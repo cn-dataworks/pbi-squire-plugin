@@ -1,0 +1,40 @@
+# MSAL Token Cache - contains authentication tokens
+.msal_token_cache.bin
+xmla_agent/.msal_token_cache.bin
+
+# Agent scratchpads (use case specific)
+agent_scratchpads/*
+!agent_scratchpads/README.md
+
+# Playwright screenshots
+.playwright-mcp/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+nul
