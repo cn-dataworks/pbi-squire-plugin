@@ -32,15 +32,206 @@ You must follow this precise, non-negotiable workflow for every task to ensure s
 - Confirm successful creation of the versioned copy before proceeding
 
 ### Step 3: Parse and Apply the Implementation Plan
+
+**Step 3.1: Read Artifact Plan (if multi-artifact)**
+- Check if **Section 1.0: Artifact Breakdown Plan** exists in findings file
+- If exists:
+  - Read artifact list and creation order
+  - Read dependency graph
+  - Prepare dependency tracking map: {artifact_name: created: false}
+- If not exists: Single-artifact mode (backward compatible)
+
+**Step 3.2: Parse Section 2 and Apply Changes**
 - Read and parse **Section 2: Proposed Changes** from the provided analyst report markdown file
 - Identify all change items listed in the report
-- For each change item:
-  - Extract the **Target Location** (the file path to be modified)
+- **Sort by Priority** (if Priority field exists in subsections like "2.1", "2.2")
+- For each change item **in priority order**:
+  - **Detect Change Type:** Check for "Change Type: CREATE" or "Change Type: MODIFY" marker
+    - If "Change Type: CREATE" found → Use **Creation Workflow** (see below)
+    - If "Original Code" block exists → Use **Modification Workflow** (default, backward compatible)
+    - If only "Proposed Code" exists and no "Original Code" → Assume CREATE
+  - Extract the **Target Location** (the file path to be modified or created)
   - Extract the **Object Type** (measure, column, table, or general code)
   - Extract the **Object Name** (e.g., "Sales Commission GP Actual NEW")
-  - Extract the `Original Code` block content
-  - Extract the `Proposed Code` block content
+  - Extract the `Original Code` block content (if MODIFY)
+  - Extract the `Proposed Code` block content (always present)
+  - Extract **Styling & Metadata** block content (if present)
+  - Extract **Priority** number (if exists, like "Priority: 2")
+  - Extract **Dependencies** list (if exists)
   - Construct the full path to the target file inside the **new timestamped project directory**
+  - **Validate Dependencies** (if multi-artifact mode):
+    - For each dependency in Dependencies list
+    - Check if dependency is marked as created in tracking map
+    - If dependency NOT created yet:
+      - ❌ HALT with error: "Cannot create [ArtifactName] - dependency [DepName] not yet created"
+      - Suggest checking Priority order in Section 1.0
+
+**CREATION WORKFLOW (for Change Type: CREATE)**
+
+When "Change Type: CREATE" is detected or only "Proposed Code" exists without "Original Code":
+
+**Step 0: Dependency Validation** (if multi-artifact mode)
+- Check Dependencies field in Section 2 subsection
+- For each listed dependency:
+  - IF dependency is "existing in model": Skip validation (assume exists)
+  - IF dependency is "from artifact #N": Check if artifact #N already created
+  - IF NOT created: HALT and report dependency error
+- Only proceed if all dependencies satisfied
+
+**For Measures (TMDL files):**
+
+1. **Identify Target File:**
+   - Check if target TMDL file exists (e.g., `measures.tmdl`, `Measures.tmdl`)
+   - If multiple exist, use the one specified in Target Location
+   - If file doesn't exist, create new TMDL file with proper structure
+
+2. **Parse Proposed Code:**
+   - Extract measure name from `measure 'Name' =` declaration
+   - Extract full DAX body
+   - Extract styling metadata from "Styling & Metadata" section:
+     - `formatString`
+     - `displayFolder`
+     - `description`
+     - `dataCategory` (if applicable)
+
+3. **Insert Measure into TMDL:**
+   - Read existing TMDL file content
+   - Find appropriate insertion point:
+     - **Preferred:** Alphabetically by measure name (maintains organization)
+     - **Alternative:** Append to end of measures section (before any tables/columns)
+   - Format measure with proper indentation (use tabs `\t`)
+   - Include all styling properties below measure declaration
+
+4. **Format Example:**
+   ```tmdl
+   measure 'YoY Revenue Growth %' =
+       VAR CurrentRevenue = [Revenue]
+       VAR PriorRevenue = [Revenue PY]
+       RETURN
+           DIVIDE(
+               CurrentRevenue - PriorRevenue,
+               PriorRevenue
+           )
+       formatString: "0.0%"
+       displayFolder: "Growth Metrics"
+       description: "Year-over-year revenue growth percentage..."
+   ```
+
+5. **Execute Insertion:**
+   - Use Python script for reliable TMDL manipulation:
+   ```python
+   def insert_measure(filepath, measure_code, insert_mode='alphabetical'):
+       # Read file
+       # Parse existing measures
+       # Find insertion point
+       # Insert new measure with proper indentation
+       # Write back to file
+   ```
+
+6. **Verification:**
+   - Read modified file
+   - Verify measure name appears
+   - Check indentation is consistent
+   - Confirm styling properties applied
+
+**For Calculated Columns (TMDL files):**
+
+1. **Identify Target Table File:**
+   - Navigate to `.SemanticModel/definition/tables/[TableName].tmdl`
+   - If creating in new table, see Table Creation workflow
+
+2. **Insert Column Definition:**
+   - Find `table [TableName]` section
+   - Locate columns section (after `lineageTag`)
+   - Insert new column definition:
+   ```tmdl
+   column 'Full Name'
+       dataType: string
+       lineageTag: [auto-generated]
+       expression:
+           VAR FirstName = [First Name]
+           VAR LastName = [Last Name]
+           RETURN
+               IF(
+                   ISBLANK(FirstName) || ISBLANK(LastName),
+                   COALESCE(FirstName, LastName, "Unknown"),
+                   FirstName & " " & LastName
+               )
+       displayFolder: "Customer Info"
+       description: "Customer full name..."
+   ```
+
+3. **Generate lineageTag:**
+   - Use UUID or hash-based identifier
+   - Format: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+
+**For Tables (New TMDL files):**
+
+1. **Create Table File:**
+   - Create new file: `.SemanticModel/definition/tables/[TableName].tmdl`
+
+2. **Generate Table Structure:**
+   ```tmdl
+   table [TableName]
+       lineageTag: [auto-generated-uuid]
+
+       [columns or M partition here based on Proposed Code]
+   ```
+
+3. **Update model.tmdl:**
+   - Add reference to new table in model relationships (if applicable)
+
+**For Visuals (Report JSON):**
+
+1. **Navigate to Report Structure:**
+   - Go to `.Report/definition/pages/[PageName].json`
+
+2. **Parse Existing Visuals:**
+   - Read JSON structure
+   - Identify visual array
+
+3. **Insert New Visual:**
+   - Parse "Proposed Code" as JSON
+   - Add to visuals array
+   - Update ordinal/position properties
+   - Apply "Visual Formatting" styling from Section 2
+
+4. **Save JSON:**
+   - Format with proper indentation
+   - Validate JSON structure
+
+**Common Creation Tasks:**
+
+1. **File Creation:** If target file doesn't exist:
+   - Create parent directories if needed
+   - Generate proper TMDL/JSON structure
+   - Add minimal required metadata
+
+2. **Styling Application:**
+   - Parse "Styling & Metadata" section
+   - Apply formatString, displayFolder, description
+   - For visuals: apply font, colors, conditional formatting
+
+3. **Error Handling:**
+   - If target location ambiguous, prompt user for clarification
+   - If file creation fails, report error with path
+   - If insertion point cannot be determined, append to end with warning
+
+4. **Logging:**
+   ```
+   ✅ CREATED: Measure 'YoY Revenue Growth %'
+      File: Measures.tmdl
+      Method: Alphabetical insertion
+      Styling: formatString="0.0%", displayFolder="Growth Metrics"
+      Priority: 2 (depends on artifact #1)
+   ```
+
+5. **Dependency Tracking Update** (if multi-artifact mode):
+   - Mark this artifact as created in tracking map
+   - Update: {artifact_name: created: true}
+   - This allows dependent artifacts to proceed
+
+**MODIFICATION WORKFLOW (for Change Type: MODIFY or backward compatibility)**
 
 **CRITICAL: Use Robust TMDL Editor for DAX Measures**
 
