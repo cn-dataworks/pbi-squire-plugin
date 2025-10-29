@@ -247,7 +247,43 @@ For TMDL files (`.tmdl`) containing DAX measure changes:
      - Locates measures by name using regex: `measure '<MeasureName>' =`
      - Extracts the entire measure definition (from `measure` declaration to next top-level element)
      - Replaces the DAX body while preserving properties (formatString, displayFolder, etc.)
-     - Handles tab indentation correctly using `\t` characters
+     - **CRITICAL: Handles tab indentation correctly using `\t` characters**
+
+**⚠️ TMDL INDENTATION REQUIREMENTS (CRITICAL):**
+
+TMDL files have STRICT indentation rules that MUST be followed precisely:
+
+**A. Indentation Standards:**
+- TMDL uses **TABS** (`\t`) for indentation, NOT spaces
+- Measure properties (`formatString`, `displayFolder`, etc.) must use **EXACTLY 2 TABS**
+- DAX expression lines inside measures use **2 TABS** for proper formatting
+- Inconsistent indentation causes Power BI Desktop parsing errors
+
+**B. Property Indentation Pattern:**
+```tmdl
+measure 'Example Measure' =
+		VAR _variable = 1                          ← 2 TABS
+		RETURN                                     ← 2 TABS
+		_variable                                  ← 2 TABS
+	formatString: "$#,0.00"                        ← 2 TABS (CRITICAL!)
+	displayFolder: "Folder Name"                   ← 2 TABS
+	lineageTag: abc-123-def                        ← 2 TABS
+
+	annotation PBI_FormatHint = {"currency":"USD"} ← 2 TABS
+```
+
+**C. Validation After Edits:**
+After making ANY TMDL file modifications, you MUST:
+1. Verify property indentation is exactly 2 tabs
+2. Verify no properties appear inside DAX expression blocks
+3. Verify all properties are at the same indentation level
+4. Use the TMDL validator tool if available (see below)
+
+**D. Common Indentation Errors to Avoid:**
+- ❌ Properties with only 1 tab (causes "not supported in current context" error)
+- ❌ Properties with 3+ tabs (properties embedded in DAX expression)
+- ❌ Mixing tabs and spaces
+- ❌ Properties appearing before RETURN statement completes
 
 3. **Measure Replacement Strategy:**
    ```python
@@ -271,6 +307,11 @@ For TMDL files (`.tmdl`) containing DAX measure changes:
    - Read the modified file and check for the new code patterns
    - Confirm the measure name still exists
    - Verify no syntax errors were introduced (e.g., unbalanced parentheses)
+   - **Run TMDL format validator** (if available):
+     ```bash
+     python .claude/tools/tmdl_format_validator.py "<filepath>" --context "Modified <measure_name>"
+     ```
+   - If validator reports errors, fix indentation issues before proceeding
 
 **Fallback: Traditional String Replacement for Non-Measure Changes**
 
@@ -308,16 +349,25 @@ For M code, calculated columns, or other non-measure TMDL changes:
 - Verify all modified files still exist and are readable
 - Check file sizes haven't become 0 bytes (corruption check)
 - For TMDL files, verify basic structure is intact (no missing closing braces)
+- **CRITICAL: Run TMDL Format Validation** (for ALL modified TMDL files):
+  ```bash
+  python .claude/tools/tmdl_format_validator.py "<modified_tmdl_file_path>" --context "Applied Section 2 changes"
+  ```
+  - If validation fails with errors, halt and report the formatting issues
+  - Fix indentation problems before proceeding
+  - Re-run validator to confirm fixes
 - Create a summary log of all changes applied:
   ```
   Changes Applied:
   1. ✅ Measure: Sales Commission GP Actual NEW
      File: Commissions_Measures.tmdl
      Method: Robust measure replacement
+     TMDL Validation: PASSED
 
   2. ✅ Measure: Sales Commission Trans Amt Actual NEW
      File: Commissions_Measures.tmdl
      Method: Robust measure replacement
+     TMDL Validation: PASSED
   ```
 
 ### Step 4: (Conditional) Deploy to Power BI Service

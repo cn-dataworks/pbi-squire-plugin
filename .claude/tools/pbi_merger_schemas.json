@@ -1,0 +1,368 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Power BI Project Merger Schemas",
+  "description": "JSON schemas for the Power BI project merge workflow outputs",
+
+  "definitions": {
+    "DiffEntry": {
+      "type": "object",
+      "description": "A single difference between two Power BI projects",
+      "required": [
+        "diff_id",
+        "component_type",
+        "component_name",
+        "file_path",
+        "status",
+        "main_version_code",
+        "comparison_version_code",
+        "metadata"
+      ],
+      "properties": {
+        "diff_id": {
+          "type": "string",
+          "description": "Unique identifier for this diff (e.g., 'diff_001')",
+          "pattern": "^diff_\\d{3,}$"
+        },
+        "component_type": {
+          "type": "string",
+          "description": "Type of Power BI component",
+          "enum": [
+            "Measure",
+            "CalculatedColumn",
+            "CalculatedTable",
+            "Table",
+            "Column",
+            "Relationship",
+            "Visual",
+            "Page",
+            "Filter",
+            "Parameter",
+            "Role",
+            "Expression",
+            "File",
+            "Error"
+          ]
+        },
+        "component_name": {
+          "type": "string",
+          "description": "Name of the component (measure name, table name, etc.)"
+        },
+        "file_path": {
+          "type": "string",
+          "description": "Relative path to the file containing this component"
+        },
+        "status": {
+          "type": "string",
+          "description": "Type of change",
+          "enum": ["Added", "Modified", "Deleted"]
+        },
+        "main_version_code": {
+          "type": ["string", "null"],
+          "description": "Code/content from main project (null if added in comparison)"
+        },
+        "comparison_version_code": {
+          "type": ["string", "null"],
+          "description": "Code/content from comparison project (null if deleted)"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional context about the diff",
+          "properties": {
+            "parent_table": {
+              "type": "string",
+              "description": "Name of parent table (for measures, columns)"
+            },
+            "line_number_main": {
+              "type": "integer",
+              "description": "Line number in main file"
+            },
+            "line_number_comparison": {
+              "type": "integer",
+              "description": "Line number in comparison file"
+            },
+            "from_table": {
+              "type": "string",
+              "description": "Source table for relationships"
+            },
+            "to_table": {
+              "type": "string",
+              "description": "Target table for relationships"
+            },
+            "cardinality": {
+              "type": "string",
+              "description": "Relationship cardinality"
+            },
+            "page_name": {
+              "type": "string",
+              "description": "Report page name (for visuals)"
+            },
+            "visual_id": {
+              "type": "string",
+              "description": "Unique visual identifier"
+            },
+            "column_count": {
+              "type": "integer",
+              "description": "Number of columns (for tables)"
+            }
+          }
+        },
+        "business_impact": {
+          "type": "string",
+          "description": "Business-level explanation of the change (added by powerbi-code-understander)"
+        }
+      }
+    },
+
+    "DiffSummary": {
+      "type": "object",
+      "description": "Summary statistics for all differences",
+      "required": ["total_diffs", "added", "modified", "deleted", "breakdown"],
+      "properties": {
+        "total_diffs": {
+          "type": "integer",
+          "description": "Total number of differences found",
+          "minimum": 0
+        },
+        "added": {
+          "type": "integer",
+          "description": "Count of added components",
+          "minimum": 0
+        },
+        "modified": {
+          "type": "integer",
+          "description": "Count of modified components",
+          "minimum": 0
+        },
+        "deleted": {
+          "type": "integer",
+          "description": "Count of deleted components",
+          "minimum": 0
+        },
+        "breakdown": {
+          "type": "object",
+          "description": "Count by component type",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+
+    "DiffReport": {
+      "type": "object",
+      "description": "Complete diff report from powerbi-compare-project-code",
+      "required": ["diffs", "summary"],
+      "properties": {
+        "diffs": {
+          "type": "array",
+          "description": "Array of all differences",
+          "items": {
+            "$ref": "#/definitions/DiffEntry"
+          }
+        },
+        "summary": {
+          "$ref": "#/definitions/DiffSummary"
+        }
+      }
+    },
+
+    "BusinessImpactReport": {
+      "type": "object",
+      "description": "Enriched diff report with business impact from powerbi-code-understander",
+      "required": ["diffs", "summary"],
+      "properties": {
+        "diffs": {
+          "type": "array",
+          "description": "Array of all differences with business_impact added",
+          "items": {
+            "allOf": [
+              {"$ref": "#/definitions/DiffEntry"},
+              {
+                "required": ["business_impact"]
+              }
+            ]
+          }
+        },
+        "summary": {
+          "$ref": "#/definitions/DiffSummary"
+        }
+      }
+    },
+
+    "MergeDecision": {
+      "type": "object",
+      "description": "User's decision for a single diff",
+      "required": ["diff_id", "choice"],
+      "properties": {
+        "diff_id": {
+          "type": "string",
+          "description": "The diff ID this decision applies to",
+          "pattern": "^diff_\\d{3,}$"
+        },
+        "choice": {
+          "type": "string",
+          "description": "Which version to use",
+          "enum": ["Main", "Comparison"]
+        }
+      }
+    },
+
+    "MergeManifest": {
+      "type": "object",
+      "description": "Complete merge manifest for powerbi-code-merger",
+      "required": [
+        "merge_decisions",
+        "main_project_path",
+        "comparison_project_path",
+        "output_project_path",
+        "diff_report"
+      ],
+      "properties": {
+        "merge_decisions": {
+          "type": "array",
+          "description": "Array of all user decisions",
+          "items": {
+            "$ref": "#/definitions/MergeDecision"
+          }
+        },
+        "main_project_path": {
+          "type": "string",
+          "description": "Absolute path to main project"
+        },
+        "comparison_project_path": {
+          "type": "string",
+          "description": "Absolute path to comparison project"
+        },
+        "output_project_path": {
+          "type": "string",
+          "description": "Absolute path to output merged project"
+        },
+        "diff_report": {
+          "$ref": "#/definitions/DiffReport"
+        }
+      }
+    },
+
+    "MergeError": {
+      "type": "object",
+      "description": "Error encountered during merge",
+      "required": ["error_type", "message", "severity"],
+      "properties": {
+        "diff_id": {
+          "type": "string",
+          "description": "The diff ID that caused the error (if applicable)"
+        },
+        "error_type": {
+          "type": "string",
+          "description": "Type of error",
+          "enum": [
+            "FileNotFound",
+            "ParseError",
+            "ComponentNotFound",
+            "CopyError",
+            "ApplyError",
+            "ValidationError"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message"
+        },
+        "severity": {
+          "type": "string",
+          "description": "Severity level",
+          "enum": ["warning", "error", "critical"]
+        }
+      }
+    },
+
+    "MergeStatistics": {
+      "type": "object",
+      "description": "Statistics about the merge operation",
+      "required": [
+        "total_decisions",
+        "main_chosen",
+        "comparison_chosen",
+        "files_modified",
+        "components_added",
+        "components_modified",
+        "components_deleted",
+        "errors"
+      ],
+      "properties": {
+        "total_decisions": {
+          "type": "integer",
+          "description": "Total number of decisions processed",
+          "minimum": 0
+        },
+        "main_chosen": {
+          "type": "integer",
+          "description": "Number of times Main version was chosen",
+          "minimum": 0
+        },
+        "comparison_chosen": {
+          "type": "integer",
+          "description": "Number of times Comparison version was chosen",
+          "minimum": 0
+        },
+        "files_modified": {
+          "type": "integer",
+          "description": "Number of files modified during merge",
+          "minimum": 0
+        },
+        "components_added": {
+          "type": "integer",
+          "description": "Number of components added",
+          "minimum": 0
+        },
+        "components_modified": {
+          "type": "integer",
+          "description": "Number of components modified",
+          "minimum": 0
+        },
+        "components_deleted": {
+          "type": "integer",
+          "description": "Number of components deleted",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "integer",
+          "description": "Number of errors encountered",
+          "minimum": 0
+        }
+      }
+    },
+
+    "MergeResult": {
+      "type": "object",
+      "description": "Final result from powerbi-code-merger",
+      "required": ["status", "output_path", "merge_log", "statistics", "errors"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Overall merge status",
+          "enum": ["success", "partial_success", "failure"]
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Absolute path to the merged project"
+        },
+        "merge_log": {
+          "type": "string",
+          "description": "Complete text log of merge operations"
+        },
+        "statistics": {
+          "$ref": "#/definitions/MergeStatistics"
+        },
+        "errors": {
+          "type": "array",
+          "description": "Array of errors encountered",
+          "items": {
+            "$ref": "#/definitions/MergeError"
+          }
+        }
+      }
+    }
+  }
+}

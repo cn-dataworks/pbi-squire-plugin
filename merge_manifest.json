@@ -1,0 +1,16 @@
+{
+  "merge_decisions": [
+    {
+      "diff_id": "diff_001",
+      "choice": "Comparison",
+      "component_type": "CalculatedColumn",
+      "component_name": "SALES_COMM_PAID_DATE",
+      "file_path": "RSR Commissions Pre Prod v4.SemanticModel/definition/tables/FACT_EQUIPMENT_SALES_RPO_CONTRACT_RSR_SALES.tmdl"
+    }
+  ],
+  "main_project_path": "C:\\Users\\anorthrup\\Downloads\\pbi_rsr_v4",
+  "comparison_project_path": "C:\\Users\\anorthrup\\Downloads\\pbi_rsr_v3",
+  "output_project_path": "C:\\Users\\anorthrup\\Downloads\\pbi_rsr_merged_20251028",
+  "merge_timestamp": "2025-10-28",
+  "focus_area": "Commission date and freeze date calculations for machine sales"
+}

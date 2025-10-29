@@ -38,7 +38,22 @@
       "Read(//c/Users/anorthrup/Desktop/rsr_project_pbi/**)",
       "Bash(for:*)",
       "Bash(do echo \"=== $file ===\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Read(//c/Users/anorthrup/Desktop/Power BI Projects/PSSR Comms_misc_updates/**)",
+      "Bash(\"C:\\Users\\anorthrup\\AppData\\Local\\pbi-tools\\pbi-tools.exe\" extract \"PSSR Commissions Pre Prod V2_misc_updated (2).pbix\")",
+      "Bash(ls:*)",
+      "SlashCommand(/implement-deploy-test-pbi-project-file --findings \"C:\\Users\\anorthrup\\Documents\\power_bi_analyst\\agent_scratchpads\\20251026-142040-misc-commission-45-percent-discount\\findings.md\")",
+      "SlashCommand(/implement-deploy-test-pbi-project-file:*)",
+      "Bash(xcopy:*)",
+      "Bash(robocopy:*)",
+      "Bash(do powershell -Command \"Get-Content ''$file'' | Select-String -Pattern ''\"\"displayName\"\"'' -Context 0,0\")",
+      "Bash(if [ -d \"C:\\Users\\anorthrup\\Downloads\\MSR_comms_v2\" ])",
+      "Bash(then echo \"Main project exists\")",
+      "Bash(else echo \"Main project NOT FOUND\")",
+      "Bash(fi)",
+      "Bash(if [ -d \"C:\\Users\\anorthrup\\Downloads\\pbi_rsr_v4_1\" ])",
+      "Bash(then echo \"Comparison project exists\")",
+      "Bash(else echo \"Comparison project NOT FOUND\")"
     ],
     "deny": [],
     "ask": []

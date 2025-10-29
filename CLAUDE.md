@@ -4,12 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Power BI analyst project repository. The codebase is currently in its initial setup phase.
+This is a Power BI analyst project repository containing agentic workflows for Power BI project analysis, modification, deployment, and merging.
 
-## Project Structure
+## Available Workflows
 
-The repository is being initialized and structure will be established as development progresses.
+Detailed documentation for all workflows is available in [.claude/README.md](.claude/README.md).
 
-## Development Workflow
+### Commands
 
-Commands and workflows will be documented here as the project develops.
+- `/evaluate-pbi-project-file` - Analyze and diagnose Power BI project issues
+- `/create-pbi-artifact` - Create new measures, columns, tables, or visuals
+- `/implement-deploy-test-pbi-project-file` - Implement, deploy, and test changes
+- `/merge-powerbi-projects` - Compare and merge two Power BI projects
+
+## Development Notes
+
+- All workflows follow non-destructive patterns (versioned copies)
+- Supports both TMDL and model.bim formats
+- Comprehensive error handling and logging
+- Python utilities in `.claude/tools/` provide reusable components

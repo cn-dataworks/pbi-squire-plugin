@@ -94,6 +94,53 @@ This slash command orchestrates the complete implementation workflow for Power B
 
 ---
 
+### Phase 2.5: TMDL Format Validation (Quality Gate)
+
+**Invoke:** `powerbi-tmdl-syntax-validator` agent
+
+**Inputs:**
+- Versioned project path (from Phase 2 output)
+- List of modified TMDL files (from Phase 2 output)
+- Context about what was changed
+
+**Agent Actions:**
+1. For each modified TMDL file, run format validation
+2. Execute Python validator: `.claude/tools/tmdl_format_validator.py`
+3. Check indentation consistency (tabs, proper levels)
+4. Verify property placement (formatString, displayFolder, etc.)
+5. Ensure properties are outside DAX expression blocks
+6. Validate TMDL structure and syntax
+
+**Validation Outcomes:**
+- **✅ PASS**: All format checks passed → Proceed to Phase 3 (DAX Validation)
+- **❌ FAIL**: Format errors found → Must fix before proceeding
+
+**Why This Phase Is Critical:**
+- TMDL format errors prevent Power BI Desktop from opening the file
+- Catches indentation issues that cause "unsupported property" errors
+- Validates BEFORE DAX logic, saving time on debugging
+- Quick validation (runs in seconds)
+
+**Failure Handling:**
+- **Format Validation FAIL**: Report specific line numbers and indentation errors
+- **Provide Fix Guidance**: Show exact tab counts needed for each property
+- **Halt Workflow**: Do not proceed to DAX validation until format is correct
+- **User Fixes**: User corrects indentation, then re-runs Phase 2.5
+
+**Success Criteria:**
+- All TMDL files pass format validation
+- No indentation errors
+- Properties correctly placed outside DAX blocks
+- Ready for Power BI Desktop to parse
+
+**Outputs:**
+- Format validation verdict (PASS/FAIL)
+- List of format errors with line numbers (if any)
+- Remediation guidance for each error
+- Recommendation to proceed or fix
+
+---
+
 ### Phase 3: DAX Validation (Quality Gate)
 
 **Invoke:** `powerbi-dax-review-agent` agent

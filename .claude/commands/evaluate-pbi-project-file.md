@@ -40,11 +40,212 @@ This slash command creates a comprehensive analyst findings report for Power BI 
 
 ## Workflow
 
-### Phase 1: Validation & Setup
-1. Parse command arguments to extract project path, image path (if provided), and description
-2. Validate that the Power BI project folder exists
-3. Search for `.pbip` files and TMDL structure to confirm valid project
-4. Exit with clear error message if project is invalid
+### Phase 1: Project Validation & Setup
+
+This phase validates the Power BI project structure and handles format conversion if needed, using the `powerbi-verify-pbiproject-folder-setup` agent.
+
+**Step 1: Parse Arguments and Create Workspace**
+
+1. Parse command arguments:
+   - `--project`: Project path (required)
+   - `--description`: Problem description (required)
+   - `--image`: Image path (optional)
+   - `--workspace`: Power BI workspace name (optional)
+   - `--dataset`: Dataset name (optional)
+
+2. Generate timestamp: `YYYYMMDD-HHMMSS` format
+
+3. Create distilled problem name from description (kebab-case, ~30-40 chars)
+
+4. Create scratchpad folder: `agent_scratchpads/<timestamp>-<distilled-name>/`
+
+5. Create empty findings.md file with Problem Statement header
+
+**Step 2: Invoke Verification Agent (Initial)**
+
+Invoke the `powerbi-verify-pbiproject-folder-setup` agent:
+```
+project_path: <from --project argument>
+findings_file_path: <scratchpad-path>/findings.md
+user_action: none
+```
+
+**Step 3: Read Prerequisites Section**
+
+After agent returns, read the Prerequisites section from findings.md and parse these fields:
+- `Status`: One of `validated`, `action_required`, `error`
+- `Action Type`: Specific action type (e.g., `pbix_extraction`, `invalid_format`)
+- `validated_project_path`: Path to use for analysis (if status=validated)
+- `format`: Project format type (if status=validated)
+- `requires_compilation`: Boolean (if status=validated)
+- `Required Action`: Description (if status=action_required)
+- `User Choices Available`: Options (if status=action_required)
+- `Error Message`: Error description (if status=error)
+
+**Step 4: Branch Based on Status**
+
+**If Status = validated:**
+- Extract `validated_project_path` from Prerequisites
+- Display success message:
+  ```
+  ✅ Project validated successfully
+  Format: <format>
+  Path: <validated_project_path>
+  ```
+- Continue to Phase 2 (problem clarification)
+
+**If Status = action_required:**
+- Check `Action Type` field:
+
+  **If Action Type = pbix_extraction:**
+  Display prompt to user:
+  ```
+  ℹ️  PBIX File Detected
+
+  You've provided a .pbix file that needs to be extracted to a folder structure.
+
+  Do you have pbi-tools CLI installed?
+
+  [Y] Yes - Extract automatically with pbi-tools
+  [N] No - Show me manual extraction instructions
+  [I] Help me install pbi-tools first
+
+  Choose an option:
+  ```
+
+  **User selects [Y]:**
+  1. Check if pbi-tools is available:
+     ```bash
+     where pbi-tools  # Windows
+     which pbi-tools  # Linux/Mac
+     ```
+
+  2. **If pbi-tools found:**
+     - Display: `✓ pbi-tools found at: <path>`
+     - Display: `📦 Extracting PBIX file...`
+     - Re-invoke verification agent:
+       ```
+       project_path: <pbix-file-path>
+       findings_file_path: <scratchpad-path>/findings.md
+       user_action: extract_with_pbitools
+       ```
+     - After agent returns, go back to Step 3 (Read Prerequisites)
+
+  3. **If pbi-tools NOT found:**
+     - Display: `❌ pbi-tools not found in system PATH`
+     - Re-display prompt with only [N] and [I] options
+
+  **User selects [N]:**
+  Display manual extraction instructions:
+  ```
+  📋 Manual PBIX Conversion Instructions
+
+  To analyze this .pbix file, convert it to Power BI Project format:
+
+  ═══════════════════════════════════════════════════════════
+  Using Power BI Desktop (Recommended)
+  ═══════════════════════════════════════════════════════════
+  1. Open Power BI Desktop
+  2. File → Open → Select: <pbix-file-path>
+  3. File → Save As → Power BI Project
+  4. Choose a location and name for the project
+  5. A folder will be created with a .pbip file inside
+
+  ═══════════════════════════════════════════════════════════
+  After Conversion - Re-run this command:
+  ═══════════════════════════════════════════════════════════
+  /evaluate-pbi-project-file \
+    --project "<converted-project-folder>" \
+    --description "<description>"
+  ```
+
+  Update Prerequisites section with:
+  ```markdown
+  **Status**: action_required
+  **Action Type**: manual_extraction_pending
+  **User Action**: Manual conversion to .pbip format required
+  ```
+
+  Exit workflow gracefully (exit code 0)
+
+  **User selects [I]:**
+  Display installation guide:
+  ```
+  📦 pbi-tools Installation Guide
+
+  pbi-tools is a command-line tool for extracting and compiling Power BI files.
+
+  ═══════════════════════════════════════════════════════════
+  Windows - Standalone Executable (Recommended)
+  ═══════════════════════════════════════════════════════════
+  1. Download latest release:
+     https://github.com/pbi-tools/pbi-tools/releases
+
+  2. Look for: pbi-tools.<version>.win-x64.zip
+
+  3. Extract to a permanent location:
+     Example: C:\tools\pbi-tools\
+
+  4. Add to PATH (optional but recommended):
+     - Windows Settings → System → About
+     - Advanced system settings → Environment Variables
+     - Edit "Path" variable
+     - Add: C:\tools\pbi-tools\
+
+  5. Verify installation:
+     Open new terminal and run: pbi-tools --version
+
+  ═══════════════════════════════════════════════════════════
+  Windows - Chocolatey (if you use Chocolatey)
+  ═══════════════════════════════════════════════════════════
+  choco install pbi-tools
+
+  ═══════════════════════════════════════════════════════════
+  Cross-Platform - .NET Tool
+  ═══════════════════════════════════════════════════════════
+  Requirements: .NET 6.0+ SDK installed
+
+  dotnet tool install -g pbi-tools
+
+  ═══════════════════════════════════════════════════════════
+  After Installation - Re-run this command:
+  ═══════════════════════════════════════════════════════════
+  /evaluate-pbi-project-file \
+    --project "<pbix-file-path>" \
+    --description "<description>"
+
+  Then select [Y] when prompted to extract automatically.
+  ```
+
+  Update Prerequisites section with:
+  ```markdown
+  **Status**: action_required
+  **Action Type**: pbitools_install_pending
+  **User Action**: pbi-tools installation required
+  ```
+
+  Exit workflow gracefully (exit code 0)
+
+**If Status = error:**
+- Read `Error Message` and `Suggested Fix` from Prerequisites
+- Display error to user:
+  ```
+  ❌ Project Validation Failed
+
+  <Error Message>
+
+  Suggested Fix:
+  <Suggested Fix>
+  ```
+- Exit workflow with error code 1
+
+**Step 5: Validation Complete**
+
+Once status=validated, Phase 1 is complete. The `validated_project_path` from Prerequisites should be used for all subsequent agent invocations.
+
+Note: If the project `format` is `pbi-tools` or `pbix-extracted-pbitools`, remember that `requires_compilation: true` - this will be important in the implementation phase.
+
+---
 
 ### Phase 2: Interactive Problem Clarification
 1. Read the image file (if provided) to understand visual context
@@ -145,10 +346,11 @@ Execute agents conditionally in sequence:
 
 #### Step 2: Code Location (powerbi-code-locator)
 - **Purpose**: Find existing relevant code in the Power BI project
-- **Input**: Problem statement, project path, findings file path (with data context if available)
+- **Input**: Problem statement, validated_project_path (from Prerequisites), findings file path (with data context if available)
 - **Output**: Populates Section 1 (Current Implementation Investigation) with code snippets
 - **Conditional**: Always runs
 - **Note**: May return empty if this is a new feature with no existing code
+- **Important**: Use the `validated_project_path` from Prerequisites section, not the original --project argument
 
 #### Step 3: Code Fix Identification (powerbi-code-fix-identifier)
 - **Purpose**: Diagnose issues and generate corrected code implementations
