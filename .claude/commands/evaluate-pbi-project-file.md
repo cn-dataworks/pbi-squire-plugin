@@ -61,6 +61,32 @@ This phase validates the Power BI project structure and handles format conversio
 
 5. Create empty findings.md file with Problem Statement header
 
+**Step 1.5: Analyze Problem Description for Visual Changes**
+
+Parse the `--description` parameter to detect if visual changes are expected:
+
+1. **Define Visual Change Keywords**:
+   - Layout keywords: "move", "resize", "reposition", "position", "coordinates", "x", "y", "width", "height"
+   - Formatting keywords: "color", "font", "title", "label", "format", "style", "theme"
+   - Visual type keywords: "chart", "visual", "graph", "table visual", "card", "slicer"
+   - Property keywords: "axis", "legend", "data labels", "tooltip"
+
+2. **Check for Visual Keywords**:
+   ```python
+   visual_keywords = ["move", "resize", "reposition", "position", "coordinates",
+                      "color", "font", "title", "label", "axis", "legend",
+                      "chart", "visual", "graph", "card", "layout"]
+
+   description_lower = description.lower()
+   visual_changes_expected = any(keyword in description_lower for keyword in visual_keywords)
+   ```
+
+3. **Set Flag**:
+   - If any visual keywords found: `visual_changes_expected = true`
+   - Otherwise: `visual_changes_expected = false`
+
+4. **Context Note**: This flag will be passed to the verification agent to ensure PBIR structure validation
+
 **Step 2: Invoke Verification Agent (Initial)**
 
 Invoke the `powerbi-verify-pbiproject-folder-setup` agent:
@@ -68,6 +94,7 @@ Invoke the `powerbi-verify-pbiproject-folder-setup` agent:
 project_path: <from --project argument>
 findings_file_path: <scratchpad-path>/findings.md
 user_action: none
+visual_changes_expected: <true/false from Step 1.5>
 ```
 
 **Step 3: Read Prerequisites Section**
@@ -128,6 +155,7 @@ After agent returns, read the Prerequisites section from findings.md and parse t
        project_path: <pbix-file-path>
        findings_file_path: <scratchpad-path>/findings.md
        user_action: extract_with_pbitools
+       visual_changes_expected: <true/false from Step 1.5>
        ```
      - After agent returns, go back to Step 3 (Read Prerequisites)
 
@@ -227,8 +255,28 @@ After agent returns, read the Prerequisites section from findings.md and parse t
   Exit workflow gracefully (exit code 0)
 
 **If Status = error:**
-- Read `Error Message` and `Suggested Fix` from Prerequisites
-- Display error to user:
+- Read `Error Message` and `Action Type` from Prerequisites
+- **If Action Type = report_folder_missing or format_incompatible_with_visual_changes:**
+  Display error specific to visual changes incompatibility:
+  ```
+  ❌ Visual Changes Not Supported
+
+  <Error Message from Prerequisites>
+
+  The workflow detected that your problem description includes visual property modifications
+  (layout, colors, titles, formatting), but the project format does not support these changes.
+
+  <Suggested Fixes from Prerequisites section>
+
+  You can:
+  1. Re-run with a .pbip project that includes a .Report folder
+  2. Modify your problem description to focus only on calculation changes
+  3. Handle visual changes manually in Power BI Desktop UI
+  ```
+  Exit workflow gracefully (exit code 0)
+
+- **Otherwise (generic error):**
+  Display error to user:
   ```
   ❌ Project Validation Failed
 
@@ -237,7 +285,7 @@ After agent returns, read the Prerequisites section from findings.md and parse t
   Suggested Fix:
   <Suggested Fix>
   ```
-- Exit workflow with error code 1
+  Exit workflow with error code 1
 
 **Step 5: Validation Complete**
 
@@ -344,13 +392,42 @@ Execute agents conditionally in sequence with iterative refinement:
 
 **Note**: The pre-flight authentication check (above) eliminates the need for mid-agent authentication blocking. The agent should now only be invoked when authentication is already confirmed.
 
-#### Step 2: Code Location (powerbi-code-locator)
-- **Purpose**: Find existing relevant code in the Power BI project
-- **Input**: Problem statement, validated_project_path (from Prerequisites), findings file path (with data context if available)
-- **Output**: Populates Section 1 (Current Implementation Investigation) with code snippets
-- **Conditional**: Always runs
-- **Note**: May return empty if this is a new feature with no existing code
-- **Important**: Use the `validated_project_path` from Prerequisites section, not the original --project argument
+#### Step 2.7: Change Type Classification
+
+**Purpose**: Determine what type of changes are needed (calculation, visual, or both)
+
+**Orchestrator Logic** (NOT an agent - this is command logic):
+
+1. Parse clarified problem statement for keywords:
+   - **Calculation keywords**: "measure", "column", "DAX", "M code", "query", "relationship", "table", "calculated column", "fix formula"
+   - **Visual keywords**: "move", "resize", "position", "title", "color", "font", "chart", "visual", "layout", "dashboard title", "axis label"
+
+2. Check project format from Prerequisites:
+   - Read `format` field and check for .Report folder existence
+
+3. Classify request and determine investigation needs
+
+**Classification Result**: `calc_only` | `visual_only` | `hybrid`
+
+#### Step 2: Investigation Phase (Conditional Parallel Execution)
+
+**Purpose**: Document current state before planning changes
+
+**Based on classification from Step 2.7**:
+
+**A. CALC_ONLY**: Invoke `powerbi-code-locator` → Section 1.A only
+
+**B. VISUAL_ONLY** (with .Report): Invoke `powerbi-visual-locator` → Section 1.B only
+
+**C. VISUAL_ONLY** (no .Report - pbi-tools): Prompt user for manual action
+
+**D. HYBRID** (with .Report): Invoke BOTH agents in PARALLEL:
+  - `powerbi-code-locator` → Section 1.A
+  - `powerbi-visual-locator` → Section 1.B
+
+**E. HYBRID** (no .Report): Invoke `powerbi-code-locator` → Section 1.A + add manual note
+
+**Important**: Use `validated_project_path` from Prerequisites
 
 #### Step 2.5: Code-Context Validation & Iterative Refinement (Human-in-the-Loop) 🆕
 
@@ -485,19 +562,68 @@ ADDITIONAL SEARCH TARGETS (from user clarification):
 | Unexpected Complexity | Simple request but code shows 8-variable calculation | Confirm full scope |
 | Filter Context Needed | User wants to "add filter" but multiple filter contexts exist | Clarify exact context |
 
-#### Step 3: Code Fix Identification (powerbi-code-fix-identifier)
-- **Purpose**: Diagnose issues and generate corrected code implementations
-- **Input**: Problem statement, findings file path (with Section 1 completed, including data context)
-- **Output**: Populates Section 2 (Proposed Changes)
-- **Conditional**: Always runs (can handle both new and modified code)
-- **Note**: Should use data context from Step 1 to inform diagnosis
+#### Step 3: Dashboard Update Planning (powerbi-dashboard-update-planner)
+
+**Purpose**: Design calculation and/or visual changes based on investigation findings
+
+**Agent**: `powerbi-dashboard-update-planner`
+
+**Input**:
+- Problem statement
+- Findings file path
+- Section 1.A (if exists - from code-locator)
+- Section 1.B (if exists - from visual-locator)
+
+**Agent Self-Detection**:
+The agent reads Section 1.A and 1.B to determine scenario:
+- Section 1.A only → CALCULATION_ONLY workflow
+- Section 1.B only → VISUAL_ONLY workflow
+- Both sections → HYBRID workflow (with coordination)
+
+**Output** (scenario-dependent):
+- **CALC_ONLY**: Section 2.A (Calculation Changes)
+- **VISUAL_ONLY**: Section 2.B (Visual Changes)
+- **HYBRID**: Coordination Summary + Section 2.A + Section 2.B
+
+**Key Feature for HYBRID**:
+- Agent designs calculation changes FIRST (determines measure names, formats)
+- Agent designs visual changes SECOND (references exact names from calculations)
+- Agent documents dependencies and execution order
+
+**Note**: This single agent replaces the former `powerbi-code-fix-identifier` and `pbir-visual-edit-planner` agents with unified expertise
 
 #### Step 4: Verification & Testing (power-bi-verification)
-- **Purpose**: Validate proposed changes and assess impact
-- **Input**: Problem statement, findings file path (with Sections 1 & 2 completed)
-- **Output**: Populates Section 3 (Test Cases and Impact Analysis)
-- **Conditional**: Only runs if Section 2 has proposed changes
-- **Result**: Provides Pass/Warning/Fail verdict
+
+**Purpose**: Validate proposed changes and assess impact
+
+**Input**: Problem statement, findings file path (with Sections 1 & 2 completed)
+
+**Output**: Populates Section 3 (Test Cases and Impact Analysis)
+
+**Conditional**: Only runs if Section 2 has proposed changes (either 2.A or 2.B or both)
+
+**Validation Scope**:
+
+**For Calculation Changes (Section 2.A)**:
+- DAX syntax correctness
+- Measure dependencies and references
+- Filter context appropriateness
+- Performance considerations
+- Breaking change detection
+
+**For Visual Changes (Section 2.B)**: 🆕
+- XML syntax validation
+- Target file path existence in .Report folder
+- JSON path validity (property paths exist in visual.json schema)
+- new_value data type compatibility
+- Operation type appropriateness (replace_property vs config_edit)
+
+**For Hybrid Changes (Both 2.A and 2.B)**:
+- Compatibility between calculation and visual changes
+- Example: If visual references a new measure, verify measure exists in Section 2.A
+- Dependency ordering (calculations should be applied before visual changes)
+
+**Result**: Provides Pass/Warning/Fail verdict based on comprehensive validation
 
 ### Phase 5: Completion
 1. Display summary of findings location
@@ -645,3 +771,41 @@ This command can be modified and re-run for subsequent analysis iterations.
 - For multiple unrelated changes, run the command separately for each
 - The scratchpad folder preserves full analysis history with timestamps
 - Agents can be re-run individually if needed by invoking them directly with the findings file path
+
+### Unified Planning Architecture 🆕
+
+**Supported Change Types**:
+1. **Calculation Changes**: DAX measures, M queries, TMDL model definitions (all project formats)
+2. **Visual Changes**: PBIR visual properties - layout, formatting, visual types, data bindings (Power BI Project .pbip format only)
+3. **Hybrid Changes**: Both calculation and visual changes in a single request with automatic coordination
+
+**Single Agent Approach**:
+- The `powerbi-dashboard-update-planner` agent handles ALL three scenarios
+- Agent automatically detects scenario by reading Section 1.A and 1.B
+- For hybrid requests, agent coordinates changes (code decisions inform visual changes)
+
+**Visual Editing Requirements**:
+- Project must be in Power BI Project (.pbip) format
+- .Report folder must exist in the project structure
+- Not supported for pbi-tools or pbix-extracted-pbitools formats (manual actions required)
+
+**Change Examples**:
+- **Calculation**: "Update Total Sales to exclude returns" → Section 2.A only
+- **Visual**: "Move Sales chart to top-right, resize to 600px" → Section 2.B only
+- **Hybrid**: "Add YoY Growth measure and update dashboard title" → Coordination Summary + 2.A + 2.B
+
+**What's NOT a Visual Change**:
+- Field parameters (data model objects, not visual properties)
+- New visuals (must be created in Power BI Desktop UI)
+- Slicers, bookmarks (UI-only operations)
+
+**Hybrid Coordination**:
+- Calculation changes designed FIRST (determines names, formats)
+- Visual changes designed SECOND (references exact names from calculations)
+- Dependencies and execution order explicitly documented
+- Example: Measure "YoY Growth %" created in 2.A, referenced by title in 2.B
+
+**Output Formats**:
+- Section 2.A: DAX/M/TMDL code (for calculations)
+- Section 2.B: XML edit plans (for visuals)
+- Coordination Summary: Dependencies and execution order (for hybrid)

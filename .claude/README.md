@@ -36,11 +36,22 @@ Commands are invoked using slash notation (e.g., `/evaluate-pbi-project-file`) a
 3. **Scratchpad Creation**: Creates timestamped workspace folder with findings.md
 4. **Agent Orchestration**:
    - Pre-flight authentication check (if workspace/dataset provided)
-   - `powerbi-data-context-agent` - Retrieves actual data from semantic model
-   - `powerbi-code-locator` - Finds relevant code in project
-   - `powerbi-code-fix-identifier` - Diagnoses issues and proposes fixes
+   - `powerbi-data-context-agent` - Retrieves actual data from semantic model (optional)
+   - **Classification**: Determines change type (calculation, visual, or hybrid)
+   - **Investigation Phase** (conditional parallel execution):
+     - `powerbi-code-locator` - Finds relevant TMDL/DAX/M code → Section 1.A
+     - `powerbi-visual-locator` - Finds relevant PBIR visual state → Section 1.B (if visual changes)
+   - **Planning Phase**: `powerbi-dashboard-update-planner` - Designs coordinated changes:
+     - Calculation-only: Section 2.A
+     - Visual-only: Section 2.B
+     - Hybrid: Coordination Summary + Section 2.A + Section 2.B
    - `power-bi-verification` - Validates proposed changes
 5. **Completion**: Displays verification verdict and suggests next steps
+
+**Supported Change Types:**
+- **Calculation Changes**: DAX measures, M queries, TMDL model definitions
+- **Visual Changes**: PBIR visual properties (layout, formatting, titles, colors) - requires .pbip format
+- **Hybrid Changes**: Both calculation and visual changes with automatic coordination
 
 **Output:** Creates `agent_scratchpads/<timestamp>-<problem-name>/findings.md` with comprehensive analysis.
 
@@ -77,7 +88,7 @@ Commands are invoked using slash notation (e.g., `/evaluate-pbi-project-file`) a
 
 ### `/implement-deploy-test-pbi-project-file`
 
-**Purpose:** Implement Power BI code changes from an analyst findings report by applying changes to a versioned project, optionally deploying to Power BI Service, and running automated tests.
+**Purpose:** Implement Power BI code and/or visual changes from an analyst findings report by applying changes to a versioned project, optionally deploying to Power BI Service, and running automated tests.
 
 **Usage:**
 ```bash
@@ -91,12 +102,16 @@ Commands are invoked using slash notation (e.g., `/evaluate-pbi-project-file`) a
 
 **Workflow:**
 1. **Validation & Setup**: Parses findings file and validates project
-2. **Apply Changes**: Uses `powerbi-code-implementer-apply` to create versioned project and apply code changes
-3. **TMDL Format Validation** ⭐: Uses `powerbi-tmdl-syntax-validator` to validate file formatting
-4. **DAX Validation** ⭐: Uses `powerbi-dax-review-agent` to validate DAX syntax and semantics
-5. **Deployment** (optional): Deploys to Power BI Service using PowerShell or pbi-tools
-6. **Testing** (optional): Uses `powerbi-playwright-tester` to run automated tests
-7. **Consolidate Results**: Updates findings.md with Section 4 (Implementation Results)
+2. **Apply Changes** (conditional):
+   - **Code Changes** (Section 2.A): Uses `powerbi-code-implementer-apply` to apply DAX/M/TMDL changes
+   - **Visual Changes** (Section 2.B): Uses `powerbi-visual-implementer-apply` 🆕 to execute XML edit plans on visual.json files
+3. **Validation** (conditional quality gates):
+   - **TMDL Format** ⭐: Uses `powerbi-tmdl-syntax-validator` to validate file formatting (if code changes)
+   - **PBIR Structure** ⭐: Uses `powerbi-pbir-validator` 🆕 to validate visual.json files (if visual changes)
+   - **DAX Logic** ⭐: Uses `powerbi-dax-review-agent` to validate DAX syntax and semantics (if code changes)
+4. **Deployment** (optional): Deploys to Power BI Service using PowerShell or pbi-tools
+5. **Testing** (optional): Uses `powerbi-playwright-tester` to run automated tests
+6. **Consolidate Results**: Updates findings.md with Section 4 (Implementation Results)
 
 **Authentication Methods:**
 - **User Authentication** (Recommended): Uses your Power BI login via PowerShell cmdlets
@@ -266,12 +281,12 @@ Agents are specialized autonomous components invoked by commands to perform spec
 
 #### `powerbi-code-locator`
 
-**Purpose:** Identifies specific code locations in Power BI projects before making modifications.
+**Purpose:** Identifies specific calculation code locations in Power BI projects before making modifications.
 
-**Invocation:** Invoked proactively when user describes desired changes to Power BI objects.
+**Invocation:** Invoked during investigation phase when calculation changes are needed.
 
 **Inputs:**
-- User's change request
+- User's change request (calculation portion)
 - Findings file path
 - Power BI project structure context
 - Optional: image paths for visual analysis
@@ -285,34 +300,83 @@ Agents are specialized autonomous components invoked by commands to perform spec
 
 **Critical Constraint:** Purely identification and extraction - NEVER modifies code or suggests improvements.
 
-**Output:** Populates Section 1 (Current Implementation Investigation) with code snippets and locations.
+**Output:** Populates Section 1.A (Calculation Code Investigation) with code snippets and locations.
 
 ---
 
-#### `powerbi-code-fix-identifier`
+#### `powerbi-visual-locator` 🆕
 
-**Purpose:** Diagnoses issues in Power BI code and generates corrected implementations.
+**Purpose:** Identifies and documents current state of PBIR visuals before planning visual modifications.
 
-**Invocation:** After code location phase in evaluation workflow.
+**Invocation:** Invoked during investigation phase when visual changes are needed.
+
+**Inputs:**
+- Visual change request (extracted from problem statement)
+- Power BI Project .Report folder path
+- Findings file path
+- Context about which visuals to locate
+
+**What It Does:**
+- Reads PBIR file structure (report.json, page.json, visual.json)
+- Locates specific visuals by name, page, or description
+- Extracts current visual properties (layout, type, configuration)
+- Parses stringified config blob for formatting details
+- Documents data bindings (measures/columns used by visual)
+- Analyzes dashboard screenshots to identify visuals
+
+**Requirements:**
+- Power BI Project (.pbip) format with .Report folder
+- Not applicable for pbi-tools format
+
+**Output:** Populates Section 1.B (Visual Current State Investigation) with visual state documentation.
+
+---
+
+#### `powerbi-dashboard-update-planner` 🆕
+
+**Purpose:** Dashboard update planning agent that designs calculation changes, visual changes, or both with automatic coordination.
+
+**Invocation:** After investigation phase completes (replaces separate code-fix and visual-edit agents).
 
 **Inputs:**
 - Problem statement
-- Findings file path (with Section 1 completed)
-- Existing code context
+- Findings file path
+- Section 1.A (if exists - calculation code context)
+- Section 1.B (if exists - visual state context)
 
 **What It Does:**
-- Analyzes problematic code to identify root causes
-- Diagnoses DAX evaluation context issues, aggregation mismatches, performance bottlenecks
-- Diagnoses M code query folding breaks and transformation errors
-- Formulates fix plans addressing root causes
-- Generates corrected code (DAX, M, or TMDL)
+- **Self-detects scenario** by reading Section 1.A and 1.B:
+  - Calculation-only: Designs DAX/M/TMDL fixes
+  - Visual-only: Generates XML edit plans for PBIR changes
+  - Hybrid: Coordinates both (code changes inform visual changes)
+- **For calculation changes**: Diagnoses root causes, generates corrected code
+- **For visual changes**: Creates machine-executable XML edit plans
+- **For hybrid changes**:
+  - Designs calculation changes FIRST (determines measure names, formats)
+  - Designs visual changes SECOND (references exact names from calculations)
+  - Documents dependencies and execution order
+- **Web Research Capability**: Can search Power BI forums, expert blogs, and documentation when:
+  - Problem involves advanced/non-standard DAX patterns
+  - Complex M code transformations requiring specialized techniques
+  - Obscure TMDL syntax or recent Power BI feature updates
+  - Specialized community knowledge needed for complex scenarios
+  - Documents research sources in Change Rationale section
 
 **Expertise:**
-- DAX: Context transition, filter context, iterator optimization
+- DAX: Context transition, filter context, iterator optimization, best practices
 - M Code: Query folding preservation, performance optimization
 - TMDL: Syntax correctness, relationship definitions
+- PBIR: Visual.json schema, XML edit plan generation, config blob editing
+- Research: **dax.guide** (authoritative DAX reference), **powerquery.how** (M code patterns), Power BI forums, SQLBI resources, Microsoft docs, expert blogs
 
-**Output:** Populates Section 2 (Proposed Changes) with corrected code and detailed rationale.
+**Critical Feature:** Single agent ensures naming consistency in hybrid scenarios (measure names in Section 2.A exactly match visual references in Section 2.B).
+
+**Output:**
+- **Calculation-only**: Section 2.A (Calculation Changes)
+- **Visual-only**: Section 2.B (Visual Changes) with XML edit plans
+- **Hybrid**: Coordination Summary + Section 2.A + Section 2.B
+
+**Replaces:** `powerbi-code-fix-identifier` and `pbir-visual-edit-planner` (now deprecated).
 
 ---
 
@@ -603,6 +667,86 @@ Agents are specialized autonomous components invoked by commands to perform spec
 
 ---
 
+#### `powerbi-visual-implementer-apply` 🆕
+
+**Purpose:** Applies PBIR visual changes from Section 2.B by executing XML edit plans to modify visual.json files.
+
+**Invocation:** After code changes are applied (if any), when Section 2.B contains visual modifications.
+
+**Inputs:**
+- Findings file path (with Section 2.B)
+- Versioned project path (from code implementer or newly created)
+
+**What It Does:**
+- Parses XML edit plan from Section 2.B
+- Executes operations using `pbir_visual_editor.py` Python utility
+- Modifies visual.json files in .Report folder
+- Supports two operation types:
+  - **replace_property**: Modify top-level properties (x, y, width, height, visualType)
+  - **config_edit**: Modify properties inside stringified config blob (title.text, colors, fonts)
+- Validates JSON structure after modifications
+- Logs all visual modifications
+
+**Operation Types:**
+```xml
+<step file_path="..." operation="replace_property" json_path="width" new_value="500" />
+<step file_path="..." operation="config_edit" json_path="title.text" new_value="'New Title'" />
+```
+
+**Requirements:**
+- Python 3.x
+- Power BI Project in .pbip format with .Report folder
+- `pbir_visual_editor.py` utility in `.claude/tools/`
+
+**Critical:** Runs AFTER code implementer in hybrid scenarios to ensure measures/columns exist before visual changes reference them.
+
+**Output:**
+- List of modified visuals with operation counts
+- Validation status for each visual
+- Error details (if any)
+
+---
+
+#### `powerbi-pbir-validator` 🆕
+
+**Purpose:** Validates PBIR visual.json files after modifications but before deployment (parallel to `powerbi-dax-review-agent`).
+
+**Invocation:** After visual implementer applies changes, as a quality gate before deployment.
+
+**Inputs:**
+- Findings file path (for Section 2.B)
+- Versioned project path
+
+**What It Does:**
+- Parses Section 2.B to identify modified visuals
+- For each modified visual.json:
+  - Validates JSON structure
+  - Verifies config string is valid JSON
+  - Checks property types match schema
+  - Validates position object (x, y, z, width, height, tabOrder)
+  - Confirms modified properties have expected values
+- Cross-references measure dependencies with Section 2.A (if applicable)
+- Generates Section 2.6: PBIR Validation Report
+
+**Validation Checks:**
+- ✅ JSON syntax valid
+- ✅ Config string parseable
+- ✅ Required properties present
+- ✅ Property data types correct
+- ✅ Measure references valid
+- ✅ Modified operations successful
+
+**Outcomes:**
+- **✅ PASS**: Ready for deployment
+- **⚠️ WARNINGS**: Non-critical issues, user decides
+- **❌ FAIL**: Critical errors, must fix before deployment
+
+**Output:** Section 2.6 appended to findings.md with detailed validation report.
+
+**Critical Constraint:** Validates ONLY modified visuals (from Section 2.B), not entire report.
+
+---
+
 ### Merge Workflow Agents
 
 #### `powerbi-compare-project-code`
@@ -831,14 +975,29 @@ This system supports three primary workflows:
 
 **Agents Involved:**
 1. `powerbi-verify-pbiproject-folder-setup` - Validates project
-2. `powerbi-data-context-agent` - Retrieves actual data
-3. `powerbi-code-locator` - Finds existing code
-4. `powerbi-code-fix-identifier` - Proposes fixes
-5. `power-bi-verification` - Validates changes
-6. `powerbi-code-implementer-apply` - Applies changes
-7. `powerbi-tmdl-syntax-validator` - Validates format
-8. `powerbi-dax-review-agent` - Validates DAX
-9. `powerbi-playwright-tester` - Tests deployment
+2. `powerbi-data-context-agent` - Retrieves actual data (optional)
+3. **Classification** (orchestrator logic) - Determines change type (calc/visual/hybrid)
+4. **Investigation Phase** (conditional parallel):
+   - `powerbi-code-locator` - Finds existing code (Section 1.A)
+   - `powerbi-visual-locator` - Finds visual state (Section 1.B, if visual changes)
+5. `powerbi-dashboard-update-planner` - Designs coordinated changes (Section 2.A/2.B)
+6. `power-bi-verification` - Validates proposed changes
+7. **Implementation Phase** (conditional sequential):
+   - `powerbi-code-implementer-apply` - Applies code changes (Section 2.A, if exists)
+   - `powerbi-visual-implementer-apply` 🆕 - Applies visual changes (Section 2.B, if exists)
+8. **Validation Phase** (conditional):
+   - `powerbi-tmdl-syntax-validator` - Validates TMDL format (if code changes)
+   - `powerbi-pbir-validator` 🆕 - Validates PBIR visual.json (if visual changes)
+   - `powerbi-dax-review-agent` - Validates DAX logic (if code changes)
+9. **Deployment & Testing** (optional):
+   - Deployment to Power BI Service (PowerShell or pbi-tools)
+   - `powerbi-playwright-tester` - Runs automated tests
+
+**Key Enhancements:**
+- Unified planner ensures calculation and visual changes are coordinated in hybrid scenarios
+- Visual implementer applies PBIR changes via XML edit plans
+- PBIR validator ensures visual.json integrity before deployment
+- Conditional execution based on what's in Section 2 (code, visual, or both)
 
 ---
 

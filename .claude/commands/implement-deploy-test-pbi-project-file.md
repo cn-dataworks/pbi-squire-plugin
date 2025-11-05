@@ -66,7 +66,18 @@ This slash command orchestrates the complete implementation workflow for Power B
    - Extract parent directory of findings.md (e.g., `agent_scratchpads/20251003-071759-pssr-misc/`)
    - This folder will receive test results
 
-### Phase 2: Apply Changes (Code Implementation)
+### Phase 2: Apply Changes (Conditional - Code and/or Visual)
+
+**Condition:** This phase executes conditionally based on what exists in Section 2:
+- If Section 2.A exists → Apply code changes
+- If Section 2.B exists → Apply visual changes (after code changes)
+- If both exist (hybrid) → Apply code FIRST, then visual changes
+
+---
+
+#### Phase 2a: Apply Code Changes (Conditional)
+
+**Condition:** Only runs if Section 2.A (Calculation Changes) exists in findings.md
 
 **Invoke:** `powerbi-code-implementer-apply` agent
 
@@ -77,7 +88,7 @@ This slash command orchestrates the complete implementation workflow for Power B
 
 **Agent Actions:**
 1. Create timestamped versioned copy of project
-2. Apply all changes from Section 2 of findings.md
+2. Apply all changes from Section 2.A of findings.md
 3. Verify all code modifications completed successfully
 
 **Success Criteria:**
@@ -94,13 +105,59 @@ This slash command orchestrates the complete implementation workflow for Power B
 
 ---
 
-### Phase 2.5: TMDL Format Validation (Quality Gate)
+#### Phase 2b: Apply Visual Changes (Conditional)
+
+**Condition:** Only runs if Section 2.B (Visual Changes) exists in findings.md
+
+**Prerequisites:**
+- If Section 2.A was executed → Use versioned project path from Phase 2a
+- If Section 2.A was NOT executed → Create versioned project first
+
+**Invoke:** `powerbi-visual-implementer-apply` agent
+
+**Inputs:**
+- Findings file path
+- Versioned project path (from Phase 2a or newly created)
+
+**Agent Actions:**
+1. Verify .Report folder exists (PBIR format required)
+2. Parse XML edit plan from Section 2.B
+3. Execute XML edit plan using `pbir_visual_editor.py`
+4. Modify visual.json files according to edit operations
+5. Verify all visual modifications completed successfully
+
+**Operation Types:**
+- `replace_property`: Modify top-level visual.json properties (x, y, width, height, visualType)
+- `config_edit`: Modify properties inside stringified config blob (title.text, colors, fonts)
+
+**Success Criteria:**
+- All visual.json files modified successfully
+- All JSON structures remain valid
+- All config strings parseable
+
+**Failure Handling:**
+- **Visual Application Fails**: Log error, continue if partial success, ABORT if critical failure
+- **No .Report Folder**: ABORT with error message: "Visual changes require Power BI Project (.pbip) format with .Report folder"
+
+**Outputs:**
+- List of modified visuals
+- Operation count per visual
+- Application status (success/partial/failed)
+
+**Why This Phase Runs After Code Changes:**
+Visuals may reference measures or columns created in Phase 2a. Running code changes first ensures these references are valid when visual changes are applied.
+
+---
+
+### Phase 2.5: TMDL Format Validation (Quality Gate - Conditional)
+
+**Condition:** Only runs if Phase 2a (code changes) was executed
 
 **Invoke:** `powerbi-tmdl-syntax-validator` agent
 
 **Inputs:**
-- Versioned project path (from Phase 2 output)
-- List of modified TMDL files (from Phase 2 output)
+- Versioned project path (from Phase 2a output)
+- List of modified TMDL files (from Phase 2a output)
 - Context about what was changed
 
 **Agent Actions:**
@@ -141,13 +198,76 @@ This slash command orchestrates the complete implementation workflow for Power B
 
 ---
 
-### Phase 3: DAX Validation (Quality Gate)
+### Phase 2.6: PBIR Visual Validation (Quality Gate - Conditional)
+
+**Condition:** Only runs if Phase 2b (visual changes) was executed
+
+**Invoke:** `powerbi-pbir-validator` agent
+
+**Inputs:**
+- Findings file path (for Section 2.B: Visual Changes)
+- Versioned project path (from Phase 2a or 2b output)
+
+**Agent Actions:**
+1. Parse Section 2.B to identify modified visuals
+2. For each modified visual.json file:
+   - Validate JSON structure
+   - Verify config string is valid JSON (if present)
+   - Check property types match schema
+   - Validate position object (x, y, z, width, height, tabOrder)
+   - Verify modified properties have correct values
+3. Cross-reference measure dependencies with Section 2.A (if applicable)
+4. Generate Section 2.6: PBIR Validation Report in findings.md
+
+**Validation Checks:**
+- ✅ JSON syntax valid
+- ✅ Config string parseable
+- ✅ Required properties present
+- ✅ Property data types correct
+- ✅ Measure references valid (cross-check with Section 2.A)
+- ✅ Modified operations successful
+
+**Validation Outcomes:**
+- **✅ PASS**: All checks passed → Proceed to Phase 3 (DAX Validation if applicable, otherwise deployment)
+- **⚠️ WARNINGS**: Non-critical issues → User decides to proceed or fix
+- **❌ FAIL**: Critical errors → Must fix before proceeding
+
+**Why This Phase Is Critical:**
+- PBIR JSON errors prevent Power BI from loading visuals
+- Config blob errors cause visual rendering failures
+- Property type mismatches lead to unexpected behavior
+- Quick validation (runs in seconds)
+
+**Failure Handling:**
+- **Validation FAIL**: Report specific visual names and errors
+- **Provide Fix Guidance**: Show exact property paths and expected values
+- **Halt Workflow**: Do not proceed to deployment until errors fixed
+- **User Fixes**: User corrects Section 2.B XML edit plan, re-runs Phase 2b and 2.6
+
+**Success Criteria:**
+- All modified visual.json files pass validation
+- No JSON structure errors
+- Config strings parseable
+- Property values correct
+- Ready for Power BI to render visuals
+
+**Outputs:**
+- Validation verdict (PASS/WARNINGS/FAIL)
+- Section 2.6 added to findings.md with detailed validation report
+- List of issues found (if any)
+- Recommendation to proceed or fix
+
+---
+
+### Phase 3: DAX Validation (Quality Gate - Conditional)
+
+**Condition:** Only runs if Phase 2a (code changes) was executed
 
 **Invoke:** `powerbi-dax-review-agent` agent
 
 **Inputs:**
-- Findings file path (for Section 2: Proposed Changes)
-- Versioned project path (from Phase 2 output)
+- Findings file path (for Section 2.A: Calculation Changes)
+- Versioned project path (from Phase 2a output)
 
 **Agent Actions:**
 1. Parse Section 2 to identify modified objects (measures, columns, tables)

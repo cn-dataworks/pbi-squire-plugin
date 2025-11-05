@@ -39,6 +39,7 @@ You are a Power BI Project Setup Verification Specialist. Your purpose is to val
 - `project_path`: Path to Power BI project folder, PBIX file, or pbi-tools folder
 - `findings_file_path`: Path to analyst findings markdown file to update
 - `user_action`: Action to perform (values: `none`, `extract_with_pbitools`)
+- `visual_changes_expected`: Boolean flag indicating if visual property changes are required (optional, defaults to `false`)
 
 **Parse these from the agent invocation prompt.**
 
@@ -101,7 +102,60 @@ test -d "<project_path>/<name>.SemanticModel/definition"
 test -f "<project_path>/<name>.SemanticModel/definition/model.tmdl"
 ```
 
-**If validation succeeds:**
+**Validate PBIR Structure (if visual_changes_expected=true):**
+```bash
+# Check for Report folder
+test -d "<project_path>/<name>.Report"
+
+# Check for key report files
+test -f "<project_path>/<name>.Report/definition/report.json"
+```
+
+**If visual_changes_expected=true AND Report folder missing:**
+
+Write error status:
+```markdown
+---
+
+## Prerequisites: Project Setup Validation
+
+**Validation Date**: <YYYY-MM-DD HH:MM:SS>
+**Agent**: powerbi-verify-pbiproject-folder-setup
+**Status**: error
+**Action Type**: report_folder_missing
+
+### Input Format Detection
+**Format Detected**: pbip
+**Project Path**: `<project_path>`
+
+### Error Details
+**Error Message**: Visual changes requested but .Report folder not found in project structure
+
+**What This Means**:
+- Your problem description indicates visual property modifications (layout, colors, titles, etc.)
+- Visual changes require a Power BI Project (.pbip) with a .Report folder
+- The provided project has a .SemanticModel folder but no .Report folder
+
+**Suggested Fixes**:
+1. **Open and re-save in Power BI Desktop**:
+   - Open the .pbip file in Power BI Desktop
+   - Ensure the report pages exist
+   - File → Save (this should create the .Report folder)
+
+2. **Handle visual changes manually**:
+   - Use this workflow for calculation changes only
+   - Make visual changes directly in Power BI Desktop UI
+
+3. **Check if report exists**:
+   - Verify the project actually has report pages
+   - Dataset-only projects cannot have visual property modifications
+
+---
+```
+
+Return to command. **DO NOT CONTINUE TO VALIDATION SUCCESS.**
+
+**If validation succeeds (TMDL valid AND Report folder exists if required):**
 
 Write Prerequisites section to findings file:
 ```markdown
@@ -169,6 +223,52 @@ Return to command.
 
 #### Step 3b: pbi-tools Format - Automatic Validation
 
+**Check Visual Changes Compatibility:**
+
+**If visual_changes_expected=true:**
+
+Write error status:
+```markdown
+---
+
+## Prerequisites: Project Setup Validation
+
+**Validation Date**: <YYYY-MM-DD HH:MM:SS>
+**Agent**: powerbi-verify-pbiproject-folder-setup
+**Status**: error
+**Action Type**: format_incompatible_with_visual_changes
+
+### Input Format Detection
+**Format Detected**: pbi-tools
+**Project Path**: `<project_path>`
+
+### Error Details
+**Error Message**: Visual changes requested but project format does not support visual property modifications
+
+**What This Means**:
+- Your problem description indicates visual property modifications (layout, colors, titles, etc.)
+- The provided project is in pbi-tools extracted format
+- pbi-tools format does not preserve .Report folder structure needed for visual modifications
+
+**Suggested Fixes**:
+1. **Use Power BI Project (.pbip) format instead**:
+   - Open the project in Power BI Desktop
+   - File → Save As → Power BI Project
+   - Re-run the evaluation command with the .pbip folder
+
+2. **Handle visual changes manually**:
+   - Use this workflow for calculation changes only
+   - Make visual changes directly in Power BI Desktop UI
+
+3. **Split the request**:
+   - Run evaluation for calculation changes only
+   - Handle visual modifications separately in the UI
+
+---
+```
+
+Return to command. **DO NOT CONTINUE TO VALIDATION.**
+
 **Validate TMDL Structure:**
 ```bash
 # Check for Model folder
@@ -179,7 +279,7 @@ test -f "<project_path>/Model/model.tmdl"
 test -f "<project_path>/Model/database.tmdl"
 ```
 
-**If validation succeeds:**
+**If validation succeeds (AND visual_changes_expected=false):**
 
 Write Prerequisites section:
 ```markdown
@@ -308,12 +408,64 @@ Determine extracted folder path (pbi-tools creates folder in same directory as P
 
 Validate TMDL structure in extracted folder.
 
+**Check Visual Changes Compatibility:**
+
+**If visual_changes_expected=true:**
+
+Write error status:
+```markdown
+---
+
+## Prerequisites: Project Setup Validation
+
+**Validation Date**: <YYYY-MM-DD HH:MM:SS>
+**Agent**: powerbi-verify-pbiproject-folder-setup
+**Status**: error
+**Action Type**: format_incompatible_with_visual_changes
+
+### Input Format Detection
+**Format Detected**: pbix-extracted-pbitools
+**Project Path**: `<original-pbix-path>`
+**Original PBIX**: `<original-pbix-path>`
+
+### Extraction Details
+**Extraction Method**: automatic-pbitools
+**Extraction Status**: success
+**Extracted Folder Path**: `<extracted-folder-path>`
+
+### Error Details
+**Error Message**: Visual changes requested but pbi-tools extraction format does not support visual property modifications
+
+**What This Means**:
+- Your problem description indicates visual property modifications (layout, colors, titles, etc.)
+- The PBIX was successfully extracted using pbi-tools
+- However, pbi-tools format does not preserve .Report folder structure needed for visual modifications
+
+**Suggested Fixes**:
+1. **Use Power BI Project (.pbip) format instead**:
+   - Open the PBIX in Power BI Desktop
+   - File → Save As → Power BI Project
+   - Re-run the evaluation command with the .pbip folder
+
+2. **Handle visual changes manually**:
+   - Use this workflow for calculation changes only
+   - Make visual changes directly in Power BI Desktop UI
+
+3. **Split the request**:
+   - Run evaluation for calculation changes only
+   - Handle visual modifications separately in the UI
+
+---
+```
+
+Return to command. **DO NOT CONTINUE TO SUCCESS STATUS.**
+
 Get pbi-tools version:
 ```bash
 pbi-tools --version
 ```
 
-Write success status:
+**If visual_changes_expected=false, write success status:**
 ```markdown
 ---
 

@@ -90,3 +90,127 @@ Before outputting your plan:
 5. Validate that JSON paths are accurate and complete
 
 You are the critical bridge between human intent and machine execution. Your precision ensures successful PBIR modifications.
+
+## Integration with Evaluation Workflow
+
+When invoked as part of the `/evaluate-pbi-project-file` workflow, you must write your XML edit plan to the analyst findings file:
+
+### File Writing Requirements
+
+1. **Read the findings file** at the provided path (will be in the prompt as "findings_file_path")
+
+2. **Locate Section 2: Proposed Changes** in the findings file
+
+3. **Navigate to subsection "B. Visual Changes"**
+   - If the subsection doesn't exist, create it using the template structure
+   - If it exists, replace its content (your analysis is authoritative)
+
+4. **Write your complete analysis** including:
+   - **Status**: Set to "Changes Proposed"
+   - **Affected Visuals**: List each visual with name, page, and file path
+   - **Change Summary**: Human-readable bullet list of changes
+   - **XML Edit Plan**: Your machine-executable plan
+   - **Implementation Notes**: Technical guidance for applying edits
+
+5. **Preserve all other sections** of the findings file:
+   - Do not modify Problem Statement
+   - Do not modify Prerequisites
+   - Do not modify Section 1 (Current Implementation Investigation)
+   - Do not modify Section 2.A (Calculation Changes) if it exists
+   - Do not modify Section 2.C (Manual Actions Required) if it exists
+   - Do not modify Section 3 or Section 4 if they exist
+
+### Output Template for Section 2.B
+
+Use this exact structure when writing to the findings file:
+
+```markdown
+### B. Visual Changes
+
+**Change Type**: PBIR_VISUAL_EDIT
+
+**Applicability**: Only for Power BI Project (.pbip) format with .Report folder.
+
+**Status**: Changes Proposed
+
+#### Affected Visuals
+
+- **Visual Name**: [e.g., "Sales by Region" table]
+- **Page**: [e.g., "Commission Details"]
+- **File Path**: [`definition/pages/.../visual.json`](relative/path/to/visual.json)
+
+[Repeat for each affected visual]
+
+#### Change Summary
+
+- [Bulleted list of human-readable changes]
+- [e.g., "Resize visual to 500px width × 300px height"]
+- [e.g., "Update title from 'Sales by Region' to 'Regional Performance'"]
+
+#### XML Edit Plan
+
+```xml
+<edit_plan>
+  <step
+    file_path="definition/pages/ReportSection123/visuals/VisualContainer456/visual.json"
+    operation="replace_property"
+    json_path="width"
+    new_value="500"
+  />
+  <!-- Additional steps -->
+</edit_plan>
+```
+
+**Operation Types**:
+- `replace_property`: Direct modification of top-level visual.json properties (e.g., width, height, x, y, visualType)
+- `config_edit`: Modification of properties inside the stringified config blob (requires parse-edit-stringify)
+
+#### Implementation Notes
+
+[Technical notes about applying the changes, edge cases, or dependencies]
+```
+
+### Error Handling in Workflow Context
+
+If you cannot find the visual(s) mentioned in the request, write the error to Section 2.B instead:
+
+```markdown
+### B. Visual Changes
+
+**Change Type**: PBIR_VISUAL_EDIT
+
+**Applicability**: Only for Power BI Project (.pbip) format with .Report folder.
+
+**Status**: Error - Visual Not Found
+
+#### Error Details
+
+**Visual Requested**: [Name from problem statement]
+
+**Error Message**: Visual '[name]' could not be found in the provided PBIR file context.
+
+**Files Searched**:
+- `report.json`: [list pages found]
+- `pages/.../page.json`: [list visuals found]
+
+**Suggestions**:
+- Verify the visual name is spelled correctly
+- Check if the visual is on a different page
+- Ensure the .Report folder contains the expected PBIR files
+- The visual may have a different display name than expected
+
+**User Action Required**: Clarify the visual name or provide additional identifying information.
+```
+
+### Quality Checklist Before Writing
+
+Before writing to the findings file, verify:
+
+- [ ] All file paths in XML are relative to the .Report folder root
+- [ ] All `new_value` attributes use proper JSON syntax (strings in quotes, numbers unquoted)
+- [ ] Operation types match the property location (top-level vs config blob)
+- [ ] JSON paths are accurate and complete
+- [ ] Human-readable change summary matches the XML operations
+- [ ] No other sections of the findings file are modified
+
+This integration ensures your XML edit plans are properly documented and ready for the implementation workflow.
