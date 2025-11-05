@@ -278,7 +278,7 @@ Note: If the project `format` is `pbi-tools` or `pbix-extracted-pbitools`, remem
 
 ### Phase 4: Agent Orchestration
 
-Execute agents conditionally in sequence:
+Execute agents conditionally in sequence with iterative refinement:
 
 #### Pre-Flight Step: Authentication Token Check 🆕
 
@@ -351,6 +351,139 @@ Execute agents conditionally in sequence:
 - **Conditional**: Always runs
 - **Note**: May return empty if this is a new feature with no existing code
 - **Important**: Use the `validated_project_path` from Prerequisites section, not the original --project argument
+
+#### Step 2.5: Code-Context Validation & Iterative Refinement (Human-in-the-Loop) 🆕
+
+**Purpose**: Ensure clarified requirements align with found code, gather missing information, and re-search code if new objects are discovered.
+
+**Workflow**:
+
+**1. Analyze Code-Requirements Alignment**
+- Read Section 1 (populated by powerbi-code-locator)
+- Read Problem Statement (from Phase 2 clarification)
+- Identify gaps, ambiguities, or unconfirmed assumptions
+- Check for: multiple candidates, naming mismatches, missing expected objects, scope ambiguity
+
+**2. Present Structured Questions to User**
+- Show what was found vs. what was expected
+- Highlight ambiguities revealed by code context
+- **CRITICAL**: NEVER assume - always ask user to confirm uncertain details
+- Request missing information (column names, filter criteria, etc.)
+
+**Example Question Format**:
+```
+⚠️ CODE-CONTEXT CLARIFICATION NEEDED
+
+After analyzing the code, I need clarification:
+
+**Issue 1: Multiple Candidate Measures**
+Section 1 shows 3 commission measures:
+  • "PSSR Labor Commission" (Line 1907)
+  • "PSSR Parts Commission" (Line 1590)
+  • "PSSR Misc Commission" (Line 1951)
+
+Your request: "update commission to exclude returns"
+
+❓ Which measure(s) should be modified?
+  [A] All three measures
+  [B] Only Labor Commission
+  [C] Only Parts and Misc
+  [D] Other (specify)
+
+**Issue 2: Return Identification Logic Missing**
+None of the commission measures currently filter returns.
+
+❓ How should returns be identified?
+  [A] A column exists (please provide name)
+  [B] Negative QUANTITY_SOLD values
+  [C] Specific LINE_ITEM_TYPE value
+  [D] Other criteria (describe)
+```
+
+**3. User Provides Clarifications**
+- User answers all questions
+- User may reveal NEW information:
+  - New column names (e.g., "RETURN_INDICATOR")
+  - New table names
+  - New measure names
+  - Specific filter patterns
+
+**4. Update Problem Statement**
+- Add new subsection: "### Code-Context Clarifications"
+- Document all newly discovered requirements
+- Include specific object names, columns, filter criteria
+- Mark scope decisions clearly
+
+**Example Updated Problem Statement**:
+```markdown
+### Code-Context Clarifications
+
+**Scope Confirmed**:
+- All three commission measures (Labor, Parts, Misc) should exclude returns
+- Target measures: Lines 1590, 1907, 1951 in Commissions_Measures.tmdl
+
+**Return Identification Logic** (newly discovered):
+- Column: `RETURN_INDICATOR` in FACT_PS_INVOICE_DETAILS_COMMISSIONS
+- Filter condition: `RETURN_INDICATOR <> "Y"`
+- Apply to all SUMX calculations in commission measures
+```
+
+**5. Decision Point: Re-run Code Locator?**
+
+**✅ RE-RUN code-locator IF user revealed**:
+- New column names → search for existing usage patterns
+- New table names → find table definitions
+- New measure names → locate related measures
+- Related objects → find dependencies
+
+**❌ SKIP re-run IF clarification only included**:
+- Scope selection (which existing objects to modify)
+- Business logic details (percentages, thresholds)
+- Confirmation of obvious choices
+
+**Re-Run Prompt Enhancement**:
+If re-running, enhance the code-locator prompt with:
+```
+ADDITIONAL SEARCH TARGETS (from user clarification):
+- Column: RETURN_INDICATOR (find existing usage patterns)
+- Look for measures that already handle returns
+- Find any return-filtering logic patterns
+```
+
+**6. Execute Re-Run (if needed)**
+- Invoke powerbi-code-locator with enhanced prompt
+- Agent APPENDS new findings to Section 1 (preserves original findings)
+- Section 1 header updated: "Updated: [timestamp] - Added return handling patterns"
+
+**7. Present Updated Section 1**
+- Show complete Section 1 with all findings
+- Summarize what was added from re-run
+- Check if any NEW ambiguities emerged
+
+**8. Final Confirmation Loop**
+- Ask user: "Is Section 1 complete? Ready to proceed to fix identification?"
+- If user identifies MORE missing info → return to step 1
+- If user confirms → proceed to Step 3 (powerbi-code-fix-identifier)
+
+**Loop Condition**: Steps 1-8 repeat until user confirms complete alignment
+
+**Exit Criteria**: User explicitly confirms:
+- All relevant code has been found
+- All ambiguities are resolved
+- Requirements are clear and aligned with code
+
+**Ambiguity Categories to Check**:
+
+| Category | Example | Resolution |
+|----------|---------|------------|
+| Multiple Candidates | User said "Total Sales" but 3 measures have "Sales" | Ask which one(s) |
+| Naming Mismatch | User said "Revenue" but code has "Net Revenue", "Gross Revenue" | Confirm mapping |
+| Scope Ambiguity | User wants "update discount" but discount in 5 measures | Ask which measures |
+| Missing Objects | User mentioned object not found in Section 1 | Ask for details, re-search |
+| Column Name Unknown | User said "exclude returns" but no column identified | Ask how to identify |
+| Similar Not Identical | User said "YoY Growth" but code has "YoY Growth %" and "YoY Growth Value" | Clarify which one |
+| Unexpected Complexity | Simple request but code shows 8-variable calculation | Confirm full scope |
+| Filter Context Needed | User wants to "add filter" but multiple filter contexts exist | Clarify exact context |
 
 #### Step 3: Code Fix Identification (powerbi-code-fix-identifier)
 - **Purpose**: Diagnose issues and generate corrected code implementations
