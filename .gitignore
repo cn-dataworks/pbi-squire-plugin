@@ -38,3 +38,9 @@ Thumbs.db
 *.tmp
 *.temp
 nul
+
+# .NET build artifacts
+.claude/tools/TmdlValidator/bin/
+.claude/tools/TmdlValidator/obj/
+.claude/tools/TmdlValidator.exe
+.claude/tools/TmdlValidator.pdb

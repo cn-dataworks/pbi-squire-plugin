@@ -232,6 +232,85 @@ in
     SetTypes
 ```
 
+### For Field Parameter Tables (DAX Table Constructor):
+
+**CRITICAL SYNTAX RULE:** Field parameters use `expression :=` (with colon), NOT `source =`
+
+```tmdl
+table 'Metric Selection'
+	lineageTag: [auto-generated-uuid]
+
+	column 'Metric Selection'
+		dataType: string
+		lineageTag: [auto-generated-uuid]
+		summarizeBy: none
+		sourceColumn: Value1
+		sortByColumn: 'Metric Selection Index'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Metric Selection Fields'
+		dataType: string
+		lineageTag: [auto-generated-uuid]
+		summarizeBy: none
+		sourceColumn: Value2
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Metric Selection Index'
+		dataType: int64
+		formatString: 0
+		lineageTag: [auto-generated-uuid]
+		summarizeBy: sum
+		sourceColumn: Value3
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Metric Selection' = calculated
+		mode: import
+		expression := {("Commission", NAMEOF('Measures'[Commission]), 0), ("Gross Profit", NAMEOF('Measures'[Gross Profit]), 1), ("Sales Amount", NAMEOF('Measures'[Sales Amount]), 2)}
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_FieldParameterMetadata = {"version":1,"fields":[{"displayName":"Commission","queryName":"Measures.Commission","expression":"'Measures'[Commission]","ordinal":0},{"displayName":"Gross Profit","queryName":"Measures.Gross Profit","expression":"'Measures'[Gross Profit]","ordinal":1},{"displayName":"Sales Amount","queryName":"Measures.Sales Amount","expression":"'Measures'[Sales Amount]","ordinal":2}]}
+```
+
+**Key Points:**
+- **Property Name:** Use `expression :=` NOT `source =` (this is a TMDL requirement for table constructors)
+- **Colon Placement:** Note `:=` with colon BEFORE equals sign
+- **⚠️ CRITICAL: Single-Line Format Required** - The entire `expression := { }` block MUST be on ONE line
+- **Table Constructor Syntax:** Enclose DAX table rows in `{ }` braces
+- **Tuple Format:** Each row is `("Display Name", NAMEOF(...), SortOrder)` separated by commas
+- **NAMEOF Function:** Ensures stability if measure names change
+- **Zero-Based Index:** Ordinal values should start at 0, not 1
+- **Metadata Annotation:** PBI_FieldParameterMetadata required for Power BI to recognize as field parameter
+
+**Common Mistakes to Avoid:**
+
+**❌ WRONG - Using `source =` instead of `expression :=`:**
+```tmdl
+partition 'Metric Selection' = calculated
+	mode: import
+	source = {("Commission", ...)}  ← Causes "Unexpected line type" error
+```
+
+**❌ WRONG - Multi-line format:**
+```tmdl
+partition 'Metric Selection' = calculated
+	mode: import
+	expression := {
+		("Commission", NAMEOF('Measures'[Commission]), 0),  ← Causes "Invalid indentation" error
+		("GP", NAMEOF('Measures'[GP]), 1)
+	}
+```
+
+**✅ CORRECT - Single-line format with `expression :=`:**
+```tmdl
+partition 'Metric Selection' = calculated
+	mode: import
+	expression := {("Commission", NAMEOF('Measures'[Commission]), 0), ("GP", NAMEOF('Measures'[GP]), 1)}
+```
+
 **Step 5: Dependencies Identification**
 
 Check for required artifacts:

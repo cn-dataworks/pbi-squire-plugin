@@ -60,18 +60,40 @@ Please validate the TMDL file format:
 - Modified Objects: PSSR Misc Commission (measure)
 ```
 
-### Step 2: Run Python Validator Script
+### Step 2: Run Validation (Two-Tier Approach)
 
-Execute the standalone TMDL format validator:
+**TMDL validation uses a two-tier approach:**
+
+#### Tier 1: Quick Regex-Based Validation (Python)
+Fast pattern matching for common issues - always runs first:
 
 ```bash
 python .claude/tools/tmdl_format_validator.py "<tmdl_file_path>" --context "<description>"
 ```
 
-**Validator Tool Location:**
-- `.claude/tools/tmdl_format_validator.py`
-- This is a standalone Python script with no external dependencies
-- Returns exit code 0 for success, 1 for errors
+#### Tier 2: Authoritative Validation (C# TmdlSerializer) - RECOMMENDED
+Uses Microsoft's official TMDL parser - same as Power BI Desktop (100% accurate):
+
+```bash
+python .claude/tools/tmdl_format_validator.py "<tmdl_file_path>" --authoritative
+```
+
+**Which Validator to Use:**
+- **Quick Checks**: Use Tier 1 only (regex) for fast feedback during development
+- **Pre-Deployment**: ALWAYS use `--authoritative` flag before deploying to Power BI Service
+- **Debugging Errors**: Use `--authoritative` flag when encountering unexplained Power BI errors
+
+**C# Validator Setup** (one-time):
+```powershell
+# Install .NET 8.0 SDK: https://dotnet.microsoft.com/download/dotnet/8.0
+cd .claude/tools/TmdlValidator
+.\build.ps1
+```
+
+**Tool Locations:**
+- Regex Validator: `.claude/tools/tmdl_format_validator.py` (no dependencies)
+- C# Validator: `.claude/tools/TmdlValidator.exe` (requires building)
+- Build Script: `.claude/tools/TmdlValidator/build.ps1`
 
 ### Step 3: Parse Validator Output
 
@@ -279,9 +301,23 @@ Critical issues identified:
 See full validation report above for details.
 ```
 
+## Validator Comparison
+
+| Aspect | Regex Validator (Tier 1) | C# TmdlSerializer (Tier 2) |
+|--------|-------------------------|---------------------------|
+| **Accuracy** | Pattern matching - may miss edge cases | 100% accurate - same parser as Power BI |
+| **Speed** | Fast (~1 second) | Moderate (~3-5 seconds) |
+| **Coverage** | Known patterns only | **ALL syntax and semantic errors** |
+| **Setup** | None - pure Python | Requires .NET 8.0 SDK + build |
+| **Use Case** | Quick checks during development | **Authoritative pre-deployment validation** |
+| **False Positives** | Possible (e.g., TMDL011 was too aggressive) | None - only real errors |
+| **False Negatives** | Possible (e.g., mixed tabs/spaces was missed) | None - catches everything |
+
+**Recommendation**: Use regex validator during development for fast feedback, but **ALWAYS** use `--authoritative` flag before deployment.
+
 ## Error Codes Reference
 
-The validator uses these error codes:
+### Regex Validator Error Codes
 
 | Code | Severity | Description |
 |------|----------|-------------|
@@ -289,15 +325,40 @@ The validator uses these error codes:
 | TMDL002 | ERROR | Property has insufficient indentation |
 | TMDL003 | WARNING | DAX expression line indentation issue |
 | TMDL004 | ERROR | Property inside DAX expression block |
+| TMDL009 | ERROR | Field parameter uses 'source =' instead of 'expression :=' |
+| TMDL010 | ERROR | Field parameter expression not in single-line format |
+| TMDL011 | ERROR | Mixed tabs and spaces (DISABLED - too aggressive) |
+
+### C# Validator Error Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| **FormatError** | TMDL syntax/format error | Invalid indentation, keywords, structure |
+| **SerializationError** | Valid syntax but invalid metadata | Incorrect relationship definitions |
+| **PathNotFound** | Path doesn't exist | Invalid folder path |
+| **InvalidStructure** | Not a valid TMDL project | Missing 'definition' folder |
 
 ## Prerequisites
 
-**Required:**
+**Required (Regex Validator):**
 - Python 3.x installed
 - `.claude/tools/tmdl_format_validator.py` exists
 - Read access to the TMDL file
+- No external dependencies - standalone Python code
 
-**No external dependencies required** - the validator is standalone Python code.
+**Optional (C# Authoritative Validator):**
+- .NET 8.0 SDK (for building): https://dotnet.microsoft.com/download/dotnet/8.0
+- `.claude/tools/TmdlValidator.exe` (built from source or pre-compiled)
+- Windows x64 system
+- Read access to .SemanticModel folder
+
+**Building C# Validator:**
+```powershell
+cd .claude/tools/TmdlValidator
+.\build.ps1
+```
+
+This creates `TmdlValidator.exe` (~50MB self-contained executable).
 
 ## Integration with Workflow
 

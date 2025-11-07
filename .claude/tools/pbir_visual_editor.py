@@ -34,6 +34,10 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+# Force UTF-8 encoding for stdout on Windows to handle emoji characters
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 
 class PBIREditError(Exception):
     """Custom exception for PBIR editing errors"""
@@ -90,49 +94,101 @@ def parse_value(value_str: str) -> Any:
         return value_str
 
 
+def parse_path_segment(segment: str) -> Tuple[str, int]:
+    """
+    Parse a path segment that may include array indexing.
+
+    Args:
+        segment: Path segment like "field" or "projections[0]"
+
+    Returns:
+        Tuple of (key, index) where index is -1 if not an array access
+
+    Examples:
+        parse_path_segment("field") -> ("field", -1)
+        parse_path_segment("projections[0]") -> ("projections", 0)
+    """
+    import re
+    match = re.match(r'^([^\[]+)\[(\d+)\]$', segment)
+    if match:
+        return (match.group(1), int(match.group(2)))
+    return (segment, -1)
+
+
 def set_nested_property(obj: Dict, json_path: str, value: Any) -> None:
     """
-    Set a nested property in a dictionary using dot notation.
+    Set a nested property in a dictionary using dot notation with array indexing support.
 
     Args:
         obj: The dictionary to modify
-        json_path: Dot-separated path (e.g., "title.text")
+        json_path: Dot-separated path (e.g., "title.text" or "projections[0].field.Measure.Property")
         value: Value to set
 
     Examples:
         set_nested_property(obj, "title.text", "New Title")
         set_nested_property(obj, "visualHeader.titleVisibility", True)
+        set_nested_property(obj, "projections[0].field.Property", "Value")
     """
-    keys = json_path.split('.')
+    segments = json_path.split('.')
     current = obj
 
     # Navigate to the parent of the target property
-    for key in keys[:-1]:
+    for segment in segments[:-1]:
+        key, index = parse_path_segment(segment)
+
         if key not in current:
-            current[key] = {}
+            current[key] = {} if index == -1 else []
+
         current = current[key]
 
+        if index >= 0:
+            if not isinstance(current, list):
+                raise ValueError(f"Expected list at '{key}' but found {type(current).__name__}")
+            if index >= len(current):
+                raise ValueError(f"Index {index} out of range for list '{key}' (length {len(current)})")
+            current = current[index]
+
     # Set the final property
-    current[keys[-1]] = value
+    final_key, final_index = parse_path_segment(segments[-1])
+
+    if final_index >= 0:
+        if final_key not in current:
+            current[final_key] = []
+        if not isinstance(current[final_key], list):
+            raise ValueError(f"Expected list at '{final_key}' but found {type(current[final_key]).__name__}")
+        if final_index >= len(current[final_key]):
+            raise ValueError(f"Index {final_index} out of range for list '{final_key}' (length {len(current[final_key])})")
+        current[final_key][final_index] = value
+    else:
+        current[final_key] = value
 
 
 def get_nested_property(obj: Dict, json_path: str) -> Any:
     """
-    Get a nested property from a dictionary using dot notation.
+    Get a nested property from a dictionary using dot notation with array indexing support.
 
     Args:
         obj: The dictionary to read from
-        json_path: Dot-separated path
+        json_path: Dot-separated path (e.g., "projections[0].field.Property")
 
     Returns:
         The value at the path, or None if not found
     """
-    keys = json_path.split('.')
+    segments = json_path.split('.')
     current = obj
 
-    for key in keys:
+    for segment in segments:
+        key, index = parse_path_segment(segment)
+
         if isinstance(current, dict) and key in current:
             current = current[key]
+
+            if index >= 0:
+                if not isinstance(current, list):
+                    return None
+                if index >= len(current):
+                    return None
+                current = current[index]
         else:
             return None
 
@@ -141,26 +197,26 @@ def get_nested_property(obj: Dict, json_path: str) -> Any:
 
 def replace_property(visual_json: Dict, json_path: str, new_value: Any) -> Dict:
     """
-    Execute replace_property operation: modify top-level visual.json property.
+    Execute replace_property operation: modify visual.json property (supports nested paths).
 
     Args:
         visual_json: The visual.json object
-        json_path: Property name (e.g., "width", "height", "x", "y", "visualType")
+        json_path: Property path (e.g., "width", "visual.query.queryState.Values.projections[0].displayName")
         new_value: New value for the property
 
     Returns:
         Modified visual.json object
 
     Raises:
-        PBIREditError: If the property doesn't exist
+        PBIREditError: If the property path is invalid (e.g., parent doesn't exist)
     """
-    if json_path not in visual_json:
-        raise PBIREditError(
-            f"Property '{json_path}' not found in visual.json. "
-            f"Available properties: {list(visual_json.keys())}"
-        )
+    # Set the property using nested property setter (supports array indexing)
+    # This will create the property if it doesn't exist (as long as parent path exists)
+    try:
+        set_nested_property(visual_json, json_path, new_value)
+    except (ValueError, KeyError) as e:
+        raise PBIREditError(f"Failed to set property '{json_path}': {str(e)}")
 
-    visual_json[json_path] = new_value
     return visual_json
 
 
