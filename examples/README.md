@@ -2,6 +2,13 @@
 
 This directory contains proof-of-concept examples demonstrating how to convert the Power BI Analyst Agent workflows into a desktop application using the Claude Agent SDK.
 
+**Scope**: These examples focus on **desktop editing only** - analyzing and modifying Power BI projects locally. The examples do NOT include:
+- Deployment to Power BI Service
+- Automated testing with Playwright
+- pbi-tools compilation/packaging
+
+The workflow is: **Analyze → Implement → Open in Power BI Desktop**
+
 ## Files
 
 ### 1. `agent_sdk_poc.py`
@@ -11,6 +18,7 @@ This directory contains proof-of-concept examples demonstrating how to convert t
 - Workflow orchestration using the Agent SDK client
 - State management (replacing findings.md with structured data)
 - FastAPI integration for desktop app backend
+- **Scope**: Desktop editing only (no deployment/testing)
 
 **Key Classes:**
 - `WorkflowState`: Structured state object (replaces findings.md)
@@ -36,7 +44,8 @@ python agent_sdk_poc.py
 - Real-time progress updates via WebSocket
 - Findings viewer with structured/markdown views
 - Integration with Python backend via REST API
-- Electron integration (file dialogs, etc.)
+- Electron integration (file dialogs, folder browsing)
+- **Focus**: Desktop workflow (analyze → implement → open in Power BI Desktop)
 
 **Key Components:**
 - `EvaluateProjectView`: Main evaluation workflow UI
@@ -76,9 +85,9 @@ npm install react axios
 │  │  ┌──────────────────────────────────┐ │  │
 │  │  │  Your Existing Tools             │ │  │
 │  │  │  - Python Utilities              │ │  │
-│  │  │  - pbi-tools CLI                 │ │  │
-│  │  │  - PowerShell                    │ │  │
-│  │  │  - Playwright                    │ │  │
+│  │  │  - TMDL Validator                │ │  │
+│  │  │  - PBIR Editor                   │ │  │
+│  │  │  - XMLA Agent (data sampling)    │ │  │
 │  │  └──────────────────────────────────┘ │  │
 │  └────────────────────────────────────────┘  │
 └─────────────────────────────────────────────┘

@@ -12,10 +12,9 @@ This document analyzes the current Power BI Analyst Agent workflow system and pr
 
 The current system is built as a **Claude Code workflow system** with:
 - **4 slash commands** that orchestrate complex workflows
-- **23 specialized agents** that perform specific tasks
+- **20+ specialized agents** that perform specific tasks
 - **Python utilities** for file manipulation and validation
 - **XMLA integration** for live data retrieval
-- **Playwright MCP** for automated testing
 
 ### Key Strengths
 
@@ -23,8 +22,8 @@ The current system is built as a **Claude Code workflow system** with:
 2. **Non-Destructive Operations**: All changes work on versioned copies
 3. **Stateless Agents**: Agents coordinate via `findings.md` - can be re-run independently
 4. **Human-in-the-Loop**: Critical decisions involve user approval
-5. **Multi-Format Support**: Handles TMDL, BIM, PBIR, and PBIX formats
-6. **Comprehensive Validation**: Multiple quality gates before deployment
+5. **Multi-Format Support**: Handles TMDL, BIM, and PBIR formats
+6. **Comprehensive Validation**: Multiple quality gates (format and syntax)
 7. **Production-Ready**: Extensive error handling and logging
 
 ### Workflow Summary
@@ -34,13 +33,13 @@ The current system is built as a **Claude Code workflow system** with:
 │                    Slash Commands (Orchestrators)                │
 ├─────────────────────────────────────────────────────────────────┤
 │  /evaluate-pbi-project-file  │  /create-pbi-artifact             │
-│  /implement-deploy-test      │  /merge-powerbi-projects          │
+│  /implement-changes          │  /merge-powerbi-projects          │
 └────────────────┬────────────────────────────────────────────────┘
                  │
                  │ Invokes
                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                   Specialized Agents (23)                        │
+│                   Specialized Agents (20+)                       │
 ├─────────────────────────────────────────────────────────────────┤
 │  Validation │ Data Analysis │ Code Location │ Planning           │
 │  Implementation │ Quality Assurance │ Business Intelligence      │
@@ -52,7 +51,6 @@ The current system is built as a **Claude Code workflow system** with:
 │              Python Utilities & External Tools                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  TMDL Validator │ PBIR Editor │ Merger Utils │ XMLA Agent        │
-│  pbi-tools CLI │ PowerShell │ Playwright MCP                     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -112,7 +110,7 @@ The SDK is designed for **programmatic agent development**. While it doesn't pro
 │  │  • Workflow Configuration UI                              │  │
 │  │  • Findings Viewer/Editor                                 │  │
 │  │  • Progress Tracking                                      │  │
-│  │  • Test Results Dashboard                                 │  │
+│  │  • Version History                                        │  │
 │  └────────────────────┬─────────────────────────────────────┘  │
 │                       │ IPC / REST API                          │
 │  ┌────────────────────▼─────────────────────────────────────┐  │
@@ -154,6 +152,7 @@ The SDK is designed for **programmatic agent development**. While it doesn't pro
 | findings.md | Structured State Object | JSON/DB storage + Markdown export |
 | User Prompts | GUI Dialogs/Forms | React/Vue components |
 | File Operations | File System API | Node.js + Python integration |
+| Versioned Projects | Project History Manager | File system + metadata database |
 
 ---
 
@@ -449,71 +448,70 @@ export const ProjectEvaluationView: React.FC = () => {
 ### Phase 2: Core Workflow Migration (4-6 weeks)
 
 **Goals:**
-- Convert all 23 agents to SDK tools
+- Convert all core agents to SDK tools
 - Implement all 4 workflows
 - Create comprehensive UI
 
 **Tasks:**
-1. Convert remaining 21 agents to SDK tools
+1. Convert remaining agents to SDK tools
 2. Implement evaluate workflow fully
 3. Implement create workflow
-4. Implement implement-deploy-test workflow
+4. Implement implement-changes workflow
 5. Implement merge workflow
 6. Build UI for each workflow
 7. Implement state management (findings → structured state)
 8. Add progress tracking and logging UI
 
 **Deliverables:**
-- All agents converted
+- All core agents converted
 - All workflows functional
 - Complete UI for all workflows
 
 ### Phase 3: Integration & Polish (3-4 weeks)
 
 **Goals:**
-- Integrate external tools (pbi-tools, PowerShell, Playwright)
-- Add authentication and credentials management
+- Add authentication for XMLA data retrieval
 - Implement settings and preferences
 - Polish UI/UX
+- Add project management features
 
 **Tasks:**
-1. Integrate pbi-tools CLI
-2. Integrate PowerShell deployment
-3. Integrate Playwright testing
-4. Implement XMLA agent integration
-5. Build settings/preferences UI
-6. Add credential management (Azure, Power BI)
-7. Implement project history/favorites
-8. Add keyboard shortcuts and accessibility
-9. UI/UX polish and refinements
+1. Implement XMLA agent integration for data sampling
+2. Build settings/preferences UI
+3. Add credential management (Azure AD for XMLA)
+4. Implement project history and version browsing
+5. Add keyboard shortcuts and accessibility
+6. UI/UX polish and refinements
+7. Add dark mode and themes
+8. Implement export features (findings to markdown/PDF)
 
 **Deliverables:**
 - Fully integrated desktop app
 - Settings and preferences system
 - Polished UI/UX
 
-### Phase 4: Testing & Packaging (2-3 weeks)
+### Phase 4: Packaging & Distribution (2-3 weeks)
 
 **Goals:**
-- Comprehensive testing
-- Package for distribution
+- Package application for distribution
 - Create documentation
+- Performance optimization
 
 **Tasks:**
-1. Unit tests for all tools
-2. Integration tests for workflows
-3. End-to-end testing
-4. Performance optimization
-5. Package for Windows
-6. Package for macOS
-7. Package for Linux
-8. Create user documentation
-9. Create developer documentation
+1. Package for Windows with Electron Builder
+2. Package for macOS with code signing
+3. Package for Linux (AppImage/Snap)
+4. Create auto-updater mechanism
+5. Performance optimization and profiling
+6. Create user documentation
+7. Create developer documentation
+8. Set up distribution channels (GitHub releases, website)
 
 **Deliverables:**
-- Tested and stable application
 - Installers for all platforms
+- Auto-update functionality
 - User and developer documentation
+- Distribution infrastructure
 
 ### Phase 5: Beta Release & Iteration (Ongoing)
 
@@ -575,28 +573,18 @@ class UserInteractionTool(Tool):
         return user_response
 ```
 
-### Challenge 4: External Tool Integration
+### Challenge 4: Authentication & Credentials
 
-**Problem:** Your system relies on external tools (pbi-tools, PowerShell, Playwright).
-
-**Solution:**
-- Use Agent SDK's **Bash tool** for command execution
-- Wrap external tools in Python utilities
-- Implement subprocess management for long-running processes
-- Provide progress feedback via callbacks
-
-### Challenge 5: Authentication & Credentials
-
-**Problem:** XMLA agent, Power BI deployment, and Azure require authentication.
+**Problem:** XMLA agent requires Azure AD authentication for data sampling.
 
 **Solution:**
 - Implement **secure credential storage** (OS keychain)
 - Use OAuth device code flow for interactive auth
-- Support service principal for automation
 - Cache tokens with automatic refresh
 - Provide credentials management UI
+- Optional: Allow manual connection string input
 
-### Challenge 6: Performance & Responsiveness
+### Challenge 5: Performance & Responsiveness
 
 **Problem:** Workflows can take minutes to hours to complete.
 
@@ -638,6 +626,7 @@ alembic>=1.11.0  # Database migrations
 python-multipart>=0.0.6
 aiofiles>=23.0.0
 pydantic-settings>=2.0.0
+adodbapi>=2.6.0  # For XMLA connections
 ```
 
 **Project Structure:**
@@ -662,7 +651,7 @@ power-bi-analyst-desktop/
 │   │   ├── code_location/
 │   │   ├── planning/
 │   │   ├── implementation/
-│   │   └── testing/
+│   │   └── quality_assurance/
 │   ├── models/                # Data models
 │   ├── utils/                 # Python utilities (existing)
 │   ├── db/                    # Database models
@@ -758,7 +747,7 @@ This hybrid approach might be **ideal for MVP** to validate market demand before
 
 1. **Validate Assumptions:**
    - Test Agent SDK with one of your existing agents
-   - Verify external tool integration (pbi-tools, PowerShell)
+   - Verify XMLA integration for data sampling
    - Prototype basic Electron + Python communication
 
 2. **Architecture Decision:**
@@ -838,21 +827,22 @@ The Agent SDK provides the infrastructure to:
    - Avoid pure web UI (less integrated feel)
 
 4. **MVP Scope:**
-   - Focus on evaluate + implement workflows first
+   - Focus on evaluate + implement-changes workflows first
    - Add create and merge workflows in v2
    - Prioritize UI/UX for core workflows
+   - Desktop editing only (no deployment/testing)
 
 ### Final Thoughts
 
-Your current system is **production-ready and valuable**. The desktop app conversion would make it **more accessible to non-technical users** and provide a **better user experience**. The Agent SDK is a **natural fit** for your architecture and would enable **additional capabilities** like:
+Your current system is **production-ready and valuable**. The desktop app conversion would make it **more accessible to non-technical users** and provide a **better user experience** focused on Power BI project editing and analysis. The Agent SDK is a **natural fit** for your architecture and would enable **additional capabilities** like:
 
-- Better context management
-- Improved performance with subagents
-- Easier integration with external services via MCP
+- Better context management for large projects
+- Improved performance with parallel subagents
+- Easier integration with data sources via MCP
 - Production-grade session management
 - Enhanced error handling and recovery
 
-**I recommend starting with the hybrid approach to validate demand, then gradually migrating to full SDK conversion as the product matures.**
+**The simplified scope (desktop editing only, no deployment/testing) makes the project more manageable and faster to deliver. I recommend starting with the hybrid approach to validate demand, then gradually migrating to full SDK conversion as the product matures.**
 
 ---
 

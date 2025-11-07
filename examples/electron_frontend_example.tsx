@@ -74,10 +74,9 @@ class WorkflowAPI {
     return response.data;
   }
 
-  async implementChanges(workflowId: string, deployEnv?: string): Promise<any> {
+  async implementChanges(workflowId: string): Promise<any> {
     const response = await axios.post(
-      `${this.baseURL}/workflows/${workflowId}/implement`,
-      { deploy_environment: deployEnv }
+      `${this.baseURL}/workflows/${workflowId}/implement`
     );
     return response.data;
   }
@@ -170,14 +169,15 @@ export const EvaluateProjectView: React.FC = () => {
     }
   };
 
-  const handleImplement = async (deployEnv?: string) => {
+  const handleImplement = async () => {
     if (!workflowId) return;
 
     try {
-      await api.implementChanges(workflowId, deployEnv);
-      alert('Implementation started!');
+      const result = await api.implementChanges(workflowId);
+      alert(`Implementation complete!\n\nVersioned project saved to:\n${result.versioned_project_path}\n\nYou can now open this project in Power BI Desktop.`);
     } catch (error) {
       console.error('Implementation failed:', error);
+      alert('Implementation failed. See console for details.');
     }
   };
 
@@ -386,6 +386,8 @@ export const EvaluateProjectView: React.FC = () => {
               className="btn-secondary"
               onClick={() => {
                 // Export findings to markdown
+                const md = workflowState.to_findings_markdown();
+                // Trigger download or save
                 alert('Export functionality coming soon!');
               }}
             >
@@ -393,25 +395,23 @@ export const EvaluateProjectView: React.FC = () => {
             </button>
 
             {workflowState.verification_verdict !== 'FAIL' && (
-              <>
-                <button
-                  className="btn-primary"
-                  onClick={() => handleImplement()}
-                >
-                  Implement Changes
-                </button>
-
-                <button
-                  className="btn-success"
-                  onClick={() => {
-                    const env = prompt('Enter deployment environment (DEV, TEST, PROD):');
-                    if (env) handleImplement(env);
-                  }}
-                >
-                  Implement & Deploy
-                </button>
-              </>
+              <button
+                className="btn-primary"
+                onClick={handleImplement}
+              >
+                Implement Changes
+              </button>
             )}
+
+            <button
+              className="btn-secondary"
+              onClick={() => {
+                // Open versioned project folder in file explorer
+                alert('Open project folder functionality coming soon!');
+              }}
+            >
+              Open Project Folder
+            </button>
           </div>
         </div>
       )}

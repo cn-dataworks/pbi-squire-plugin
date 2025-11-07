@@ -46,11 +46,12 @@ class WorkflowState:
     section_2b_visual_changes: Optional[List[Dict]] = None
 
     # Section 3: Verification
-    test_cases: Optional[List[Dict]] = None
     verification_verdict: Optional[str] = None
+    verification_notes: Optional[List[str]] = None
 
     # Section 4: Implementation Results
     implementation_results: Optional[Dict] = None
+    versioned_project_path: Optional[str] = None
 
     def to_json(self) -> str:
         """Serialize to JSON for API responses"""
@@ -557,13 +558,13 @@ class PowerBIWorkflowEngine:
     async def implement_changes(
         self,
         state: WorkflowState,
-        deploy_environment: Optional[str] = None,
         callback=None
     ) -> WorkflowState:
         """
-        Equivalent to /implement-deploy-test-pbi-project-file command
+        Equivalent to /implement-changes command
 
         Applies changes from WorkflowState to actual project
+        Creates versioned copy with modifications
         """
         session = await self.client.create_session()
 
@@ -583,29 +584,42 @@ class PowerBIWorkflowEngine:
                     1. Create versioned copy
                     2. Apply all changes
                     3. Validate TMDL syntax
-                    4. Return results
+                    4. Validate DAX logic
+                    5. Return results with versioned project path
                     """
                 )
 
                 state.implementation_results = impl_result
+                state.versioned_project_path = impl_result.get("versioned_project_path")
 
             # Phase 2: Visual Implementation
             if state.section_2b_visual_changes:
                 if callback:
                     callback("Applying visual changes...")
 
-                # Similar pattern for visual changes
-                pass
+                visual_result = await session.query(
+                    f"""Apply these visual changes to the project:
 
-            # Phase 3: Deployment (optional)
-            if deploy_environment:
-                if callback:
-                    callback(f"Deploying to {deploy_environment}...")
+                    Project: {state.versioned_project_path or state.project_path}
+                    Changes: {state.section_2b_visual_changes}
 
-                # Deploy using PowerShell or pbi-tools
-                pass
+                    Use powerbi_implement_visual tool to:
+                    1. Apply PBIR visual modifications
+                    2. Validate visual.json structure
+                    3. Return results
+                    """
+                )
+
+                # Merge results
+                if state.implementation_results:
+                    state.implementation_results.update(visual_result)
+                else:
+                    state.implementation_results = visual_result
 
             state.status = "implemented"
+
+            if callback:
+                callback(f"Implementation complete! Project saved to: {state.versioned_project_path}")
 
         except Exception as e:
             state.status = "implementation_failed"
@@ -661,12 +675,12 @@ async def main():
     print("\nStarting implementation workflow...")
     implemented_state = await engine.implement_changes(
         state=state,
-        deploy_environment="DEV",
         callback=progress_callback
     )
 
     print(f"\nImplementation status: {implemented_state.status}")
-    print(f"Versioned project: {implemented_state.implementation_results.get('versioned_project_path')}")
+    print(f"Versioned project: {implemented_state.versioned_project_path}")
+    print(f"\nYou can now open the modified project in Power BI Desktop!")
 
 
 if __name__ == "__main__":
@@ -735,21 +749,31 @@ async def websocket_progress(websocket: WebSocket, workflow_id: str):
 
 
 @app.post("/api/workflows/{workflow_id}/implement")
-async def implement_changes(workflow_id: str, deploy_env: Optional[str] = None):
+async def implement_changes(workflow_id: str):
     '''
     API endpoint for implementation workflow
+    Creates versioned copy with changes applied
     '''
     # Load state from database
     state = load_workflow_state(workflow_id)
 
     # Run implementation
     implemented_state = await workflow_engine.implement_changes(
-        state=state,
-        deploy_environment=deploy_env
+        state=state
     )
 
     return {
         "status": implemented_state.status,
+        "versioned_project_path": implemented_state.versioned_project_path,
         "results": implemented_state.implementation_results
     }
+
+
+@app.get("/api/projects/{project_path}/versions")
+async def list_project_versions(project_path: str):
+    '''
+    List all versioned copies of a project
+    '''
+    # Implementation to find all timestamped versions
+    pass
 """
