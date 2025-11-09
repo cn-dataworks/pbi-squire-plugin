@@ -98,6 +98,7 @@ class TmdlFormatValidator:
         self._validate_measure_structures()
         self._validate_property_indentation()
         self._validate_dax_expression_blocks()
+        self._validate_dax_property_separation()  # NEW: Critical indentation hierarchy check
         self._validate_property_placement()
         self._validate_partition_source_expressions()
         self._validate_partition_property_names()
@@ -263,6 +264,89 @@ class TmdlFormatValidator:
                             message=f"DAX expression line may have incorrect indentation. Expected at least {expression_indent} tabs/levels",
                             line_content=line
                         ))
+
+    def _validate_dax_property_separation(self):
+        """
+        Validate that DAX expressions are indented one level deeper than properties.
+
+        Microsoft TMDL Rule: "Multi-line expressions must be indented one level deeper
+        than object properties."
+
+        Three indentation levels:
+        - Level 1: Object Declaration (e.g., measure 'Name' =) - 1 tab
+        - Level 2: Object Properties (e.g., lineageTag:, annotation) - 2 tabs
+        - Level 3: Multi-line DAX Expressions (e.g., SWITCH(), VAR) - 3 tabs
+
+        If DAX and properties are at the same indentation level, Power BI will parse
+        properties as part of the DAX expression, causing "syntax for 'lineageTag' is
+        incorrect" errors.
+        """
+        for i, line in enumerate(self.lines, start=1):
+            # Detect measure or column definition with '=' at end of line
+            match = re.search(r'^\s*(measure|column)\s+[\'"]?[\w\s]+[\'"]?\s*=\s*$', line)
+            if not match:
+                continue
+
+            obj_indent = self._get_indentation_level(line)
+            expected_property_indent = obj_indent + 1  # Properties should be at object + 1
+            expected_dax_indent = obj_indent + 2       # DAX should be at object + 2 (or properties + 1)
+
+            # Scan forward to find first DAX line and first property line
+            first_dax_line = None
+            first_dax_indent = None
+            first_property_line = None
+            first_property_indent = None
+
+            for j in range(i + 1, min(i + 50, len(self.lines) + 1)):
+                current_line = self.lines[j - 1]
+                current_indent = self._get_indentation_level(current_line)
+
+                # Stop if we hit another object at same or lower indent
+                if current_indent <= obj_indent and current_line.strip():
+                    if any(keyword in current_line for keyword in self.OBJECT_KEYWORDS):
+                        break
+
+                # Skip empty lines and comments
+                if not current_line.strip() or current_line.strip().startswith('//'):
+                    continue
+
+                # Check for property
+                is_property = any(re.search(rf'^\s*{prop}\s*:', current_line) for prop in self.PROPERTY_KEYWORDS)
+
+                if is_property:
+                    if first_property_line is None:
+                        first_property_line = j
+                        first_property_indent = current_indent
+                    # Once we hit properties, we're done scanning
+                    break
+                else:
+                    # This is DAX content
+                    if first_dax_line is None:
+                        first_dax_line = j
+                        first_dax_indent = current_indent
+
+            # Validate: DAX must be indented deeper than properties
+            if first_dax_line and first_property_line:
+                if first_dax_indent == first_property_indent:
+                    # CRITICAL ERROR: DAX and properties at same level
+                    self.issues.append(ValidationIssue(
+                        line_number=first_dax_line,
+                        severity=Severity.ERROR,
+                        code="TMDL012",
+                        message=f"DAX expression at same indentation level as properties (both at {first_dax_indent} tabs). "
+                                f"DAX must be indented one level deeper than properties ({expected_dax_indent} tabs) to prevent "
+                                f"properties from being parsed as DAX code. This causes 'syntax for lineageTag is incorrect' errors in Power BI Desktop.",
+                        line_content=self.lines[first_dax_line - 1]
+                    ))
+                elif first_dax_indent < expected_dax_indent:
+                    # DAX has insufficient indentation
+                    self.issues.append(ValidationIssue(
+                        line_number=first_dax_line,
+                        severity=Severity.ERROR,
+                        code="TMDL012",
+                        message=f"DAX expression has insufficient indentation. Expected {expected_dax_indent} tabs (properties + 1), got {first_dax_indent} tabs.",
+                        line_content=self.lines[first_dax_line - 1]
+                    ))
 
     def _validate_property_placement(self):
         """Validate that properties appear in correct locations relative to expressions"""
