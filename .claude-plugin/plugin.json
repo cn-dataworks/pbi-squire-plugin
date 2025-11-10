@@ -1,0 +1,10 @@
+{
+  "name": "powerbi-analyst",
+  "version": "1.0.0",
+  "description": "Power BI project analysis, modification, and deployment workflows with specialized agents for DAX, M, TMDL, and PBIR editing",
+  "author": "CN Dataworks",
+  "repository": "https://github.com/cn-dataworks/powerbi-analyst-plugin",
+  "commands": ".claude/commands",
+  "agents": ".claude/agents",
+  "skills": ".claude/skills"
+}
