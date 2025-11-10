@@ -1,0 +1,167 @@
+# Workflow Decision Tree
+
+This document helps map user intents to the appropriate Power BI workflow command.
+
+## Primary Decision: What do you need to do?
+
+### 1. "I have a problem/issue/bug with existing code"
+
+**Command:** `/evaluate-pbi-project-file`
+
+**User statements that match:**
+- "My measure shows wrong totals"
+- "The calculation is incorrect"
+- "I need to fix a broken measure"
+- "Something is wrong with my DAX"
+- "I need to debug this calculation"
+- "The visual title needs to change"
+- "I need to update the chart colors"
+- "The dashboard layout needs adjustment"
+
+**What it does:**
+- Analyzes existing code/visuals
+- Diagnoses problems
+- Proposes fixes
+- Creates findings report for implementation
+
+**Next step:** Review findings.md, then use `/implement-deploy-test-pbi-project-file`
+
+---
+
+### 2. "I need to create something new"
+
+**Command:** `/create-pbi-artifact`
+
+**User statements that match:**
+- "Create a YoY growth measure"
+- "Add a new calculated column"
+- "Build a KPI card"
+- "I want to add a new table"
+- "Create a visual showing sales by region"
+- "Add a measure for customer count"
+
+**What it does:**
+- Guides you through specification
+- Analyzes data model
+- Discovers existing patterns
+- Generates implementation-ready code
+
+**Next step:** Review findings.md, then use `/implement-deploy-test-pbi-project-file`
+
+---
+
+### 3. "I have a plan ready and need to apply it"
+
+**Command:** `/implement-deploy-test-pbi-project-file`
+
+**User statements that match:**
+- "Apply these changes"
+- "Implement the plan"
+- "Deploy this to Power BI Service"
+- "Execute the findings report"
+- "I'm ready to make these changes"
+
+**What it does:**
+- Applies code/visual changes
+- Validates TMDL format and DAX logic
+- Optionally deploys to service
+- Optionally runs automated tests
+
+**Prerequisites:** Must have findings.md from evaluate or create workflow
+
+---
+
+### 4. "I need to merge/compare two projects"
+
+**Command:** `/merge-powerbi-projects`
+
+**User statements that match:**
+- "Compare dev and prod models"
+- "Merge these two projects"
+- "What's different between these projects?"
+- "Combine changes from both versions"
+- "Sync development into production"
+
+**What it does:**
+- Compares two projects
+- Explains business impact
+- Lets you choose which version to keep
+- Creates new merged project
+
+**Result:** New timestamped merged project folder
+
+---
+
+## Secondary Decision: What information do I need?
+
+### For `/evaluate-pbi-project-file`:
+- ✅ **Required:** Project path (.pbip folder or .pbix file)
+- ✅ **Required:** Problem description (what's wrong?)
+- ⭐ **Recommended:** Workspace name + dataset name (for data sampling)
+- 📷 **Optional:** Screenshot showing the issue
+
+### For `/create-pbi-artifact`:
+- ✅ **Required:** Project path (.pbip folder)
+- ✅ **Required:** What to create (description)
+- 📝 **Optional:** Artifact type (measure, calculated-column, table, visual, multi)
+- ⭐ **Recommended:** Workspace name + dataset name (for data sampling)
+
+### For `/implement-deploy-test-pbi-project-file`:
+- ✅ **Required:** Path to findings.md file
+- 🚀 **Optional:** Deploy environment name (DEV, TEST, PROD)
+- 🧪 **Optional:** Dashboard URL (for automated testing)
+
+### For `/merge-powerbi-projects`:
+- ✅ **Required:** Main project path (baseline)
+- ✅ **Required:** Comparison project path (source of changes)
+- 🎯 **Optional:** Description (focus area to filter differences)
+
+---
+
+## Common Scenarios
+
+### Scenario: "Fix a broken measure"
+```
+1. /evaluate-pbi-project-file --project "path" --description "Total Sales shows wrong value"
+2. Review findings.md
+3. /implement-deploy-test-pbi-project-file --findings "findings.md"
+```
+
+### Scenario: "Add a new feature with testing"
+```
+1. /create-pbi-artifact --project "path" --type measure --description "YoY Revenue Growth %"
+2. Review findings.md specification
+3. /implement-deploy-test-pbi-project-file --findings "findings.md" --deploy DEV --dashboard-url "https://..."
+```
+
+### Scenario: "Merge development into production"
+```
+1. /merge-powerbi-projects --main "prod-path" --comparison "dev-path"
+2. Review combined analysis
+3. Respond with decisions: "diff_001: Comparison, diff_002: Main, ..."
+4. Test merged project in Power BI Desktop
+```
+
+### Scenario: "Update visual and calculation together"
+```
+1. /evaluate-pbi-project-file --project "path" --description "Update Total Revenue calculation AND change chart title"
+2. Review hybrid changes (Section 2.A for code, Section 2.B for visual)
+3. /implement-deploy-test-pbi-project-file --findings "findings.md"
+```
+
+---
+
+## When Uncertain
+
+**If user request is vague:**
+- Ask clarifying questions
+- Is it about existing code (evaluate) or new artifact (create)?
+- What specifically needs to change?
+
+**If multiple workflows apply:**
+- Start with `/evaluate-pbi-project-file` for analysis
+- It can identify if creation is better suited
+
+**If user just says "help with Power BI":**
+- Ask: "What would you like to do?"
+- Options: Fix something, Create something, Compare projects, or Learn about workflows

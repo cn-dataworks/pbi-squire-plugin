@@ -53,9 +53,23 @@
       "Bash(fi)",
       "Bash(if [ -d \"C:\\Users\\anorthrup\\Downloads\\pbi_rsr_v4_1\" ])",
       "Bash(then echo \"Comparison project exists\")",
-      "Bash(else echo \"Comparison project NOT FOUND\")"
+      "Bash(else echo \"Comparison project NOT FOUND\")",
+      "Read(//mnt/c/Users/AndrewNorthrup/Desktop/Power BI Files/Building Permit Data/**)",
+      "Read(//mnt/c/Users/AndrewNorthrup/Desktop/Power BI Files/**)",
+      "Bash(git pull:*)",
+      "Bash(python3:*)",
+      "Bash(unzip:*)",
+      "WebSearch",
+      "WebFetch(domain:www.sqlbi.com)",
+      "WebFetch(domain:community.fabric.microsoft.com)",
+      "WebFetch(domain:claude.com)",
+      "WebFetch(domain:code.claude.com)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "playwright-extension"
+  ]
 }
