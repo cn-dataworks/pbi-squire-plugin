@@ -453,6 +453,16 @@ Agents are specialized autonomous components invoked by commands to perform spec
 **Validation Consolidation:**
 All TMDL validation checks are consolidated into a single tool (`tmdl_format_validator.py`) for simplicity. Previous standalone validators (`tmdl_duplicate_property_validator.py`, `tmdl_measure_backticks_validator.py`) have been integrated or removed.
 
+**Important Validation Lessons:**
+
+⚠️ **TmdlSerializer vs Power BI Desktop Gap**: TmdlSerializer (Microsoft's authoritative parser) accepts multiple formatting styles as "valid TMDL," but Power BI Desktop has stricter loading requirements. A file that passes TmdlSerializer validation may still fail to load in Desktop. This is why TMDL013 duplicate property check and TMDL012 auto-fix were added.
+
+⚠️ **TMDL012 Auto-Fix**: When TMDL012 warnings are detected (DAX at same indentation as properties), the validator automatically adds triple backticks to remove structural ambiguity. This follows Power BI best practices and prevents Desktop loading issues. Auto-fix is safe because it preserves DAX logic exactly while clarifying structure.
+
+⚠️ **TMDL013 Blocks Auto-Fix**: If duplicate properties (TMDL013) are detected alongside TMDL012, auto-fix is blocked and reported as ERROR. Duplicate properties indicate deeper issues (merge conflicts, code generation errors) that require manual resolution.
+
+⚠️ **Why No Backticks-Only Validator**: An earlier attempt to validate triple backticks usage was removed due to 86 false positives on a working project. Power BI Desktop accepts many indentation patterns. The real issue is **duplicate properties** (TMDL013), not missing backticks. TMDL012 warnings are now auto-fixed with backticks when safe to do so.
+
 ---
 
 #### `powerbi-dax-review-agent`

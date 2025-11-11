@@ -170,19 +170,42 @@ Visuals may reference measures or columns created in Phase 2a. Running code chan
 
 **Validation Outcomes:**
 - **✅ PASS**: All format checks passed → Proceed to Phase 3 (DAX Validation)
-- **❌ FAIL**: Format errors found → Must fix before proceeding
+- **✅ FIXED**: TMDL012 warnings auto-fixed with triple backticks → Proceed to Phase 3
+- **❌ FAIL**: Format errors found (including TMDL013 duplicate properties) → Must fix before proceeding
+
+**Auto-Fix Handling:**
+When TMDL012 warnings are detected (properties at DAX indentation level), the validator automatically:
+1. **Checks for duplicate properties FIRST** (TMDL013 check)
+   - If duplicates found → Report as ERROR, halt workflow (cannot auto-fix)
+   - If no duplicates → Proceed with auto-fix
+2. **Adds triple backticks** to affected measures to remove structural ambiguity
+3. **Re-validates** to confirm fix successful
+4. **Reports what was fixed** and proceeds to Phase 3
+
+This auto-fix is safe because:
+- Preserves DAX logic exactly (no behavior change)
+- Follows Power BI best practices
+- Prevents Power BI Desktop loading issues
+- No user intervention needed
 
 **Why This Phase Is Critical:**
 - TMDL format errors prevent Power BI Desktop from opening the file
 - Catches indentation issues that cause "unsupported property" errors
+- Auto-fixes TMDL012 warnings proactively (adds backticks for clarity)
+- Detects duplicate properties (TMDL013) that indicate deeper issues
 - Validates BEFORE DAX logic, saving time on debugging
 - Quick validation (runs in seconds)
 
 **Failure Handling:**
-- **Format Validation FAIL**: Report specific line numbers and indentation errors
-- **Provide Fix Guidance**: Show exact tab counts needed for each property
+- **Format Validation FAIL (TMDL001-TMDL010)**: Report specific line numbers and indentation errors
+- **Duplicate Properties Detected (TMDL013)**: Report ERROR with line numbers, halt workflow
+  - Duplicates indicate merge conflict or code generation error
+  - Must be manually resolved - cannot auto-fix
+  - User must remove duplicate properties, then re-run Phase 2 and 2.5
+- **TMDL012 Warnings**: Automatically fixed with triple backticks (no user action)
+- **Provide Fix Guidance**: Show exact tab counts needed for each property error
 - **Halt Workflow**: Do not proceed to DAX validation until format is correct
-- **User Fixes**: User corrects indentation, then re-runs Phase 2.5
+- **User Fixes**: User corrects indentation/duplicates, then re-runs Phase 2.5
 
 **Success Criteria:**
 - All TMDL files pass format validation

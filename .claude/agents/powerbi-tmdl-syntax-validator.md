@@ -229,6 +229,77 @@ RECOMMENDED ACTION:
 The file CANNOT be opened in Power BI Desktop until these errors are fixed.
 ```
 
+### Step 4.5: Auto-Fix TMDL012 Warnings
+
+**When TMDL012 warnings are detected, automatically fix them.**
+
+**TMDL012 Warning**: "DAX expression at same indentation level as properties"
+
+**What This Indicates:**
+- Properties (lineageTag, formatString, etc.) appear at same indentation as DAX code
+- Creates structural ambiguity about where DAX ends and properties begin
+- Violates Power BI best practices for TMDL formatting
+- May cause Power BI Desktop loading issues
+
+**Auto-Fix Action:**
+When the validator detects TMDL012 warnings, it should:
+
+1. **Identify affected measures** with properties at DAX indentation level
+2. **Check for duplicate properties FIRST** (TMDL013 - common root cause):
+   - If duplicates found → Report as ERROR (cannot auto-fix, must be manually resolved)
+   - If no duplicates → Proceed with backticks auto-fix
+3. **Automatically add triple backticks** to separate DAX from properties:
+   - Add opening ` ``` ` after `measure 'Name' =`
+   - Add closing ` ``` ` on a new line before properties section
+4. **Re-run validation** to confirm fix successful
+5. **Report what was fixed**
+
+**Example Auto-Fix Report:**
+```
+⚠️ TMDL012 WARNINGS DETECTED → AUTO-FIXING
+
+Measure: PSSR Misc GP (Line 2055)
+Issue: Properties appear at DAX indentation level (structural ambiguity)
+Action: Adding triple backticks to clarify DAX/properties boundary
+
+Before:
+measure 'PSSR Misc GP' =
+    VAR _discount = 0.45
+    RETURN _discount * Sales[Amount]
+    formatString: $#,0.00
+    lineageTag: abc-123
+
+After:
+measure 'PSSR Misc GP' = ```
+    VAR _discount = 0.45
+    RETURN _discount * Sales[Amount]
+    ```
+    formatString: $#,0.00
+    lineageTag: abc-123
+
+✅ FIXED: Triple backticks added
+✅ RE-VALIDATED: Format now passes all checks
+
+This follows Power BI best practices and removes structural ambiguity.
+
+Next Step: Proceed to DAX validation (powerbi-dax-review-agent)
+```
+
+**Why Auto-Fix Is Safe:**
+- Adding backticks preserves DAX logic exactly (no behavior change)
+- Removes ambiguity without altering calculations
+- Prevents Power BI Desktop loading issues
+- Follows Microsoft's recommended TMDL formatting standards
+- Makes code more maintainable and readable
+
+**When NOT to Auto-Fix (Report as ERROR instead):**
+- If duplicate properties detected (TMDL013 - e.g., two lineageTags) → Must be manually resolved
+- If measure has complex nested structure → Report for manual review
+- If backticks already present but mismatched → Syntax error
+
+**Critical Note About Duplicate Properties:**
+TMDL012 warnings often co-occur with duplicate properties (TMDL013). The validator MUST check for duplicates BEFORE applying backticks auto-fix. If duplicates exist, report as ERROR and halt - do not auto-fix. Duplicate properties indicate a deeper issue (merge conflict, code generation error) that requires manual intervention.
+
 ### Step 5: Provide Remediation Guidance
 
 If errors are found, provide step-by-step fix instructions:
