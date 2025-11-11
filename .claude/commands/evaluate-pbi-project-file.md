@@ -295,18 +295,38 @@ Note: If the project `format` is `pbi-tools` or `pbix-extracted-pbitools`, remem
 
 ---
 
-### Phase 2: Interactive Problem Clarification
+### Phase 2: Interactive Problem Clarification (Outcome-Focused)
+
+**Purpose**: Clarify the DESIRED OUTCOME and business intent, not implementation details.
+
 1. Read the image file (if provided) to understand visual context
+
 2. Analyze the problem description to identify:
-   - Key Power BI objects mentioned (measures, tables, columns, relationships)
-   - Ambiguous requirements or unclear specifications
-   - Missing critical information (data types, business logic, filter contexts)
+   - **Ambiguities in the desired outcome or behavior** - what should the end result look like?
+   - **Unclear scope** - does this apply to everything or specific scenarios?
+   - **Expected vs. current behavior** - what should change in the user's experience?
+   - **Business logic intent** - the conceptual logic (e.g., "exclude returns", "apply discount"), not specific columns
+
 3. Present a structured problem analysis to the user with:
-   - Understanding of the request
-   - Identified ambiguities or unclear points
-   - Specific clarifying questions
-4. Wait for user responses and incorporate them into the problem statement
-5. Repeat clarification if needed until the problem is well-defined
+   - Your understanding of what they want to achieve (outcome-focused)
+   - Questions about expected behavior and user-visible results
+   - Questions about scope and applicability
+   - **Meta-questions**: "Do you know if similar patterns exist in this project?" "Do you have a preferred approach?"
+
+4. **DO NOT ask about** (these come later in Step 2.5 after code scan):
+   - Specific column names, table names, or measure names
+   - Implementation details or technical approach
+   - Which specific objects to modify
+
+5. **Example Good Questions** (outcome-focused):
+   - "When you say 'exclude returns', should the visual show lower totals, or should returns appear separately?"
+   - "Should this apply to all commission types or only specific scenarios?"
+   - "Do you expect this to affect historical data or only future calculations?"
+   - "Are there other similar exclusions in this report that we should match the pattern of?"
+
+6. Wait for user responses and incorporate them into the problem statement
+
+7. Repeat clarification if needed until the DESIRED OUTCOME is well-defined (not the implementation)
 
 ### Phase 3: Scratchpad Creation
 1. Generate timestamp: `YYYYMMDD-HHMMSS` format

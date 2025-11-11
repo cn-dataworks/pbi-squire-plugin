@@ -102,6 +102,7 @@ class TmdlFormatValidator:
         self._validate_property_placement()
         self._validate_partition_source_expressions()
         self._validate_partition_property_names()
+        self._validate_duplicate_properties()  # NEW: Duplicate property detection (TMDL013)
 
         return len([i for i in self.issues if i.severity == Severity.ERROR]) == 0
 
@@ -550,6 +551,88 @@ class TmdlFormatValidator:
                         message="Mixed tabs and spaces detected at structural indentation level. SWITCH arguments and lines near properties must use pure tabs.",
                         line_content=line
                     ))
+
+    def _validate_duplicate_properties(self):
+        """
+        Validate that measures/columns don't have duplicate TMDL properties.
+
+        This catches the specific Power BI Desktop loading issue where duplicate
+        properties (especially lineageTag) cause measures to fail loading, with
+        properties appearing inside the DAX editor.
+
+        TMDL013: Duplicate property detected within a measure or column.
+        """
+        from collections import defaultdict
+
+        # Properties that MUST be unique within a measure/column
+        unique_properties = {
+            'lineageTag': r'^\s*lineageTag:\s*(.+)$',
+            'formatString': r'^\s*formatString:\s*(.+)$',
+            'displayFolder': r'^\s*displayFolder:\s*(.+)$',
+            'dataCategory': r'^\s*dataCategory:\s*(.+)$',
+            'isHidden': r'^\s*isHidden',
+            'annotation PBI_FormatHint': r'^\s*annotation\s+PBI_FormatHint\s*='
+        }
+
+        # Track current object (measure/column) being processed
+        current_object = None
+        current_object_line = 0
+        current_object_type = None
+        properties_found = defaultdict(list)
+
+        for i, line in enumerate(self.lines, start=1):
+            # Detect start of new measure or column
+            measure_match = re.match(r'^\s*measure\s+[\'\"]?([^\'\"]+)[\'\"]?\s*=', line)
+            column_match = re.match(r'^\s*column\s+[\'\"]?([^\'\"]+)[\'\"]?', line)
+
+            if measure_match or column_match:
+                # Check previous object for duplicates before starting new one
+                if current_object:
+                    self._check_for_duplicates(current_object, current_object_type,
+                                               current_object_line, properties_found)
+
+                # Start tracking new object
+                current_object = measure_match.group(1) if measure_match else column_match.group(1)
+                current_object_type = 'measure' if measure_match else 'column'
+                current_object_line = i
+                properties_found = defaultdict(list)
+                continue
+
+            # Check if we're inside an object and found a property
+            if current_object:
+                for prop_name, pattern in unique_properties.items():
+                    match = re.match(pattern, line)
+                    if match:
+                        value = match.group(1) if match.lastindex else ''
+                        properties_found[prop_name].append((i, value))
+
+        # Check last object
+        if current_object:
+            self._check_for_duplicates(current_object, current_object_type,
+                                       current_object_line, properties_found)
+
+    def _check_for_duplicates(self, object_name, object_type, start_line, properties_found):
+        """Helper method to check for duplicate properties in an object"""
+        for prop_name, occurrences in properties_found.items():
+            if len(occurrences) > 1:
+                # Found duplicate property
+                line_numbers = [line_num for line_num, _ in occurrences]
+                values = [value for _, value in occurrences]
+
+                # Format values for display
+                values_str = ', '.join([f'"{v}"' if v else '(present)' for v in values])
+
+                self.issues.append(ValidationIssue(
+                    line_number=line_numbers[0],  # Report first occurrence
+                    severity=Severity.ERROR,
+                    code="TMDL013",
+                    message=f'Duplicate property "{prop_name}" found {len(occurrences)} times in {object_type} '
+                            f'"{object_name}" at lines {", ".join(map(str, line_numbers))} with values: {values_str}. '
+                            f'Power BI Desktop will fail to load this {object_type} correctly. '
+                            f'Remove duplicate properties and add triple backticks if needed to separate '
+                            f'DAX code from TMDL properties.',
+                    line_content=self.lines[line_numbers[0] - 1]
+                ))
 
     def print_report(self):
         """Print validation report to console"""

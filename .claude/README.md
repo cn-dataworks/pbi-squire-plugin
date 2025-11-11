@@ -427,6 +427,7 @@ Agents are specialized autonomous components invoked by commands to perform spec
 - Checks indentation consistency (tabs vs spaces)
 - Validates property placement (formatString, displayFolder, etc.)
 - Ensures properties are outside DAX expression blocks
+- **Detects duplicate properties (TMDL013)** ⭐ NEW: Catches duplicate lineageTag/formatString/etc that cause Power BI Desktop loading failures
 - Verifies TMDL structure and syntax
 
 **Requirements:**
@@ -437,9 +438,20 @@ Agents are specialized autonomous components invoked by commands to perform spec
 - Pass/fail verdict
 - Line numbers for issues
 - Remediation guidance
-- Error codes (TMDL001, TMDL002, etc.)
+- Error codes (TMDL001-TMDL013)
 
 **Critical Constraint:** Validates format only, NOT DAX logic.
+
+**Error Codes:**
+- TMDL001-TMDL004: Property and DAX indentation issues
+- TMDL005-TMDL008: Partition source formatting (tabs/spaces)
+- TMDL009-TMDL010: Field parameter syntax
+- TMDL011: Mixed tabs/spaces (disabled)
+- TMDL012: DAX at same indentation as properties
+- **TMDL013: Duplicate property detected** ⭐ NEW: Catches duplicate lineageTag, formatString, displayFolder, annotation, etc. that cause Power BI Desktop to misinterpret properties as DAX code
+
+**Validation Consolidation:**
+All TMDL validation checks are consolidated into a single tool (`tmdl_format_validator.py`) for simplicity. Previous standalone validators (`tmdl_duplicate_property_validator.py`, `tmdl_measure_backticks_validator.py`) have been integrated or removed.
 
 ---
 
