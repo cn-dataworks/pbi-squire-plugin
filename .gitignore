@@ -44,3 +44,6 @@ nul
 .claude/tools/TmdlValidator/obj/
 .claude/tools/TmdlValidator.exe
 .claude/tools/TmdlValidator.pdb
+
+# User-generated scratchpads
+agent_scratchpads/
