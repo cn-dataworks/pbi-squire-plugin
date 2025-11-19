@@ -4,9 +4,14 @@ TMDL Format Validator
 
 A lightweight standalone validator for TMDL (Tabular Model Definition Language) files.
 Validates formatting, indentation, and structure without requiring external dependencies.
+Optionally runs authoritative C# TmdlSerializer validation for 100% accuracy.
 
 Usage:
-    python tmdl_format_validator.py <tmdl_file_path> [--context "description of changes"]
+    python tmdl_format_validator.py <tmdl_file_path> [--context "description"] [--authoritative]
+
+Options:
+    --context 'text'     Add context description to report
+    --authoritative      Run C# TmdlSerializer validation (requires .SemanticModel folder)
 
 Exit Codes:
     0 - All validations passed
