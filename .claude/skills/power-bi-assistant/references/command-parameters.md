@@ -100,6 +100,50 @@ Detailed breakdown of parameters for each Power BI workflow command.
 
 ---
 
+## `/create-pbi-page-specs`
+
+### Required Parameters
+
+**`--project <path>`**
+- **Purpose:** Path to Power BI Project folder
+- **Format:** Must be `.pbip` format with `.Report` folder
+- **Examples:**
+  - Windows: `C:\Projects\SalesReport.pbip`
+  - WSL: `/mnt/c/Projects/SalesReport.pbip`
+- **Important:** This workflow requires .Report folder for page creation (native .pbip format)
+
+**`--question "<text>"`**
+- **Purpose:** Business question this page should answer
+- **Be specific:** Include metrics, dimensions, and analytical intent
+- **Good examples:**
+  - `"Show Q4 sales performance by region and product category"`
+  - `"Compare year-over-year revenue growth across sales territories"`
+  - `"Display executive KPI summary with top 10 products"`
+  - `"Analyze customer retention trends by segment"`
+- **Bad examples:**
+  - `"Sales page"` (too vague - what about sales?)
+  - `"Dashboard"` (what question should it answer?)
+
+### Optional Parameters
+
+**`--workspace <name>`** and **`--dataset <name>`**
+- Same as `/create-pbi-artifact`
+- **Benefits:** Enables data sampling for BOTH measure and visual recommendations
+- **Highly recommended** for page design
+
+**`--page-name "<name>"`**
+- **Purpose:** Custom name for the dashboard page
+- **Default:** Auto-generated from question (e.g., "Q4 Sales by Region")
+- **Example:** `--page-name "Executive Summary"`
+- **Note:** Page names should be descriptive and user-friendly
+
+### Full Example
+```bash
+/create-pbi-page-specs --project "/mnt/c/Projects/SalesReport.pbip" --question "Show Q4 sales performance by region and product category with year-over-year growth comparison" --workspace "Analytics" --dataset "Sales Model" --page-name "Q4 Sales Performance"
+```
+
+---
+
 ## `/implement-deploy-test-pbi-project-file`
 
 ### Required Parameters

@@ -24,9 +24,15 @@ Best practices extracted from project documentation and real-world usage.
 - You're unsure whether to fix or create
 
 **Use `/create-pbi-artifact` when:**
-- You're certain you need a net-new artifact
+- You're certain you need a single net-new artifact
 - You have a clear specification of what to build
 - You want guided specification building with recommendations
+
+**Use `/create-pbi-page-specs` when:**
+- You need to design a complete dashboard page
+- You have a business question to answer with multiple visuals
+- You want intelligent layout, interactions, and visual type recommendations
+- You need measures AND visuals created together
 
 **Use `/implement-deploy-test-pbi-project-file` when:**
 - You have a completed findings.md file
@@ -445,6 +451,95 @@ agent_scratchpads/
 - Reduce decision fatigue
 - Faster merge process
 - Less risk of unintended changes
+
+---
+
+## Page Design Best Practices (for `/create-pbi-page-specs`)
+
+### Frame Questions as Business Problems
+
+✅ **Good question framing:**
+```
+"Show Q4 sales performance by region and product category"
+"Compare year-over-year revenue growth across sales territories"
+"Identify top-performing products with trend analysis"
+```
+
+**Why:** Questions should describe WHAT to analyze, not HOW to visualize
+
+❌ **Bad question framing:**
+```
+"Create a bar chart and a table"
+"Add 3 KPI cards"
+```
+
+**Why:** These describe implementation, not business intent
+
+### Trust the Visual Type Recommendations
+
+✅ **Review pros/cons carefully:**
+- Recommendations are data-driven (based on cardinality, metric type)
+- Pros/cons are specific to your data
+- Choose based on your analytical priorities
+
+⚠️ **When to override:**
+- User audience preference (executives prefer cards over tables)
+- Organizational standards (always use specific visual types)
+- Specific feature requirements (need drill-through, custom visual)
+
+### Review Layout for Analytical Flow
+
+✅ **Check Section 3 (Layout Plan):**
+- Do KPIs appear first (top-left)?
+- Is primary analysis in middle zones?
+- Are filters in consistent location (bottom)?
+- Does layout support user's analytical workflow?
+
+⚠️ **Red flags:**
+- Filters in top zone (disrupts visual hierarchy)
+- Primary analysis at bottom (buried)
+- Overlapping visuals (validation should catch this)
+
+### Validate Interaction Logic
+
+✅ **Check Section 4 (Interaction Design):**
+- Do cross-filtering interactions make analytical sense?
+- Are bi-directional filters appropriate (or should be one-way)?
+- Do drill-through targets address user's detail needs?
+- Are slicers configured to filter all visuals?
+
+⚠️ **Common issues:**
+- KPI cards sending filters (should receive only)
+- Detail tables filtering summary visuals (reverse flow)
+- Missing drill-through for high-cardinality dimensions
+
+### Plan Helper Pages Early
+
+✅ **Review Section 6 (Helper Page Recommendations):**
+- Identify drill-through targets BEFORE implementing
+- Consider creating helper pages first if they're dependencies
+- Plan multi-page workflows for complex dashboards
+
+**Approach:**
+1. Create main page first (with drill-through identified in Section 6)
+2. Review in Power BI Desktop
+3. Create helper pages using findings from Section 6
+4. Link via drill-through in Desktop UI
+
+### Use Data Sampling for Better Results
+
+✅ **Highly recommended for page design:**
+```bash
+--workspace "Analytics" --dataset "Sales Model"
+```
+
+**Benefits for page workflow:**
+- Better measure recommendations (column selection, filtering)
+- Visual type recommendations based on actual cardinality
+- Sorting recommendations based on data distribution
+- Formatting recommendations based on value ranges
+
+**Impact:** 2-3x better recommendation quality with data sampling
 
 ---
 

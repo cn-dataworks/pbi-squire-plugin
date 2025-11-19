@@ -40,10 +40,18 @@ Transform a high-level, potentially complex creation request into a structured l
 
 **Your Mandatory Workflow:**
 
-**Step 1: Read Context**
+**Step 1: Read Context & Detect Mode**
 - Read findings file Section 1.1 (data model schema)
+- Read Section 1.0 (Question Analysis & Page Planning) if exists
 - Read original creation request
 - Read artifact type parameter (if specified, or "auto" if omitted)
+- **Detect mode:**
+  - If Section 1.0 exists (Question Analysis present) → **PAGE MODE**
+  - Otherwise → **SINGLE-ARTIFACT MODE** (default)
+
+**Mode Differences:**
+- **SINGLE-ARTIFACT MODE:** Creating 1-3 related artifacts (e.g., measure + visual)
+- **PAGE MODE:** Designing complete page with multiple measures + visuals + interactions
 
 **Step 2: Parse Request for Artifact Keywords**
 
@@ -289,7 +297,9 @@ IF user selects "⚠️ Modify":
 
 **Step 10: Document in Findings File**
 
-Update Section 1.0 with final artifact plan:
+Update Section 1.2 (or 1.0 for page mode) with final artifact plan:
+
+**For SINGLE-ARTIFACT MODE** (Section 1.0):
 
 ```markdown
 ## Section 1.0: Artifact Breakdown Plan
@@ -331,6 +341,103 @@ Update Section 1.0 with final artifact plan:
 **User Modifications:** [None | List of changes made]
 
 **Specification Status:** Ready for Phase 3 (Data Understanding)
+```
+
+---
+
+**For PAGE MODE** (Section 1.2):
+
+```markdown
+## Section 1.2: Artifact Breakdown Plan
+
+**Page Question:** "[business question from Section 1.0]"
+
+**Artifact Summary:**
+- Measures to CREATE: [N]
+- Measures to REFERENCE (existing): [M]
+- Visuals to CREATE: [K]
+- Page-level Filters: [P]
+- Estimated Complexity: [Low | Medium | High]
+
+---
+
+### Measures to Create
+
+#### Measure [N]: [Measure Name]
+**Type:** [Helper | Business | Time Intelligence]
+**Purpose:** [Why needed for this page]
+**Status:** CREATE
+**Priority:** [N] ([create first | depends on X])
+**Dependencies:**
+- [Existing measure or column]
+- [Measure #M] (from this list)
+**Used By:** [Visual names that use this measure]
+
+[Repeat for each NEW measure]
+
+---
+
+### Measures to Reference (Existing)
+
+- **[Measure Name]:** [Used by which visuals]
+- **[Measure Name]:** [Used by which visuals]
+
+---
+
+### Visuals to Create
+
+#### Visual [N]: [Visual Name]
+**Type:** [Card | Bar Chart | Matrix | etc.]
+**Purpose:** [What analytical question this visual answers]
+**Status:** CREATE
+**Priority:** [N] ([after measures | primary visual])
+**Dependencies:**
+- [Measure #1] (new from above)
+- [Measure #2] (existing)
+- [Dimension column] (from data model)
+**Interacts With:** [Other visual names for cross-filtering]
+
+[Repeat for each visual]
+
+---
+
+### Page-Level Elements
+
+**Filters/Slicers:**
+- [Slicer dimension 1] (e.g., Quarter slicer)
+- [Slicer dimension 2] (e.g., Region slicer)
+
+**Cross-Filtering Candidates:**
+- [Visual A] ↔ [Visual B] (shared dimension: [Dimension])
+- [Slicer] → All visuals
+
+**Drill-Through Opportunities:**
+- [Summary Visual] → [Detail Page] (context: [Dimension])
+
+---
+
+### Dependency Graph
+
+```
+MEASURES:
+[Base Measure] ──→ [Helper Measure PY] ──→ [YoY Growth %]
+                                                ↓
+VISUALS:                                   [KPI Card]
+[Region] + [Category] ──→ [Regional Bar Chart] ──→ [Category Matrix]
+                                ↓
+[Quarter Slicer] ──→ Filters all visuals
+```
+
+### Creation Order
+1. **Measure:** [Measure Name] ([reason])
+2. **Measure:** [Measure Name] ([reason])
+3. **Visual:** [Visual Name] ([reason - after measures])
+4. **Visual:** [Visual Name] ([reason])
+...
+
+**User Modifications:** [None | List of changes made]
+
+**Specification Status:** Ready for Phase 5 (Parallel Measure + Visual Specification)
 ```
 
 **Artifact Type Icons:**

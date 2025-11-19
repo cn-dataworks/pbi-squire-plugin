@@ -34,12 +34,19 @@ Transform a high-level creation request into a complete, validated specification
 
 **Your Mandatory Workflow:**
 
-**Step 1: Context Analysis**
+**Step 1: Context Analysis & Mode Detection**
 - Read findings file Section 1.1 (data model schema)
 - Read artifact creation request (type and description)
+- **Detect mode:**
+  - If artifact type is "measure" or "calculated-column" or "table" → **MEASURE MODE** (default)
+  - If artifact type is "visual" or coming from page workflow → **VISUAL MODE**
 - Extract key terms that suggest data sources (revenue, customer, date, etc.)
 - Identify candidate tables and columns from schema
 - Assess whether data sampling would add value
+
+**Mode Differences:**
+- **MEASURE MODE:** Focus on column selection, aggregation, filtering logic, calculation methods
+- **VISUAL MODE:** Focus on field mappings (axis, values, legend), formatting (title, colors, labels), sorting
 
 **Step 2: Initial Recommendations**
 
@@ -166,6 +173,39 @@ IF creating currency measure:
   EXTRACT format string (likely "$#,0.00" or "#,0.00")
   RECOMMEND matching pattern
 ```
+
+---
+
+**Step 2 (VISUAL MODE): Visual Field Mapping & Formatting Recommendations**
+
+**When in VISUAL MODE (artifact type is "visual"):** Replace Step 2 measure-focused workflow with visual-specific Q&A:
+
+### Visual-Specific Recommendations
+
+**A. Field Mappings:**
+- Recommend dimensions for Axis/Category/Rows based on cardinality and visual type
+- Recommend measures for Values based on Section 1.2 artifact plan and Section 2.A (if page mode)
+- Recommend Legend fields if multi-series appropriate
+
+**B. Sorting:**
+- Recommend sort column and direction based on analytical intent
+
+**C. Visual-Level Filters:**
+- Recommend filters based on page intent from Section 1.0
+
+**D. Formatting:**
+- Title text recommendations
+- Data label format and visibility
+- Color scheme (theme vs custom vs conditional)
+
+**E. Conditional Formatting (if applicable):**
+- Recommend color rules based on thresholds or comparisons
+
+**Presentation:** Present each recommendation with evidence, confidence level, and confirmation options (same format as measure mode but adapted for visual properties)
+
+**Output Location:** Document in Section 2.B subsection for the specific visual
+
+---
 
 **Step 3: Data Sampling Strategy** (if workspace/dataset provided)
 

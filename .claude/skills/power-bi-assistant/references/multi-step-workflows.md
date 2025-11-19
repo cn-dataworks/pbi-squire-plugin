@@ -104,9 +104,9 @@ Complete end-to-end workflow sequences for Power BI development.
 
 ---
 
-## Workflow 2: Create → Implement → Deploy → Test
+## Workflow 2A: Create Single Artifact → Implement → Deploy → Test
 
-**Use when:** Building new measures, columns, tables, or visuals
+**Use when:** Building a new measure, column, table, or single visual
 
 ### Step 1: Create Artifact Specification
 
@@ -152,6 +152,74 @@ Follow Steps 2-4 from Workflow 1 (Implement → Verify → Deploy)
 - Implementation applies artifacts in dependency order
 - Helper measures created before main measures
 - Base calculations before dependent calculations
+
+---
+
+## Workflow 2B: Create Complete Page → Implement → Deploy → Test
+
+**Use when:** Designing a complete dashboard page with multiple visuals, measures, layout, and interactions
+
+### Step 1: Create Page Specifications
+
+**Command:**
+```bash
+/create-pbi-page-specs --project "<path>" --question "<business-question>" [--workspace "<name>"] [--dataset "<name>"] [--page-name "<name>"]
+```
+
+**What happens:**
+1. Project validation (requires .Report folder)
+2. Question analysis (classifies question type, identifies requirements)
+3. Data model analysis (Section 1.1 - schema extraction)
+4. Artifact decomposition (Section 1.2 - separates measures vs visuals vs interactions)
+5. **PARALLEL WORKFLOWS:**
+   - **Branch A (Measures):** For each new measure:
+     - Interactive Q&A for measure specification
+     - Pattern discovery
+     - DAX code generation
+   - **Branch B (Visuals):** For each visual:
+     - Visual type recommendation (2-3 options with pros/cons)
+     - Field mapping Q&A (axis, values, legend)
+     - Formatting recommendations
+6. Page layout design (Section 3 - generates coordinates using research-based 1600×900 canvas)
+7. Interaction design (Section 4 - cross-filtering matrix, drill-through targets)
+8. PBIR page generation (Section 5 - complete page.json and visual.json files)
+9. Helper page identification (Section 6 - recommends drill-through targets)
+10. Validation (DAX + PBIR)
+
+**Output:**
+- `agent_scratchpads/<timestamp>-<page-name>/findings.md`
+- Section 1.0 (Question Analysis & Page Planning)
+- Section 1.1 (Data Model Schema)
+- Section 1.2 (Artifact Breakdown - measures + visuals separated)
+- Section 2.A (Calculation Changes - DAX measures)
+- Section 2.B (Visual Specifications - field mappings, formatting)
+- Section 3 (Page Layout Plan - coordinates table)
+- Section 4 (Interaction Design - cross-filtering matrix)
+- Section 5 (PBIR Page Files - complete JSON)
+- Section 6 (Helper Page Recommendations)
+- Section 7 (Validation Results)
+- Section 8 (Final Summary)
+
+**Checkpoint:** Review complete page design
+- **Section 1.2:** Are all needed measures and visuals identified?
+- **Section 2.A:** Is the DAX code correct for each measure?
+- **Section 2.B:** Are visual types and field mappings appropriate?
+- **Section 3:** Does the layout make analytical sense?
+- **Section 4:** Are interactions logical (cross-filtering, drill-through)?
+- **Section 5:** Review PBIR JSON for any issues
+- **Section 6:** Should you create helper pages first or later?
+
+---
+
+### Step 2-4: Same as Workflow 1
+
+Follow Steps 2-4 from Workflow 1 (Implement → Verify → Deploy)
+
+**Note for page creation:**
+- Implementation creates folder structure in .Report/definition/pages/
+- All measures created first (Section 2.A)
+- Then page and visual files created (Section 5)
+- Validation includes both DAX and PBIR checks
 
 ---
 
@@ -331,11 +399,24 @@ rest Main
 - **Testing:** 3-10 minutes (depends on test cases)
 - **Total:** ~15-30 minutes
 
-### Workflow 2: Create → Implement → Deploy → Test
+### Workflow 2A: Create Single Artifact → Implement → Deploy → Test
 - **Creation:** 5-15 minutes (interactive Q&A, data sampling)
 - **Implementation:** 1-3 minutes
 - **Rest:** Same as Workflow 1
 - **Total:** ~20-40 minutes
+
+### Workflow 2B: Create Complete Page → Implement → Deploy → Test
+- **Question Analysis:** 1-2 minutes
+- **Artifact Decomposition:** 2-5 minutes (user confirmation)
+- **Parallel Specification:** 10-30 minutes (depends on measure count + visual count)
+  - Per measure: 3-5 minutes (Q&A, patterns, code gen)
+  - Per visual: 2-4 minutes (type recommendation, field mapping)
+- **Layout & Interaction Design:** 3-5 minutes
+- **PBIR Generation:** 2-3 minutes
+- **Validation:** 1-3 minutes
+- **Implementation:** 2-5 minutes (creates page structure + measures)
+- **Rest:** Same as Workflow 1
+- **Total:** ~30-70 minutes (varies significantly with page complexity)
 
 ### Workflow 3: Compare → Decide → Merge
 - **Comparison:** 3-10 minutes (depends on project size)

@@ -86,6 +86,70 @@ Commands are invoked using slash notation (e.g., `/evaluate-pbi-project-file`) a
 
 ---
 
+### `/create-pbi-page-specs`
+
+**Purpose:** Create comprehensive specifications for a complete Power BI dashboard page (measures, visuals, layout, interactions) through intelligent analysis and design - ready for implementation via `/implement-deploy-test-pbi-project-file`.
+
+**Usage:**
+```bash
+/create-pbi-page-specs --project <path-to-pbip-folder> --question "<business question to answer>" [--workspace <workspace-name>] [--dataset <dataset-name>] [--page-name "<custom page name>"]
+```
+
+**Parameters:**
+- `--project` (required): Path to the Power BI Project folder (must include .Report folder)
+- `--question` (required): Business question this page should answer
+  - Example: "Show Q4 sales performance by region and product category"
+  - Example: "Compare year-over-year revenue growth across sales territories"
+- `--workspace` (optional): Power BI workspace name for XMLA data sampling
+- `--dataset` (optional): Dataset name (required if `--workspace` provided)
+- `--page-name` (optional): Custom name for the page (auto-generated from question if omitted)
+
+**Workflow:**
+1. **Prerequisites & Validation**: Uses `powerbi-verify-pbiproject-folder-setup` to ensure .Report folder exists
+2. **Scratchpad Creation**: Creates timestamped workspace folder
+3. **Question Analysis**: Uses `powerbi-page-question-analyzer` to classify question type and identify requirements
+4. **Data Model Analysis**: Uses `powerbi-data-model-analyzer` to extract schema
+5. **Artifact Decomposition** (Page Mode): Uses `powerbi-artifact-decomposer` to separate measures, visuals, filters, and interactions
+6. **PARALLEL WORKFLOWS**:
+   - **Branch A (Measures)**: For each new measure:
+     - `powerbi-data-understanding-agent` (measure mode) - Interactive Q&A for specification
+     - `powerbi-pattern-discovery` - Find existing patterns
+     - `powerbi-artifact-designer` - Generate DAX code
+   - **Branch B (Visuals)**: For each visual:
+     - `powerbi-visual-type-recommender` - Recommend visual types with pros/cons
+     - `powerbi-data-understanding-agent` (visual mode) - Interactive Q&A for field mappings and formatting
+7. **Page Layout Design**: Uses `powerbi-page-layout-designer` to generate optimal coordinates (research-based 1600×900 canvas with 8-pixel grid)
+8. **Interaction Design**: Uses `powerbi-interaction-designer` to create cross-filtering matrix and drill-through targets
+9. **PBIR Page Generation**: Uses `powerbi-pbir-page-generator` to create complete page.json and visual.json files
+10. **Helper Page Identification**: Documents recommended drill-through target pages for future creation
+11. **Validation**: Uses `power-bi-verification` and `powerbi-pbir-validator` to validate specifications
+12. **Summary**: Generates before/after with concrete examples
+
+**What This Does:**
+- ✅ Creates complete page specifications (measures + visuals + layout + interactions)
+- ✅ Generates ready-to-implement PBIR files (Section 5)
+- ❌ **Does NOT modify any project files** (specification only)
+
+**Next Step:**
+```bash
+/implement-deploy-test-pbi-project-file --findings "agent_scratchpads/<timestamp>-<page-name>/findings.md"
+```
+
+**Output:** Creates `agent_scratchpads/<timestamp>-<page-name>/findings.md` with:
+- Section 1.0: Question Analysis & Page Planning
+- Section 1.1: Data Model Schema
+- Section 1.2: Artifact Breakdown Plan
+- Section 2.A: Calculation Changes (measures)
+- Section 2.B: Visual Specifications
+- Section 3: Page Layout Plan
+- Section 4: Interaction Design
+- Section 5: PBIR Page Files (complete JSON)
+- Section 6: Helper Page Recommendations
+- Section 7: Validation Results
+- Section 8: Final Summary
+
+---
+
 ### `/implement-deploy-test-pbi-project-file`
 
 **Purpose:** Implement Power BI code and/or visual changes from an analyst findings report by applying changes to a versioned project, optionally deploying to Power BI Service, and running automated tests.
@@ -495,25 +559,33 @@ All TMDL validation checks are consolidated into a single tool (`tmdl_format_val
 
 ### Creation Workflow Agents
 
-#### `powerbi-artifact-decomposer`
+#### `powerbi-artifact-decomposer` (Enhanced with Page Mode)
 
-**Purpose:** Analyzes complex creation requests and breaks them down into discrete artifacts with dependency relationships.
+**Purpose:** Analyzes complex creation requests and breaks them down into discrete artifacts with dependency relationships. **Supports two modes:** single-artifact mode (default) for creating individual artifacts, and page mode for designing complete dashboard pages.
 
 **Invocation:** After data model analysis, before data understanding phase.
 
 **Inputs:**
-- Findings file path (with Section 1.1 completed)
+- Findings file path (with Section 1.1 completed, Section 1.0 if page mode)
 - Original creation request
 - Artifact type parameter
+- **Mode detection:** Automatically detects page mode if Section 1.0 (Question Analysis) exists
 
 **What It Does:**
-- Parses natural language to identify primary artifact and dependencies
-- Detects explicit references (mentions of specific measures, columns)
-- Detects implicit dependencies (visual needs measures, YoY needs PY helper)
-- Checks schema to determine which artifacts exist vs need creation
-- Builds dependency graph
-- Determines creation order (topological sort)
-- Presents plan to user for confirmation
+- **Single-Artifact Mode:**
+  - Parses natural language to identify primary artifact and dependencies
+  - Detects explicit references (mentions of specific measures, columns)
+  - Detects implicit dependencies (visual needs measures, YoY needs PY helper)
+  - Checks schema to determine which artifacts exist vs need creation
+  - Builds dependency graph
+  - Determines creation order (topological sort)
+  - Presents plan to user for confirmation
+- **Page Mode (NEW):**
+  - Separates measures, visuals, page filters, and interactions
+  - Categorizes measures as CREATE vs REFERENCE (existing)
+  - Identifies cross-filtering candidates based on shared dimensions
+  - Detects drill-through opportunities
+  - Structures output to support parallel workflows (measures + visuals)
 
 **Pattern Recognition:**
 - KPI Card Pattern: Card visual + measures + optional targets
@@ -521,53 +593,55 @@ All TMDL validation checks are consolidated into a single tool (`tmdl_format_val
 - Dashboard Pattern: Multiple visuals + supporting measures
 - Trend Visual Pattern: Chart + measure + date validation
 
-**Output:** Populates Section 1.0 (Artifact Breakdown Plan) with:
-- List of artifacts to create
-- Dependency graph
-- Creation order with reasoning
-- User confirmation status
+**Output:**
+- **Single-Artifact Mode:** Populates Section 1.0 (Artifact Breakdown Plan)
+- **Page Mode:** Populates Section 1.2 (Artifact Breakdown Plan) with separate sections for:
+  - Measures to Create
+  - Measures to Reference (existing)
+  - Visuals to Create
+  - Page-Level Elements (filters, slicers, interactions)
 
 ---
 
-#### `powerbi-data-understanding-agent`
+#### `powerbi-data-understanding-agent` (Enhanced with Visual Mode)
 
-**Purpose:** Builds complete artifact specifications through interactive Q&A with intelligent recommendations and data sampling.
+**Purpose:** Builds complete artifact specifications through interactive Q&A with intelligent recommendations and data sampling. **Supports two modes:** measure mode (default) for creating measures/columns/tables, and visual mode for specifying visual field mappings and formatting.
 
-**Invocation:** After artifact decomposition (or data model analysis for single artifacts).
+**Invocation:** After artifact decomposition (or data model analysis for single artifacts). Can be invoked multiple times for different artifacts.
 
 **Inputs:**
 - Findings file path (with Section 1.1 and optionally 1.0)
 - Artifact type and description
 - Workspace and dataset names (for data sampling)
 - User responses to Q&A
+- **Mode detection:** Automatically detects visual mode if artifact type is "visual"
 
 **What It Does:**
-- Makes intelligent recommendations based on schema and data analysis
-- Samples actual data (if workspace/dataset provided) to validate assumptions
-- Presents options with evidence and confidence levels (🟢 High, 🟡 Medium, 🔴 Low)
-- Guides user through confirmations rather than open-ended questions
-- Iterates until every specification aspect is confirmed
-- Documents complete specification including styling decisions
+- **Measure Mode (default):**
+  - Makes intelligent recommendations based on schema and data analysis
+  - Samples actual data (if workspace/dataset provided) to validate assumptions
+  - Presents options with evidence and confidence levels (🟢 High, 🟡 Medium, 🔴 Low)
+  - Guides user through confirmations for: column selection, aggregation, filtering, time intelligence, edge cases, styling
+  - Iterates until every specification aspect is confirmed
+- **Visual Mode (NEW):**
+  - Recommends field mappings (Axis, Values, Legend) based on visual type and cardinality
+  - Recommends sorting (column and direction) based on analytical intent
+  - Recommends visual-level filters based on page intent
+  - Recommends formatting (title, data labels, colors, conditional formatting)
+  - Guides user through visual-specific confirmations
 
 **Recommendation Categories:**
-- Data Source Selection (column selection, aggregation methods)
-- Filtering Logic (categorical detection, value distribution)
-- Date/Time Context (time intelligence approaches)
-- Business Logic (calculation methods, edge cases)
-- Styling & Formatting (format strings, display folders, descriptions)
+- **Measure Mode:** Data Source Selection, Filtering Logic, Date/Time Context, Business Logic, Styling & Formatting
+- **Visual Mode:** Field Mappings, Sorting & Filtering, Visual Formatting, Conditional Formatting
 
 **Requirements:**
 - Valid Section 1.1 (Data Model Schema)
 - Optional: Workspace/dataset for data sampling
 - Optional: Authentication for XMLA queries
 
-**Output:** Populates Section 1.2 (Data Understanding & Artifact Specification) with:
-- Complete business requirement statement
-- Data sources with treatment decisions
-- Data validation results (if sampling performed)
-- Complete business logic specification
-- Styling & formatting decisions
-- Confirmation trail
+**Output:**
+- **Measure Mode:** Populates Section 1.2 or Section 2.A subsection (depending on workflow)
+- **Visual Mode:** Populates Section 2.B subsection with complete visual field specifications
 
 ---
 
@@ -640,6 +714,202 @@ All TMDL validation checks are consolidated into a single tool (`tmdl_format_val
 - Change Rationale: Detailed explanation
 - Dependencies: Required artifacts and relationships
 - Validation Notes: Edge cases and performance considerations
+
+---
+
+### Page Design Agents (NEW)
+
+These agents are specific to the `/create-pbi-page-specs` workflow for designing complete dashboard pages.
+
+#### `powerbi-page-question-analyzer`
+
+**Purpose:** Analyzes business questions to determine Power BI page requirements, classifying question types and identifying needed metrics, dimensions, and page structure.
+
+**Invocation:** First analytical step in page design workflow (Phase 3).
+
+**Inputs:**
+- Business question from --question parameter
+- Findings file path
+- Optional: Screenshot/mockup for visual reference
+
+**What It Does:**
+- Classifies question type (Comparison, Trend, Composition, Performance Tracking, Relationship)
+- Identifies required metrics (simple aggregations, ratios, time intelligence)
+- Identifies required dimensions (grouping, filtering, drill-down paths)
+- Determines time context and comparison requirements
+- Designs page structure (summary level, detail level, filter level)
+- Documents analytical intent and success criteria
+
+**Question Types:**
+- Comparison: Regional sales comparison, product rankings
+- Trend: Revenue over time, seasonal patterns
+- Composition: Market share, category breakdown
+- Performance Tracking: KPIs, targets, variance
+- Relationship: Correlations, dependencies
+
+**Output:** Populates Section 1.0 (Question Analysis & Page Planning) with:
+- Question classification and analytical intent
+- Metrics needed (primary, comparative, calculated)
+- Dimensions needed (grouping, filtering, hierarchies)
+- Time context and comparisons
+- Page structure blueprint
+
+---
+
+#### `powerbi-visual-type-recommender`
+
+**Purpose:** Recommends specific Power BI visual types based on data characteristics, presenting 2-3 options with pros/cons for user selection.
+
+**Invocation:** Per visual in page workflow (Phase 6, Branch B).
+
+**Inputs:**
+- Visual purpose from Section 1.2
+- Metric type (single value, count, sum, percentage, ratio)
+- Dimension cardinality from Section 1.1
+- Analytical intent from Section 1.0
+
+**What It Does:**
+- Analyzes metric count, dimension count, and cardinality
+- Applies recommendation rules:
+  - Single value + no dimensions → Card, KPI, or Gauge
+  - 2-7 categories → Bar/Column chart
+  - Time series → Line chart
+  - High cardinality → Table or Matrix
+  - Composition → Donut (with warnings)
+- Presents 2-3 options with data-driven pros/cons
+- Gets explicit user selection
+- Warns about anti-patterns (pie charts >5 slices)
+
+**Visual Types Supported:**
+- Card, KPI, Gauge (single values)
+- Bar Chart, Column Chart, Line Chart, Area Chart (comparisons/trends)
+- Table, Matrix (detailed data)
+- Pie, Donut, Treemap (composition - with warnings)
+- Scatter Plot (relationships)
+
+**Output:** Appends to Section 2.B subsection with:
+- Visual type recommendation options
+- Pros/cons analysis
+- User choice
+- Rationale for chosen type
+
+---
+
+#### `powerbi-page-layout-designer`
+
+**Purpose:** Generates optimal Power BI page layouts with research-based coordinates and sizing using 8-pixel grid system and layout hierarchy principles.
+
+**Invocation:** After visual specifications complete (Phase 7).
+
+**Inputs:**
+- Visual list from Section 2.B (with types and importance)
+- Canvas size: 1600×900 (professional standard)
+- Existing pages (for filter placement consistency)
+- Findings file path
+
+**What It Does:**
+- Categorizes visuals by importance (KPI, primary analysis, supporting, filters)
+- Applies research-based layout hierarchy:
+  - Top-left (0-800x, 0-300y): Key KPIs
+  - Top-right (800-1600x, 0-300y): Complementary metrics
+  - Middle-left (0-800x, 300-700y): Primary analysis
+  - Middle-right (800-1600x, 300-700y): Supporting analytics
+  - Bottom (0-1600x, 700-900y): Filters/slicers
+- Calculates precise coordinates using 8-pixel grid
+- Validates no overlaps
+- Ensures consistency with existing page filter placement
+- Generates layout visualization (table + ASCII art)
+
+**Layout Standards:**
+- Canvas: 1600×900 pixels (16:9 professional standard)
+- Grid: 8-pixel alignment for all coordinates
+- Margins: 24px from canvas edges
+- Spacing: 16px between visuals
+- F-pattern reading hierarchy
+
+**Output:** Populates Section 3 (Page Layout Plan) with:
+- Complete coordinate table (x, y, width, height per visual)
+- Layout visualization
+- Layout rationale
+- Consistency notes
+
+---
+
+#### `powerbi-interaction-designer`
+
+**Purpose:** Designs Power BI page interactions including cross-filtering matrices, drill-through targets, and optional bookmark navigation.
+
+**Invocation:** After layout design (Phase 8).
+
+**Inputs:**
+- Visual list from Section 2.B (with dimensions and measures)
+- Layout from Section 3
+- Page intent from Section 1.0
+- Findings file path
+
+**What It Does:**
+- Analyzes common dimensions across visuals
+- Designs cross-filtering matrix:
+  - Visuals with shared dimensions → enable cross-filtering
+  - Slicers → filter all visuals (page-level effect)
+  - KPI cards → receive filters only, don't send
+  - Detail visuals (tables) → receive filters, optionally send
+- Identifies drill-through opportunities (summary → detail pages)
+- Documents bookmark navigation (only if requested or problem-suited)
+
+**Cross-Filtering Rules:**
+- Shared dimension → bi-directional filtering
+- Slicer → filters all visuals
+- KPI cards → receive only
+- Summary → Detail (one-directional preferred)
+
+**Output:** Populates Section 4 (Interaction Design) with:
+- Cross-filtering matrix (which visuals filter which)
+- Interaction logic explanations
+- Drill-through definitions with context passing
+- Bookmark specifications (if applicable)
+
+---
+
+#### `powerbi-pbir-page-generator`
+
+**Purpose:** Generates complete PBIR page files (page.json, visual.json files, pages.json update) ready for implementation with syntactically valid JSON.
+
+**Invocation:** After interaction design (Phase 9).
+
+**Inputs:**
+- Visual specifications (Section 2.B)
+- Layout coordinates (Section 3)
+- Interactions (Section 4)
+- Measure references (Section 2.A measure names)
+- Findings file path
+
+**What It Does:**
+- Generates page folder structure plan (GUIDs for page and visuals)
+- Creates complete page.json content (page metadata)
+- For each visual, generates complete visual.json:
+  - Top-level properties: visualType, x, y, width, height
+  - Config blob: Stringified JSON with formatting, titles, colors
+  - Query transforms: Measure bindings referencing Section 2.A
+  - Filters: Visual-level filters
+  - Interactions: Cross-filtering settings from Section 4
+- Generates pages.json update (add new page entry)
+- Validates JSON syntax before documenting
+- Ensures measure bindings match Section 2.A names exactly
+
+**JSON Validation:**
+- All JSON parseable (no syntax errors)
+- Config blobs properly stringified (escaped quotes)
+- Measure references valid (exist in Section 2.A or model)
+- Coordinates within canvas bounds
+- No visual overlaps
+
+**Output:** Populates Section 5 (PBIR Page Files) with:
+- Complete page.json content
+- Complete visual.json content for each visual
+- pages.json update
+- Measure binding documentation
+- Folder structure specification
 
 ---
 
@@ -1268,6 +1538,131 @@ agent_scratchpads/                   # Created by commands
 - Add filter metadata YAML blocks to test cases
 - Use URL filtering instead of DOM interaction
 - Verify table/column names match TMDL definitions
+
+---
+
+## Skills
+
+Skills extend Claude Code's capabilities with specialized knowledge and workflows for specific domains. Skills are modular, self-contained packages that provide procedural knowledge beyond what the base model possesses.
+
+### Available Skills
+
+#### `agentic-workflow-reviewer`
+
+**Purpose:** Review and validate agentic workflow designs against established best practices.
+
+**Use when:**
+- User asks to "review this workflow" or "audit my workflow"
+- User requests "check workflow quality" or "validate agent design"
+- User wants to ensure workflow follows best practices
+
+**What it does:**
+Evaluates workflows against 5 core properties:
+1. **Prompt Refinement** - Clear specifications with goals, constraints, outputs
+2. **Human Feedback Loop** - Dedicated section with recommendations and sub-agent coordination
+3. **Validation Loop** - Quality checks with iteration capability
+4. **Persistent Documentation** - Structured, incremental documentation
+5. **Clear Summary** - Before/after examples showing concrete impact
+
+**Output:** Comprehensive review report with:
+- Detailed assessment (5 properties scored)
+- Priority improvements list
+- Comparison examples (current vs recommended)
+- Next steps
+
+**Location:** `.claude/skills/agentic-workflow-reviewer/`
+
+---
+
+#### `agentic-workflow-creator`
+
+**Purpose:** Create high-quality agentic workflows (slash commands with multi-agent orchestration) following proven architectural principles.
+
+**Use when:**
+- User requests "create a workflow" or "build an agentic system"
+- User asks "design a multi-agent workflow" or "set up automation for [task]"
+- User wants to implement a new workflow from scratch
+
+**What it does:**
+Guides through 6-step creation process:
+1. **Synthesize Request** - Clarify goals, inputs, outputs, phases
+2. **Design Architecture** - Apply 5 core principles, identify agents
+3. **Apply Naming** - Use consistent conventions for commands/agents
+4. **Create Plan** - Present structured plan for user approval
+5. **Implement Files** - Generate slash command + agent files from templates
+6. **Validate** - Use agentic-workflow-reviewer to ensure quality
+
+**Key features:**
+- Checks `.claude/README.md` for existing agents to reuse
+- Ensures all workflows have coordination files for multi-agent communication
+- Provides comprehensive templates (slash commands, agents, coordination files)
+- Includes complete workflow examples (single-agent, sequential, parallel)
+
+**Output:** Production-ready workflow files:
+- `.claude/commands/[workflow-name].md` - Slash command orchestrator
+- `.claude/agents/[agent-name].md` - Individual agent definitions
+- Documentation updates to README.md
+
+**Location:** `.claude/skills/agentic-workflow-creator/`
+
+**Related:** Works in tandem with `agentic-workflow-reviewer` for validation
+
+---
+
+#### `powerbi-dashboard-analyzer`
+
+**Purpose:** Analyze existing Power BI dashboards and provide business-friendly summaries of pages, visuals, metrics, filters, and interactions.
+
+**Use when:**
+- User asks "Tell me what this dashboard is doing" or "Explain how the metrics work"
+- User requests "Help me understand this page" or "What does this graph show"
+- User wants to "Analyze the Sales Dashboard" or understand dashboard behavior
+- User needs business-friendly explanations of technical Power BI content
+
+**What it does:**
+Creates comprehensive markdown analysis reports that translate Power BI dashboards into plain English:
+1. **Page-by-Page Analysis** - Summarizes each page's purpose and contents
+2. **Detailed Visual Descriptions** - Describes charts, tables, and cards with business context
+3. **Metric Explanations** - Translates DAX formulas into business definitions with dependency tracking
+4. **Interaction Documentation** - Explains cross-filtering, drillthrough, tooltips, and navigation
+5. **Filter Guide** - Documents all slicers and filters available to users
+
+**Key features:**
+- Parses .Report folder (PBIR format) for pages and visuals
+- Extracts measure definitions from .SemanticModel TMDL files
+- Provides business-friendly language (avoids DAX/TMDL jargon)
+- Shows measure dependencies ("Depends on: Total Sales, Prior Year Sales")
+- Detailed visual descriptions (axes, data fields, colors, position)
+- Documents user interactions (cross-filtering, drillthrough, tooltips)
+- Saves timestamped analysis reports in `agent_scratchpads/`
+
+**Requirements:**
+- Power BI Project (.pbip) format with .Report folder (for page/visual analysis)
+- .SemanticModel folder with TMDL files (for measure analysis)
+- pbi-tools or model.bim formats support data model analysis only (no visuals)
+
+**Output:** Creates `agent_scratchpads/<timestamp>-dashboard-analysis/dashboard_analysis.md` with:
+- Dashboard overview (pages, metrics, purpose)
+- Page-by-page breakdown with all visuals
+- Key metrics glossary (business definitions)
+- Filter and interaction guide
+- Raw data in JSON format for programmatic use
+
+**Example triggers:**
+- "Analyze the dashboard at C:\Projects\SalesReport"
+- "Tell me what this dashboard does and how the metrics are calculated"
+- "Explain the Revenue page in business terms"
+
+**Location:** `.claude/skills/powerbi-dashboard-analyzer/`
+
+**Bundled Resources:**
+- `scripts/parse_pbir_pages.py` - Extracts pages/visuals from .Report folder
+- `scripts/extract_measure_info.py` - Parses TMDL for measures and dependencies
+- `scripts/generate_dashboard_analysis.py` - Main orchestrator script
+- `references/visual_types.md` - Power BI visual types in business language
+- `references/dax_common_patterns.md` - DAX pattern translations
+- `references/interaction_patterns.md` - Cross-filtering and interaction explanations
+- `assets/analysis_report_template.md` - Report structure template
 
 ---
 

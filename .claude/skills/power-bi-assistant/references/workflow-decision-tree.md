@@ -30,6 +30,10 @@ This document helps map user intents to the appropriate Power BI workflow comman
 
 ### 2. "I need to create something new"
 
+**Decision:** Single artifact or complete page?
+
+#### 2A. "Create a single artifact (measure, column, table, or visual)"
+
 **Command:** `/create-pbi-artifact`
 
 **User statements that match:**
@@ -45,6 +49,36 @@ This document helps map user intents to the appropriate Power BI workflow comman
 - Analyzes data model
 - Discovers existing patterns
 - Generates implementation-ready code
+
+**Next step:** Review findings.md, then use `/implement-deploy-test-pbi-project-file`
+
+---
+
+#### 2B. "Create a complete dashboard page"
+
+**Command:** `/create-pbi-page-specs`
+
+**User statements that match:**
+- "Create a page showing Q4 sales by region"
+- "Build a dashboard page for revenue analysis"
+- "Design a page answering [business question]"
+- "Add a new page with KPIs and charts"
+- "Create a sales performance page"
+- "I need a page to analyze customer trends"
+
+**What it does:**
+- Analyzes your business question
+- Identifies needed measures AND visuals
+- Designs optimal layout (research-based coordinates)
+- Creates cross-filtering and interactions
+- Generates complete PBIR page specifications
+- Recommends helper pages for drill-through
+
+**Key difference from /create-pbi-artifact:**
+- Creates ENTIRE PAGE (measures + visuals + layout + interactions)
+- Multiple artifacts in one workflow
+- Layout and interaction design included
+- Parallel measure + visual specification
 
 **Next step:** Review findings.md, then use `/implement-deploy-test-pbi-project-file`
 
@@ -127,11 +161,19 @@ This document helps map user intents to the appropriate Power BI workflow comman
 3. /implement-deploy-test-pbi-project-file --findings "findings.md"
 ```
 
-### Scenario: "Add a new feature with testing"
+### Scenario: "Add a new measure"
 ```
 1. /create-pbi-artifact --project "path" --type measure --description "YoY Revenue Growth %"
 2. Review findings.md specification
 3. /implement-deploy-test-pbi-project-file --findings "findings.md" --deploy DEV --dashboard-url "https://..."
+```
+
+### Scenario: "Create a complete dashboard page"
+```
+1. /create-pbi-page-specs --project "path" --question "Show Q4 sales by region with YoY growth" --workspace "Analytics" --dataset "Sales Model"
+2. Review findings.md (all 8 sections - especially layout and interactions)
+3. /implement-deploy-test-pbi-project-file --findings "findings.md" --deploy DEV
+4. (Optional) Create helper pages identified in Section 6
 ```
 
 ### Scenario: "Merge development into production"
