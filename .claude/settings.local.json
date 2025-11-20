@@ -63,7 +63,10 @@
       "WebFetch(domain:www.sqlbi.com)",
       "WebFetch(domain:community.fabric.microsoft.com)",
       "WebFetch(domain:claude.com)",
-      "WebFetch(domain:code.claude.com)"
+      "WebFetch(domain:code.claude.com)",
+      "Skill(example-skills:skill-creator)",
+      "Bash(move:*)",
+      "Bash(set:*)"
     ],
     "deny": [],
     "ask": []

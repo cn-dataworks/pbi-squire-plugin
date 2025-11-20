@@ -16,6 +16,9 @@ __pycache__/
 *.so
 .Python
 
+# Packaged skill files (can be rebuilt from source)
+.claude/skills/packaged/*.skill
+
 # Virtual environments
 venv/
 ENV/
