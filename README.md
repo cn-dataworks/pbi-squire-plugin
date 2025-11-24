@@ -4,8 +4,33 @@ Claude Code plugin for Power BI project analysis, modification, and deployment w
 
 ## Installation
 
+### From GitHub (Recommended)
+
 ```bash
-/plugin install powerbi-analyst@github/cn-dataworks/powerbi-analyst-plugin
+# Add the marketplace
+/plugin marketplace add cn-dataworks/powerbi-analyst-plugin
+
+# Install the plugin
+/plugin install powerbi-analyst@cn-dataworks/powerbi-analyst-plugin
+
+# Verify installation
+/plugin list
+```
+
+### From Local Development
+
+For local development and testing:
+
+```bash
+# Clone the repository
+git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git
+cd powerbi-analyst-plugin
+
+# Add as local marketplace (use absolute path)
+/plugin marketplace add C:\path\to\powerbi-analyst-plugin
+
+# Install from local marketplace
+/plugin install powerbi-analyst@C:\path\to\powerbi-analyst-plugin
 ```
 
 ## Features
