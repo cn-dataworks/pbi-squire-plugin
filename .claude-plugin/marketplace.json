@@ -11,7 +11,7 @@
   "plugins": [
     {
       "name": "powerbi-analyst",
-      "source": "."
+      "source": "./"
     }
   ]
 }
