@@ -1,0 +1,17 @@
+{
+  "name": "cn-dataworks-plugins",
+  "owner": {
+    "name": "CN Dataworks",
+    "email": "info@cndataworks.com"
+  },
+  "metadata": {
+    "description": "Power BI analyst workflows and tools",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "powerbi-analyst",
+      "source": "."
+    }
+  ]
+}
