@@ -33,6 +33,61 @@ cd powerbi-analyst-plugin
 /plugin install powerbi-analyst@C:\path\to\powerbi-analyst-plugin
 ```
 
+## Troubleshooting
+
+### Slash commands not appearing after installation
+
+**Known Issue:** The plugin marketplace may show the plugin as "installed" but the actual files aren't copied to your repository. You can verify this by checking if `.claude/commands/` exists:
+
+```bash
+ls .claude/commands/
+```
+
+If this directory doesn't exist or is empty, use manual installation below.
+
+### Manual Installation
+
+If the plugin installation doesn't copy files properly, manually copy them:
+
+**Windows (PowerShell):**
+```powershell
+# Clone the plugin temporarily
+git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git C:\temp\pbi-plugin
+
+# Copy the .claude folder contents to your target repository
+xcopy /E /I /Y "C:\temp\pbi-plugin\.claude\*" ".claude\"
+
+# Clean up
+rmdir /S /Q C:\temp\pbi-plugin
+```
+
+**macOS/Linux:**
+```bash
+# Clone the plugin temporarily
+git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git /tmp/pbi-plugin
+
+# Copy the .claude folder contents to your target repository
+cp -r /tmp/pbi-plugin/.claude/* .claude/
+
+# Clean up
+rm -rf /tmp/pbi-plugin
+```
+
+**After manual installation:**
+1. Restart Claude Code (exit with `/exit` or Ctrl+C, then run `claude` again)
+2. Type `/` to verify commands appear:
+   - `/evaluate-pbi-project-file`
+   - `/create-pbi-artifact`
+   - `/implement-deploy-test-pbi-project-file`
+   - `/analyze-pbi-dashboard`
+   - `/create-pbi-page-specs`
+
+### Commands still not appearing
+
+1. **Verify files exist:** Check that `.claude/commands/*.md` files are present
+2. **Restart Claude Code:** Commands are loaded at startup
+3. **Check directory:** Make sure you're running Claude Code from the repository where you installed the plugin
+
 ## Features
 
 ### Commands
