@@ -1,0 +1,133 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "{{VISUAL_NAME}}",
+  "position": {
+    "x": {{X}},
+    "y": {{Y}},
+    "z": {{Z}},
+    "height": {{HEIGHT}},
+    "width": {{WIDTH}},
+    "tabOrder": {{TAB_ORDER}}
+  },
+  "visual": {
+    "visualType": "pivotTable",
+    "query": {
+      "queryState": {
+        "Rows": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{ROW_TABLE}}"
+                    }
+                  },
+                  "Property": "{{ROW_COLUMN}}"
+                }
+              },
+              "queryRef": "{{ROW_TABLE}}.{{ROW_COLUMN}}",
+              "nativeQueryRef": "{{ROW_COLUMN}}",
+              "active": true
+            }
+          ]
+        },
+        "Columns": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{COLUMN_TABLE}}"
+                    }
+                  },
+                  "Property": "{{COLUMN_COLUMN}}"
+                }
+              },
+              "queryRef": "{{COLUMN_TABLE}}.{{COLUMN_COLUMN}}",
+              "nativeQueryRef": "{{COLUMN_COLUMN}}"
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{MEASURE_1_TABLE}}"
+                    }
+                  },
+                  "Property": "{{MEASURE_1_NAME}}"
+                }
+              },
+              "queryRef": "{{MEASURE_1_TABLE}}.{{MEASURE_1_NAME}}",
+              "nativeQueryRef": "{{MEASURE_1_NAME}}"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{MEASURE_2_TABLE}}"
+                    }
+                  },
+                  "Property": "{{MEASURE_2_NAME}}"
+                }
+              },
+              "queryRef": "{{MEASURE_2_TABLE}}.{{MEASURE_2_NAME}}",
+              "nativeQueryRef": "{{MEASURE_2_NAME}}"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "subTotals": [
+        {
+          "properties": {
+            "columnSubtotals": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_COLUMN_SUBTOTALS}}"
+                }
+              }
+            },
+            "rowSubtotals": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_ROW_SUBTOTALS}}"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'{{TITLE}}'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

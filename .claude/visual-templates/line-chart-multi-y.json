@@ -1,0 +1,160 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "{{VISUAL_NAME}}",
+  "position": {
+    "x": {{X}},
+    "y": {{Y}},
+    "z": {{Z}},
+    "height": {{HEIGHT}},
+    "width": {{WIDTH}},
+    "tabOrder": {{TAB_ORDER}}
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{CATEGORY_TABLE}}"
+                    }
+                  },
+                  "Property": "{{CATEGORY_COLUMN}}"
+                }
+              },
+              "queryRef": "{{CATEGORY_TABLE}}.{{CATEGORY_COLUMN}}",
+              "nativeQueryRef": "{{CATEGORY_COLUMN}}",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{MEASURE_1_TABLE}}"
+                    }
+                  },
+                  "Property": "{{MEASURE_1_NAME}}"
+                }
+              },
+              "queryRef": "{{MEASURE_1_TABLE}}.{{MEASURE_1_NAME}}",
+              "nativeQueryRef": "{{MEASURE_1_NAME}}"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{MEASURE_2_TABLE}}"
+                    }
+                  },
+                  "Property": "{{MEASURE_2_NAME}}"
+                }
+              },
+              "queryRef": "{{MEASURE_2_TABLE}}.{{MEASURE_2_NAME}}",
+              "nativeQueryRef": "{{MEASURE_2_NAME}}"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "lineStyles": [
+        {
+          "properties": {
+            "showMarker": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_MARKERS}}"
+                }
+              }
+            },
+            "strokeWidth": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{STROKE_WIDTH}}D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "legend": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "position": {
+              "expr": {
+                "Literal": {
+                  "Value": "'{{LEGEND_POSITION}}'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryAxis": [
+        {
+          "properties": {
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_CATEGORY_AXIS_TITLE}}"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "valueAxis": [
+        {
+          "properties": {
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_VALUE_AXIS_TITLE}}"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'{{TITLE}}'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
