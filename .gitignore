@@ -2,6 +2,9 @@
 .msal_token_cache.bin
 xmla_agent/.msal_token_cache.bin
 
+# Claude Code local settings (contains user-specific paths)
+.claude/settings.local.json
+
 # Agent scratchpads (use case specific)
 agent_scratchpads/*
 !agent_scratchpads/README.md

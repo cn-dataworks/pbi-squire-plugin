@@ -120,6 +120,51 @@ See [.claude/README.md](.claude/README.md) for comprehensive documentation inclu
 - Complete workflow sequences
 - Best practices and troubleshooting
 
+## Sandboxing Configuration
+
+The plugin uses Claude Code's permission system to control file access. Permissions are split between project settings (shared) and local settings (personal).
+
+### Quick Setup
+
+1. Copy the template to create your local settings:
+   ```bash
+   cp .claude/settings.local.json.template .claude/settings.local.json
+   ```
+
+2. Edit `.claude/settings.local.json` and replace `YOUR_USERNAME` with your Windows username
+
+3. Add any additional project folders you work with
+
+### Configuration Files
+
+| File | Purpose | Git Status |
+|------|---------|------------|
+| `.claude/settings.json` | Core plugin permissions (bash, web, MCP) | Committed |
+| `.claude/settings.local.json` | Your project folder paths | Ignored |
+| `.claude/settings.local.json.template` | Template for new users | Committed |
+
+### Adding Project Folders
+
+To allow Claude Code to work on a Power BI project folder, add these lines to your `settings.local.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(C:/Users/YourName/Documents/Customer Projects/ProjectName/**)",
+      "Edit(C:/Users/YourName/Documents/Customer Projects/ProjectName/**)",
+      "Write(C:/Users/YourName/Documents/Customer Projects/ProjectName/**)"
+    ]
+  }
+}
+```
+
+### Path Format
+
+- Use forward slashes: `C:/Users/Name/folder/**`
+- Use `**` for recursive matching
+- `Read()` = read files, `Edit()` = modify existing files, `Write()` = create new files
+
 ## Requirements
 
 - Claude Code (latest version)
