@@ -403,3 +403,21 @@ The workflow is complete when:
 2. User has made decisions on all differences
 3. Merged project has been created
 4. Final report has been presented
+
+---
+
+## Final Phase: Agent Usage Analytics
+
+After the workflow completes, run token analysis and generate aggregated metrics:
+
+```bash
+python .claude/tools/token_analyzer.py --full
+python .claude/tools/analytics_merger.py
+```
+
+This step:
+1. Parses Claude Code JSONL logs for token usage data
+2. Correlates with runtime events captured by hooks
+3. Updates `agent_scratchpads/_analytics/agent_analytics.json` with aggregated metrics
+
+**Note**: Runtime events are captured automatically via hooks. Token analysis requires parsing Claude Code's session logs.

@@ -560,3 +560,21 @@ The generated analysis file follows this structure:
 - For creating new artifacts, use `/create-pbi-artifact`
 - The analysis preserves full technical details while creating business-accessible summaries
 - Output is designed to serve both technical and non-technical audiences
+
+---
+
+## Final Phase: Agent Usage Analytics
+
+After the workflow completes, run token analysis and generate aggregated metrics:
+
+```bash
+python .claude/tools/token_analyzer.py --full
+python .claude/tools/analytics_merger.py
+```
+
+This step:
+1. Parses Claude Code JSONL logs for token usage data
+2. Correlates with runtime events captured by hooks
+3. Updates `agent_scratchpads/_analytics/agent_analytics.json` with aggregated metrics
+
+**Note**: Runtime events are captured automatically via hooks. Token analysis requires parsing Claude Code's session logs.
