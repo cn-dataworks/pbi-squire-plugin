@@ -16,12 +16,17 @@ https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visua
 | `card-single-measure.json` | Card | Single measure display with formatting |
 | `line-chart-category-y.json` | Line Chart | Category on X-axis, single measure on Y-axis |
 | `line-chart-multi-y.json` | Line Chart | Category on X-axis, multiple measures on Y-axis |
+| `line-chart-with-series.json` | Line Chart | Category on X-axis, Series for legend grouping, single Y measure |
 | `bar-chart-category-y.json` | Bar Chart | Horizontal bars with category and measure |
 | `bar-chart-with-series.json` | Bar Chart | Grouped/stacked bars with category, series, and measure |
 | `clustered-column-multi-measure.json` | Clustered Column | Multiple measures side-by-side |
 | `table-basic.json` | Table | Basic table with columns and measures |
 | `matrix-basic.json` | Matrix | Pivot table with rows, columns, and values |
+| `pie-chart.json` | Pie Chart | Category slices with measure values |
+| `scatter-bubble-chart.json` | Scatter/Bubble | X/Y measures with category and optional bubble size |
 | `azure-map-gradient.json` | Azure Map | Filled map with gradient coloring |
+| `azure-map-bubble.json` | Azure Map | Bubble map with clustering support |
+| `image-static.json` | Image | Static image/logo from registered resources |
 | `slicer-between-date.json` | Slicer | Date range slicer (Between mode) |
 | `slicer-dropdown.json` | Slicer | Dropdown single-select slicer |
 | `slicer-list-multiselect.json` | Slicer | List multi-select slicer |
@@ -63,6 +68,11 @@ All templates use `{{PLACEHOLDER}}` syntax for values that need to be replaced:
 | `{{COLUMN_1_TABLE}}`, `{{COLUMN_1_NAME}}` | Table first column | `Fact_Sales`, `region` |
 | `{{LOCATION_TABLE}}` | Geographic dimension table | `dim_customer` |
 | `{{LOCATION_COLUMN}}` | Location column | `state` |
+| `{{X_MEASURE_TABLE}}`, `{{X_MEASURE_NAME}}` | Scatter X-axis measure | `Fact_Sales`, `Units Sold` |
+| `{{Y_MEASURE_TABLE}}`, `{{Y_MEASURE_NAME}}` | Scatter Y-axis measure | `Fact_Sales`, `Profit Margin` |
+| `{{SIZE_MEASURE_TABLE}}`, `{{SIZE_MEASURE_NAME}}` | Bubble size measure | `Fact_Sales`, `Revenue` |
+| `{{TOOLTIP_MEASURE_TABLE}}`, `{{TOOLTIP_MEASURE_NAME}}` | Tooltip measure | `Fact_Sales`, `Count` |
+| `{{IMAGE_FILE_NAME}}` | Registered resource image file | `logo_abc123.png` |
 
 ### Formatting Placeholders
 
@@ -82,21 +92,40 @@ All templates use `{{PLACEHOLDER}}` syntax for values that need to be replaced:
 | `{{SHOW_COLUMN_SUBTOTALS}}` | Show column subtotals (matrix) | `true` |
 | `{{MAP_TRANSPARENCY}}` | Map transparency (append L) | `40` → `"40L"` |
 | `{{MEASURE_1_COLOR}}` | Hex color code | `#19F5E2` |
+| `{{SHOW_LEGEND}}` | Show legend | `true`, `false` |
+| `{{SHOW_LABELS}}` | Show data labels (pie chart) | `true`, `false` |
+| `{{LABEL_STYLE}}` | Pie label style | `Category`, `Data value`, `Percent of total`, `All detail labels` |
+| `{{BACKGROUND_TRANSPARENCY}}` | Background transparency (0-100) | `0` |
+| `{{SHOW_X_AXIS_TITLE}}` | Show X-axis title (scatter) | `true`, `false` |
+| `{{SHOW_Y_AXIS_TITLE}}` | Show Y-axis title (scatter) | `true`, `false` |
+| `{{SHOW_CATEGORY_LABELS}}` | Show category labels | `true`, `false` |
+| `{{MAP_STYLE}}` | Azure Map style | `road`, `aerial`, `grayscale_dark`, `grayscale_light` |
+| `{{SHOW_STYLE_PICKER}}` | Show map style picker | `true`, `false` |
+| `{{SHOW_NAV_CONTROLS}}` | Show map navigation controls | `true`, `false` |
+| `{{SHOW_SELECTION_CONTROL}}` | Show map selection control | `true`, `false` |
+| `{{ENABLE_CLUSTERING}}` | Enable bubble clustering | `true`, `false` |
+| `{{CLUSTER_RADIUS}}` | Cluster bubble radius (append L) | `23` → `"23L"` |
+| `{{MIN_BUBBLE_RADIUS}}` | Minimum bubble radius (append L) | `6` → `"6L"` |
 
 ## Query Structure Reference
 
 ### Role Names by Visual Type
 
 ```
-Card:              { Values: [...] }
-Line Chart:        { Category: [...], Y: [...] }
-Bar Chart:         { Category: [...], Y: [...] }
-Bar Chart (Series):{ Category: [...], Series: [...], Y: [...] }
-Column Chart:      { Category: [...], Y: [...] }
-Table:             { Values: [...] }  // columns and measures together
-Matrix:            { Rows: [...], Columns: [...], Values: [...] }
-Azure Map:         { Category: [...], Tooltips: [...] }
-Slicer:            { Values: [...] }
+Card:                { Values: [...] }
+Line Chart:          { Category: [...], Y: [...] }
+Line Chart (Series): { Category: [...], Series: [...], Y: [...] }
+Bar Chart:           { Category: [...], Y: [...] }
+Bar Chart (Series):  { Category: [...], Series: [...], Y: [...] }
+Column Chart:        { Category: [...], Y: [...] }
+Pie Chart:           { Category: [...], Y: [...] }
+Scatter/Bubble:      { Category: [...], X: [...], Y: [...], Size: [...] }
+Table:               { Values: [...] }  // columns and measures together
+Matrix:              { Rows: [...], Columns: [...], Values: [...] }
+Azure Map (Gradient):{ Category: [...], Tooltips: [...] }
+Azure Map (Bubble):  { Category: [...], Size: [...], Tooltips: [...] }
+Image:               // No query - uses ResourcePackageItem
+Slicer:              { Values: [...] }
 ```
 
 ### Column vs Measure References
@@ -181,16 +210,19 @@ The following visual types don't have templates yet:
 
 - [x] Table *(added: table-basic.json)*
 - [x] Matrix *(added: matrix-basic.json)*
-- [ ] Pie Chart
+- [x] Pie Chart *(added: pie-chart.json)*
 - [ ] Donut Chart
-- [ ] Scatter Chart
+- [x] Scatter Chart *(added: scatter-bubble-chart.json)*
 - [ ] Gauge
 - [ ] KPI
 - [ ] Treemap
-- [ ] Stacked Bar/Column
+- [x] Stacked Bar/Column *(covered by bar-chart-with-series.json)*
 - [ ] Area Chart
 - [ ] Waterfall Chart
 - [ ] Funnel Chart
+- [x] Image *(added: image-static.json)*
+- [x] Azure Map Bubble *(added: azure-map-bubble.json)*
+- [x] Line Chart with Series *(added: line-chart-with-series.json)*
 
 ## Source
 

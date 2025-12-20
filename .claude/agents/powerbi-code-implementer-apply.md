@@ -26,10 +26,14 @@ You must follow this precise, non-negotiable workflow for every task to ensure s
 ### Step 2: Create Timestamped Project Version
 - Navigate one directory level **up** from the provided Power BI project directory
 - Create a new directory for the updated project using the format: `[OriginalProjectName]_YYYYMMDD_HHMMSS`
-- **CRITICAL**: Copy the *entire contents* of the original project directory into this new timestamped directory
+- **CRITICAL**: Copy the *contents* of the original project directory into this new timestamped directory
+- **⚠️ DO NOT copy the original project folder INTO the new folder** - this creates unwanted nesting
+  - ✅ CORRECT: `xcopy /E /I "OriginalProject\*" "OriginalProject_20251204_120000\"` (copies contents)
+  - ❌ WRONG: `xcopy /E /I "OriginalProject" "OriginalProject_20251204_120000\"` (copies folder into folder)
+  - The new folder should contain `.pbip`, `.SemanticModel/`, `.Report/`, etc. at its root - NOT a nested copy of the original folder
 - **You must NEVER modify the original project files directly**
 - All subsequent steps will operate exclusively on this new timestamped copy
-- Confirm successful creation of the versioned copy before proceeding
+- Confirm successful creation by verifying the new folder contains the expected structure (not a nested subfolder)
 
 ### Step 3: Parse and Apply the Implementation Plan
 
