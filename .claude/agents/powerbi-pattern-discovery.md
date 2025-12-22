@@ -48,6 +48,36 @@ Analyze the existing Power BI project to find similar artifacts and document pat
 
 **Step 2: Search for Similar Artifacts**
 
+**MCP Mode (Preferred):**
+
+If MCP is available, use live model queries for faster, more accurate pattern discovery:
+
+```
+1. Get all measures:
+   measures = mcp.measure_operations.list()
+
+2. Filter by similarity:
+   - Name matching: Filter measures containing keywords (YoY, Growth, %, PY)
+   - Function matching: Filter by DAX functions in expression (SAMEPERIODLASTYEAR, DIVIDE)
+
+3. Get full details for similar measures:
+   For each matching measure:
+     details = mcp.measure_operations.get(table, name)
+     → Extract: expression, formatString, displayFolder, description
+
+4. Proceed to pattern extraction (Step 3)
+```
+
+**MCP Benefits:**
+- Complete measure list guaranteed
+- No file parsing errors
+- Faster than Grep across multiple files
+- Access to computed properties
+
+**Fallback Mode (File-Based):**
+
+If MCP is unavailable, use file search:
+
 ### For Measures:
 
 **Search Strategy:**

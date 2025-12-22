@@ -71,6 +71,31 @@ For EACH object in the validation queue:
 
 ### Step 3: Perform Syntax Validation (Modified Objects Only)
 
+**MCP Mode (Preferred):**
+
+If MCP is available (check `state.json` for `mcp_available: true`), use live validation:
+
+```
+For each DAX formula:
+1. Call mcp.dax_query_operations.validate(expression)
+2. If validation passes → mark as ✅ Syntax Valid (MCP)
+3. If validation fails → capture error details:
+   - Error message
+   - Line/column position (if provided)
+   - Error code
+4. Skip manual syntax checks (MCP is authoritative)
+```
+
+**MCP Validation Benefits:**
+- Live validation against actual model
+- Detects reference errors (missing tables/columns)
+- Identifies semantic issues (type mismatches)
+- Faster than static analysis
+
+**Fallback Mode (File-Based):**
+
+If MCP is unavailable, perform static analysis:
+
 For each DAX formula extracted in Step 2:
 
 **A. Structural Validation:**
@@ -164,6 +189,7 @@ Append **Section 2.5: DAX Validation Report** to findings.md:
 **Status**: ✅ PASS | ⚠️ WARNING | ❌ FAIL
 
 **Syntax Validation**: ✅ PASS
+- Validation Method: MCP Live | Static Analysis
 - Balanced parentheses: ✅
 - Valid function names: ✅
 - Variable declarations: ✅

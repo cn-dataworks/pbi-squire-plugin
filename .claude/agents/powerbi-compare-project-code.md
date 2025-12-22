@@ -45,6 +45,47 @@ For each file difference, create a diff entry with status "Added" or "Deleted".
 
 ### Step 3: Parse and Compare Semantic Model
 
+**MCP Mode (Preferred):**
+
+If both projects can be connected via MCP, use live model extraction:
+
+```
+For each project:
+1. Connect via mcp.connection_operations.connect()
+2. Extract schema:
+   - mcp.table_operations.list() → all tables
+   - mcp.column_operations.list(table) → columns per table
+   - mcp.measure_operations.list() → all measures with expressions
+   - mcp.relationship_operations.list() → all relationships
+3. Store extracted schema for comparison
+4. Disconnect after extraction
+```
+
+**MCP Benefits:**
+- Guaranteed accurate schema extraction
+- No parsing errors
+- Includes computed properties not in TMDL
+- Handles all model formats uniformly
+
+**MCP Comparison Flow:**
+```
+main_schema = extract_via_mcp(main_project)
+comparison_schema = extract_via_mcp(comparison_project)
+
+For each measure in comparison_schema:
+  - If not in main_schema → status: "Added"
+  - If in main_schema with different expression → status: "Modified"
+
+For each measure in main_schema:
+  - If not in comparison_schema → status: "Deleted"
+
+[Same logic for tables, columns, relationships]
+```
+
+**Fallback Mode (File-Based):**
+
+If MCP is unavailable, parse files directly:
+
 #### For TMDL Format:
 
 1. Navigate to `{project}.SemanticModel/definition/`

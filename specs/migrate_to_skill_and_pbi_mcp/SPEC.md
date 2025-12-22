@@ -20,7 +20,20 @@ Convert the Power BI Analyst Plugin from a file-based architecture (parsing TMDL
 - Enable live model editing (Power BI Desktop, Fabric)
 - Simplify deployment pipeline
 - Implement state.json orchestration for session-level "Global Truth"
-- Package as a Claude Code skill
+- Package as a Claude Code skill with automated installer
+
+**Distribution Philosophy: Driver/Installer Pattern**
+
+The skill uses a **Driver/Installer Pattern** rather than a static skill package. This is necessary because:
+1. The Microsoft Power BI Modeling MCP is an external binary dependency
+2. MCP availability varies by user environment (installed vs. not installed)
+3. Configuration must be dynamic based on detected capabilities
+
+The skill includes a `setup.py` entry point that:
+- Auto-detects the user's environment (MCP available vs. file-based only)
+- Configures `mcpServers` in Claude config if MCP binary is found
+- Sets up fallback mode if MCP is unavailable
+- Optionally enables OpenTelemetry tracing for observability
 
 ---
 
@@ -148,8 +161,8 @@ Specialists read from `state.json` and write their outputs to `findings.md`. The
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      Orchestrator                            │
-│              (powerbi-artifact-designer)                     │
-│                    manages state.json                        │
+│                     (skill.md)                               │
+│           Main LLM thread manages state.json                 │
 └──────────────────────┬──────────────────────────────────────┘
                        │
          ┌─────────────┴─────────────┐
@@ -172,49 +185,63 @@ Specialists read from `state.json` and write their outputs to `findings.md`. The
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Target Agent Inventory (18 total)
+### 3.2 Target Agent Inventory (19 total)
 
-**Planning/Reasoning - KEEP (6 agents):**
-- powerbi-dashboard-update-planner
-- powerbi-artifact-decomposer
-- powerbi-data-understanding-agent
-- powerbi-artifact-designer (becomes Orchestrator for specialists)
-- power-bi-verification
-- powerbi-code-understander
+> **Definitive Inventory** - Reconciled 2025-12-22. This is the authoritative list.
 
-**Specialists - NEW (2 agents):**
-- powerbi-dax-specialist (Time Intelligence, Filter Context, Performance)
-- powerbi-mcode-specialist (ETL, Query Folding, Privacy Levels)
+#### 3.2.1 Summary Table
 
-**Investigation - REMOVE/REPLACE (0 agents, use MCP):**
-- ~~powerbi-data-model-analyzer~~ --> mcp.table/column/measure_operations
-- ~~powerbi-data-context-agent~~ --> mcp.dax_query_operations
-- ~~powerbi-code-locator~~ --> mcp.measure_operations.get()
-- powerbi-visual-locator --> KEEP (PBIR, MCP can't do)
+| Category | Count | Status |
+|----------|-------|--------|
+| Planning/Reasoning | 5 | KEEP |
+| Specialists | 2 | NEW (created) |
+| Investigation | 1 | KEEP |
+| Implementation | 1 | KEEP |
+| Validation | 2 | KEEP (1 enhance) |
+| Page Design | 5 | KEEP |
+| Merge Workflow | 1 | KEEP (enhance) |
+| Pattern Discovery | 1 | KEEP (enhance) |
+| Testing | 1 | KEEP |
+| **Total** | **19** | |
 
-**Implementation - SIMPLIFY (1 agent):**
-- ~~powerbi-code-implementer-apply~~ --> mcp.measure_operations + transactions
-- powerbi-visual-implementer-apply --> KEEP (PBIR)
+#### 3.2.2 Complete Agent Manifest
 
-**Validation - SIMPLIFY (2 agents):**
-- ~~powerbi-tmdl-syntax-validator~~ --> MCP validates implicitly
-- powerbi-dax-review-agent --> ENHANCE with mcp.dax_query_operations.validate()
-- powerbi-pbir-validator --> KEEP
-- ~~powerbi-verify-pbiproject-folder-setup~~ --> mcp.connection_operations
+| # | Agent File | Category | Action | Notes |
+|---|------------|----------|--------|-------|
+| 1 | `powerbi-dashboard-update-planner.md` | Planning | KEEP | LLM reasoning |
+| 2 | `powerbi-artifact-decomposer.md` | Planning | KEEP | LLM reasoning |
+| 3 | `powerbi-data-understanding-agent.md` | Planning | KEEP | LLM reasoning |
+| 4 | `power-bi-verification.md` | Planning | KEEP | LLM reasoning |
+| 5 | `powerbi-code-understander.md` | Planning | KEEP | LLM reasoning |
+| 6 | `powerbi-dax-specialist.md` | Specialist | KEEP | NEW - DAX generation |
+| 7 | `powerbi-mcode-specialist.md` | Specialist | KEEP | NEW - M code generation |
+| 8 | `powerbi-visual-locator.md` | Investigation | KEEP | PBIR only |
+| 9 | `powerbi-visual-implementer-apply.md` | Implementation | KEEP | PBIR only |
+| 10 | `powerbi-dax-review-agent.md` | Validation | ENHANCE | Add MCP validation |
+| 11 | `powerbi-pbir-validator.md` | Validation | KEEP | PBIR only |
+| 12 | `powerbi-page-question-analyzer.md` | Page Design | KEEP | PBIR only |
+| 13 | `powerbi-visual-type-recommender.md` | Page Design | KEEP | PBIR only |
+| 14 | `powerbi-page-layout-designer.md` | Page Design | KEEP | PBIR only |
+| 15 | `powerbi-interaction-designer.md` | Page Design | KEEP | PBIR only |
+| 16 | `powerbi-pbir-page-generator.md` | Page Design | KEEP | PBIR only |
+| 17 | `powerbi-compare-project-code.md` | Merge | ENHANCE | Add MCP model reads |
+| 18 | `powerbi-pattern-discovery.md` | Discovery | ENHANCE | Use MCP for measure list |
+| 19 | `powerbi-playwright-tester.md` | Testing | KEEP | Browser testing |
 
-**Page Design - KEEP (5 agents):**
-- powerbi-page-question-analyzer
-- powerbi-visual-type-recommender
-- powerbi-page-layout-designer
-- powerbi-interaction-designer
-- powerbi-pbir-page-generator
+#### 3.2.3 Deleted Agents (10 total)
 
-**Merge Workflow - ENHANCE (2 agents):**
-- powerbi-compare-project-code --> ENHANCE with MCP model reads
-- ~~powerbi-code-merger~~ --> mcp.transaction + operations
-
-**Testing - KEEP (1 agent):**
-- powerbi-playwright-tester
+| Agent File | Replacement |
+|------------|-------------|
+| `powerbi-data-model-analyzer.md` | `mcp.table/column/measure_operations` |
+| `powerbi-data-context-agent.md` | `mcp.dax_query_operations.execute()` |
+| `powerbi-code-locator.md` | `mcp.measure_operations.get()` |
+| `powerbi-code-implementer-apply.md` | MCP transactions |
+| `powerbi-tmdl-syntax-validator.md` | MCP validates implicitly |
+| `powerbi-verify-pbiproject-folder-setup.md` | `mcp.connection_operations` |
+| `powerbi-code-merger.md` | MCP transactions |
+| `powerbi-code-fix-identifier.md` | Deprecated (use dashboard-update-planner) |
+| `power-bi-visual-edit-planner.md` | Deprecated (use visual agents) |
+| `powerbi-artifact-designer.md` | Moved to skill.md orchestration |
 
 ### 3.3 Target Dependencies
 
@@ -311,16 +338,22 @@ Specialists read from `state.json` and write their outputs to `findings.md`. The
 - [ ] Output: Validated M script written to findings.md
 - [ ] MCP Tools: partition_operations, named_expression operations
 
-**2.5.3 Refactor powerbi-artifact-designer as Orchestrator**
-- [ ] Update agent to orchestrate DAX/M specialists
-- [ ] Add state.json initialization and management
-- [ ] Delegate to appropriate specialist based on artifact type:
-  - Measures → DAX Specialist
-  - Calculated Columns → DAX Specialist
-  - Partitions/Tables → M-Code Specialist
-  - Calculation Groups → DAX Specialist
-- [ ] Coordinate MCP transactions across specialist outputs
-- [ ] Update state.json after successful MCP operations
+**2.5.3 Remove powerbi-artifact-designer (Orchestration Moves to skill.md)**
+
+> **Architecture Correction:** The main LLM thread (skill.md) is the orchestrator, not a subagent. Subagents cannot spawn other subagents.
+
+- [ ] Delete `powerbi-artifact-designer.md` (or keep for fallback only)
+- [ ] Move orchestration logic to skill.md:
+  - state.json initialization and management
+  - Artifact type detection and specialist delegation
+  - MCP transaction coordination
+  - Specialist output assembly
+- [ ] Skill.md delegates to appropriate specialist based on artifact type:
+  - Measures → DAX Specialist (via Task tool)
+  - Calculated Columns → DAX Specialist (via Task tool)
+  - Partitions/Tables → M-Code Specialist (via Task tool)
+  - Calculation Groups → DAX Specialist (via Task tool)
+- [ ] Specialists are pure workers - they receive input, generate code, return output
 
 **2.5.4 Define Specialist Handoff Protocol**
 - [ ] Document state.json schema
@@ -560,6 +593,29 @@ Or use a folder that matches an existing pattern:
 
 #### 7.0.3 MCP Dependency Configuration
 
+**Soft Requirement: Preferred with Fallback (Install-Time Detection)**
+
+The MCP dependency is a "soft requirement" — the skill works without it but with reduced capabilities. The key difference from typical skill dependencies is that MCP availability is determined **at install time** by `setup.py`, not just at runtime.
+
+**Install-Time Configuration:**
+
+```
+setup.py execution:
+1. Scan for powerbi-modeling-mcp.exe:
+   - VS Code extensions folder
+   - Standard paths (Program Files, AppData)
+   - PATH environment variable
+2. If found:
+   - Register MCP server in claude_config (mcpServers section)
+   - Set skill mode = "mcp"
+3. If not found:
+   - Omit MCP server from config
+   - Set skill mode = "file_fallback"
+   - Log warning (no installation failure)
+```
+
+**MCP Server Configuration (Generated by setup.py):**
+
 ```yaml
 mcp_dependencies:
   required: false  # Skill works without MCP (fallback mode)
@@ -586,7 +642,31 @@ mcp_dependencies:
         - screenshot capture
 ```
 
-**MCP Detection Logic:**
+**Generated mcpServers Entry (when MCP found):**
+
+> **🖥️ Desktop Mode (Default)**
+>
+> The empty `env` block triggers **Windows Integrated Authentication**.
+> No environment variables are needed for Power BI Desktop connections.
+> This is the default and recommended configuration for v1.0.
+
+```json
+{
+  "mcpServers": {
+    "powerbi-modeling": {
+      "command": "C:/path/to/powerbi-modeling-mcp.exe",
+      "args": [],
+      "env": {}
+    }
+  }
+}
+```
+
+> **Note:** Fabric/Azure connections requiring service principal authentication
+> are **out of scope** for v1.0. Future releases may add `env` configuration
+> for `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET`.
+
+**Runtime Detection (Fallback Verification):**
 ```
 On skill initialization:
 1. Check if mcp__powerbi-modeling__* tools are available
@@ -947,8 +1027,8 @@ Each workflow is a condensed version of the corresponding command, with MCP inte
 
 6. GENERATE CODE
    ├─ [MCP MODE] DAX Specialist agent → validates with mcp.dax_query_operations.validate()
-   └─ [FALLBACK] powerbi-artifact-designer agent
-       └─ Generate DAX, no live validation
+   └─ [FALLBACK] DAX Specialist agent (file-based mode)
+       └─ Generate DAX, validation deferred to TMDL validator
 
 7. COMPLETE
    └─ Section 2 in findings.md (Proposed Changes)
@@ -1303,101 +1383,272 @@ ORCHESTRATOR
 | M-Code Specialist | `partition_operations.create/update`, `table_operations.create`, `named_expression_operations` |
 | Orchestrator | All MCP tools (orchestration) |
 
-#### 7.0.8 State Management Patterns
+#### 7.0.8 State Management Patterns (Zero-Dependency Architecture)
 
-Defines how the skill maintains session state via state.json and coordinates agent communication via the Task Blackboard pattern.
+Defines how the skill maintains session state and coordinates agent communication using a **capability-based fallback strategy** that requires no Python runtime.
 
-**Implementation Reference:**
-> The state management implementation is defined in `state_manage.py` in this specification folder.
-> The blackboard template is defined in `findings_template.md`.
+**Architecture Philosophy:**
+- **Claude-Native First:** Use Claude's Read/Write/Edit tools for JSON state
+- **Graceful Degradation:** Fall back to PowerShell → CMD → Bash if needed
+- **Zero Core Dependencies:** No Python required for basic functionality
+- **Optional Addons:** Python-based telemetry available as opt-in
 
 ---
 
-##### 7.0.8.1 State File Locations
+##### 7.0.8.1 Revised Dependency Model
+
+**Core Dependencies (Required):**
+
+| Dependency | Version | Purpose | Built-In |
+|------------|---------|---------|----------|
+| **Claude Code** | 1.0+ | Skill execution, file operations | Yes |
+| **PowerShell** | 5.1+ | Fallback state management | Yes (Windows 10+) |
+| **Power BI Modeling MCP** | Latest | Semantic model operations | No (download) |
+
+**Optional Dependencies (Addons):**
+
+| Dependency | Version | Purpose | Addon |
+|------------|---------|---------|-------|
+| **Python** | 3.10+ | Telemetry, advanced validation | `telemetry.md` |
+| **jq** | 1.6+ | Bash JSON processing (macOS/Linux) | `state_manage.sh` |
+| **opentelemetry-sdk** | 1.20+ | Trace export | `telemetry.md` |
+| **pydantic** | 2.0+ | Schema validation | `validation.md` |
+
+**Removed from Core:**
+
+| Previously Required | Replacement |
+|---------------------|-------------|
+| Python 3.10+ | Claude-native or PowerShell/CMD/Bash |
+| pathlib | Claude Read/Write tools |
+| pydantic | Optional addon |
+| state_manage.py | Claude-native + script fallbacks |
+
+---
+
+##### 7.0.8.2 Capability Detection Protocol
+
+The skill detects available capabilities **once per session** and stores the result.
+
+```
+SESSION START
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  CAPABILITY PROBE (Run Once)                                     │
+│  ─────────────────────────────                                   │
+│  Goal: Determine best available state management backend         │
+└─────────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Test 1: Claude-Native JSON Capability                           │
+│  ─────────────────────────────────────                           │
+│  1. Create test file: .claude/capability_probe.json              │
+│     Content: {"probe": "test", "timestamp": 0}                   │
+│  2. Read the file back                                           │
+│  3. Parse JSON, update timestamp to current time                 │
+│  4. Write updated JSON                                           │
+│  5. Read again, verify timestamp changed                         │
+│                                                                  │
+│  SUCCESS → state_backend = "claude_native"                       │
+│  FAILURE → Continue to Test 2                                    │
+└─────────────────────────────────────────────────────────────────┘
+    │ (if failed)
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Test 2: PowerShell Capability                                   │
+│  ─────────────────────────────                                   │
+│  Execute: powershell -Command "Write-Output 'PROBE_OK'"          │
+│                                                                  │
+│  If output contains "PROBE_OK":                                  │
+│      → state_backend = "powershell"                              │
+│  Else:                                                           │
+│      → Continue to Test 3                                        │
+└─────────────────────────────────────────────────────────────────┘
+    │ (if failed)
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Test 3: CMD Capability (Windows)                                │
+│  ─────────────────────────────────                               │
+│  Execute: cmd /c "echo PROBE_OK"                                 │
+│                                                                  │
+│  If output contains "PROBE_OK":                                  │
+│      → state_backend = "cmd"                                     │
+│  Else:                                                           │
+│      → Continue to Test 4                                        │
+└─────────────────────────────────────────────────────────────────┘
+    │ (if failed)
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Test 4: Bash + jq Capability (macOS/Linux)                      │
+│  ─────────────────────────────────────────                       │
+│  Execute: bash -c "command -v jq && echo PROBE_OK"               │
+│                                                                  │
+│  If output contains "PROBE_OK":                                  │
+│      → state_backend = "bash"                                    │
+│  Else:                                                           │
+│      → state_backend = "none" (ERROR STATE - warn user)          │
+└─────────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Store Result in Session State                                   │
+│  ─────────────────────────────                                   │
+│  Write to .claude/state.json:                                    │
+│  {                                                               │
+│    "session": {                                                  │
+│      "state_backend": "claude_native|powershell|cmd|bash",       │
+│      "capability_probe": {                                       │
+│        "tested_at": "2025-12-22T10:00:00Z",                      │
+│        "claude_native": true|false,                              │
+│        "powershell": true|false,                                 │
+│        "cmd": true|false,                                        │
+│        "bash": true|false                                        │
+│      }                                                           │
+│    }                                                             │
+│  }                                                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 7.0.8.3 State File Locations
 
 ```
 Project Root/
 ├── .claude/
 │   ├── state.json              ← Global session state (singleton)
+│   ├── capability_probe.json   ← Capability test artifact
 │   └── tasks/
 │       └── <task-id>/
 │           └── findings.md     ← Task-specific blackboard
 ```
 
-**Migration Note:** Current workflows use `agent_scratchpads/<timestamp>-<problem>/`. The skill will use `.claude/tasks/<task-id>/` for consistency with state_manage.py. The `agent_scratchpads/` pattern is deprecated for new workflows.
+**Migration Note:** Current workflows use `agent_scratchpads/<timestamp>-<problem>/`. The skill uses `.claude/tasks/<task-id>/` for consistency with the new state management architecture. The `agent_scratchpads/` pattern is deprecated for new workflows.
 
 ---
 
-##### 7.0.8.2 Complete State Schema
+##### 7.0.8.4 Complete State Schema
 
 ```json
 {
-  "session": {
-    "started": "2025-12-20T10:30:00Z",
-    "last_activity": "2025-12-20T14:45:00Z",
-    "skill_version": "1.0.0",
-    "mcp_available": true,
-    "connection": {
-      "type": "desktop|fabric|pbip|file_fallback",
-      "status": "connected|disconnected|error",
-      "details": {
-        "desktop_port": 12345,
-        "fabric_workspace": "workspace-guid",
-        "fabric_dataset": "dataset-guid",
-        "pbip_path": "C:/Projects/SalesReport"
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Power BI Analyst Skill State",
+  "type": "object",
+  "properties": {
+    "session": {
+      "type": "object",
+      "properties": {
+        "started": { "type": "string", "format": "date-time" },
+        "last_activity": { "type": "string", "format": "date-time" },
+        "skill_version": { "type": "string" },
+        "state_backend": {
+          "type": "string",
+          "enum": ["claude_native", "powershell", "cmd", "bash", "none"]
+        },
+        "capability_probe": {
+          "type": "object",
+          "properties": {
+            "tested_at": { "type": "string", "format": "date-time" },
+            "claude_native": { "type": "boolean" },
+            "powershell": { "type": "boolean" },
+            "cmd": { "type": "boolean" },
+            "bash": { "type": "boolean" }
+          }
+        },
+        "mcp_available": { "type": "boolean" },
+        "connection": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["desktop", "fabric", "pbip", "file_fallback"] },
+            "status": { "type": "string", "enum": ["connected", "disconnected", "error"] },
+            "established_at": { "type": "string", "format": "date-time" }
+          }
+        }
       },
-      "established_at": "2025-12-20T10:31:00Z"
-    }
-  },
-  "model_schema": {
-    "tables": [
-      {
-        "name": "Sales",
-        "columns": ["Date", "Amount", "ProductID"],
-        "measures": ["Total Sales", "YoY Growth"]
+      "required": ["started", "state_backend"]
+    },
+    "model_schema": {
+      "type": "object",
+      "properties": {
+        "tables": { "type": "array" },
+        "relationships": { "type": "array" },
+        "last_synced": { "type": "string", "format": "date-time" },
+        "sync_source": { "type": "string", "enum": ["mcp", "tmdl_parse"] }
       }
-    ],
-    "relationships": [
-      {"from": "Sales.ProductID", "to": "Products.ID", "cardinality": "many-to-one"}
-    ],
-    "last_synced": "2025-12-20T10:31:05Z",
-    "sync_source": "mcp|tmdl_parse"
-  },
-  "active_tasks": {
-    "fix-yoy-calc-1734700200": {
-      "path": ".claude/tasks/fix-yoy-calc-1734700200",
-      "status": "in_progress",
-      "workflow_type": "evaluate",
-      "created": "2025-12-20T10:30:00Z",
-      "updated": "2025-12-20T10:45:00Z",
-      "current_stage": "dax_specialist"
+    },
+    "active_tasks": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "failed"] },
+          "workflow_type": { "type": "string" },
+          "created": { "type": "string", "format": "date-time" },
+          "updated": { "type": "string", "format": "date-time" },
+          "current_stage": { "type": "string" }
+        },
+        "required": ["path", "status", "workflow_type", "created"]
+      }
+    },
+    "resource_locks": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "archived_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task_id": { "type": "string" },
+          "workflow_type": { "type": "string" },
+          "completed_at": { "type": "string", "format": "date-time" },
+          "summary": { "type": "string" }
+        }
+      }
     }
   },
-  "resource_locks": {
-    "definition/tables/Sales.tmdl": "fix-yoy-calc-1734700200",
-    "definition/pages/Overview/visuals/card1.json": "fix-yoy-calc-1734700200"
-  },
-  "validation_cache": {
-    "last_dax_validation": {
-      "task_id": "fix-yoy-calc-1734700200",
-      "timestamp": "2025-12-20T10:42:00Z",
-      "result": "passed",
-      "measures_validated": ["YoY Growth"]
-    }
-  },
-  "archived_tasks": [
-    {
-      "task_id": "add-margin-measure-1734690000",
-      "completed": "2025-12-20T08:00:00Z",
-      "summary": "Added Margin % measure with DIVIDE pattern"
-    }
-  ]
+  "required": ["session", "active_tasks", "resource_locks"]
 }
 ```
 
 ---
 
-##### 7.0.8.3 Session Recovery Behavior
+##### 7.0.8.5 Backend-Specific Operations
+
+Each state operation has multiple implementations. The skill uses the detected backend.
+
+**Create Task:**
+
+| Backend | Implementation |
+|---------|----------------|
+| Claude-Native | Generate ID, mkdir, Read/Write state.json, Write findings.md |
+| PowerShell | `state_manage.ps1 -CreateTask "name" -Workflow "type"` |
+| CMD | `state_manage.cmd create_task "name" "type"` |
+| Bash | `state_manage.sh create_task "name" "type"` |
+
+**Acquire Lock:**
+
+| Backend | Implementation |
+|---------|----------------|
+| Claude-Native | Read state.json, check locks, update, Write state.json |
+| PowerShell | `state_manage.ps1 -Lock "path" -TaskId "id"` |
+| CMD | N/A (manual) |
+| Bash | `state_manage.sh lock "path" "id"` |
+
+**Complete Task:**
+
+| Backend | Implementation |
+|---------|----------------|
+| Claude-Native | Read state.json, update status, release locks, Write |
+| PowerShell | `state_manage.ps1 -Complete "task_id"` |
+| CMD | N/A (manual) |
+| Bash | `state_manage.sh complete "task_id"` |
+
+---
+
+##### 7.0.8.6 Session Recovery Behavior
 
 **Decision: Prompt User if Session Exists**
 
@@ -1418,31 +1669,16 @@ Choice: _
 ```
 
 **Session Timeout Rules:**
+
 | Time Since Last Activity | Behavior |
 |--------------------------|----------|
 | < 4 hours | Prompt to resume or start fresh |
 | 4-24 hours | Warn about staleness, recommend fresh start |
 | > 24 hours | Auto-archive, start fresh (with notification) |
 
-**Recovery Logic:**
-```python
-def should_prompt_resume(state):
-    last_activity = parse_iso(state["session"]["last_activity"])
-    hours_elapsed = (now() - last_activity).total_seconds() / 3600
-
-    if hours_elapsed > 24:
-        return "auto_archive"
-    elif hours_elapsed > 4:
-        return "warn_stale"
-    elif state["active_tasks"]:
-        return "prompt_resume"
-    else:
-        return "fresh_start"
-```
-
 ---
 
-##### 7.0.8.4 Task Lifecycle
+##### 7.0.8.7 Task Lifecycle
 
 ```
 CREATE                  IN_PROGRESS              COMPLETE/FAIL           ARCHIVE
@@ -1460,19 +1696,9 @@ CREATE                  IN_PROGRESS              COMPLETE/FAIL           ARCHIVE
                findings.md       findings.md
 ```
 
-**Lifecycle Commands:**
-
-| Stage | Command | State Change |
-|-------|---------|--------------|
-| Create | `--create_task "name"` | `null → pending → in_progress` |
-| Update Stage | `--update_stage <task_id> <stage>` | Updates `current_stage` |
-| Complete | `--complete <task_id>` | `in_progress → completed` |
-| Fail | `--fail <task_id> "reason"` | `in_progress → failed` |
-| Archive | `--archive <task_id>` | Moves to `archived_tasks[]`, clears locks |
-
 ---
 
-##### 7.0.8.5 Agent Communication Protocol (Task Blackboard Pattern)
+##### 7.0.8.8 Agent Communication Protocol (Task Blackboard Pattern)
 
 Specialists communicate via the **Task Blackboard** (`findings.md`), not directly with each other.
 
@@ -1480,86 +1706,65 @@ Specialists communicate via the **Task Blackboard** (`findings.md`), not directl
 
 ```markdown
 # Task Blackboard: [TASK_NAME]
-**Status:** 🟡 In-Progress | 🟢 Complete | 🔴 Failed
+
+**Status:** in_progress
 **Task ID:** [TASK_ID]
 **Workflow:** [evaluate|create|implement|analyze|merge]
+**Created:** [ISO_TIMESTAMP]
+**Backend:** [claude_native|powershell|cmd|bash]
 
 ---
 
 ## Section 1: Requirements (Orchestrator)
-*Written by: powerbi-artifact-designer (Orchestrator)*
 - **Goal:** [User intent in business terms]
 - **Artifacts Needed:**
   - [ ] Measure: [Name] → DAX Specialist
   - [ ] Partition: [Name] → M-Code Specialist
-  - [ ] Visual: [Type] → Orchestrator (PBIR)
 
 ---
 
 ## Section 2: DAX Logic (DAX Specialist)
-*Written by: powerbi-dax-specialist*
 - **Measures Created:**
-  ```dax
-  [Measure Name] = DIVIDE(SUM(Sales[Amount]), ...)
-  ```
-- **Validation:** ✅ Passed via MCP dax_query_operations.validate()
-- **Dependencies:** [List of referenced measures/columns]
+  [DAX code block]
+- **Validation:** Passed/Failed
 
 ---
 
 ## Section 3: M-Code Logic (M-Code Specialist)
-*Written by: powerbi-mcode-specialist*
 - **Partitions Created:**
-  ```m
-  let Source = ... in FinalTable
-  ```
-- **Query Folding:** ✅ Folds to source
-- **Privacy Level:** Organizational
+  [M code block]
+- **Query Folding:** Folds to source / Breaks folding
 
 ---
 
 ## Section 4: Implementation (Orchestrator)
-*Written by: powerbi-artifact-designer after specialist sections complete*
-- **TMDL Changes:**
-  - File: `definition/tables/Sales.tmdl`
-  - Operation: CREATE measure [YoY Growth]
-- **PBIR Changes:**
-  - File: `definition/pages/Overview/visuals/card1.json`
-  - Operation: UPDATE dataBindings
+- **TMDL Changes:** [List]
+- **PBIR Changes:** [List]
 
 ---
 
 ## Section 5: Validation Results
-*Written by: Validation agents after implementation*
-- **DAX Review:** ✅ Passed
-- **PBIR Validation:** ✅ Passed
-- **TMDL Syntax:** ✅ Passed
+- **DAX Review:** Passed/Failed
+- **TMDL Syntax:** Passed/Failed
 
 ---
 
 ## Section 6: Final Manifest
-*Moved to state.json archived_tasks on completion*
-- **Summary:** Added YoY Growth measure using SAMEPERIODLASTYEAR pattern
+- **Summary:** [Brief description]
 ```
 
 **Communication Rules:**
 
 | Agent | Reads | Writes |
 |-------|-------|--------|
-| Orchestrator | User request, state.json | Section 1, Section 4, Final Manifest |
-| DAX Specialist | Section 1, state.json (model_schema) | Section 2 |
-| M-Code Specialist | Section 1, state.json (model_schema) | Section 3 |
+| Orchestrator | User request, state.json | Section 1, 4, 6 |
+| DAX Specialist | Section 1, model_schema | Section 2 |
+| M-Code Specialist | Section 1, model_schema | Section 3 |
 | Validators | Section 2-4 | Section 5 |
-
-**Isolation Rules:**
-- Specialists CANNOT read each other's sections until Orchestrator signals completion
-- Specialists CANNOT invoke other agents
-- Specialists CANNOT modify state.json (only Orchestrator can)
-- All cross-agent data flows through findings.md
 
 ---
 
-##### 7.0.8.6 Resource Locking Protocol
+##### 7.0.8.9 Resource Locking Protocol
 
 Locks prevent concurrent modification of the same file by multiple tasks.
 
@@ -1570,37 +1775,7 @@ Locks prevent concurrent modification of the same file by multiple tasks.
 | Read TMDL/PBIR | No |
 | Write TMDL measure | Yes (table file) |
 | Write PBIR visual | Yes (visual.json) |
-| Write PBIR page | Yes (entire page folder) |
 | MCP operations | No (MCP handles internally) |
-
-**Lock Acquisition Flow:**
-
-```
-BEFORE FILE WRITE
-    │
-    ▼
-┌─────────────────────────────────────────┐
-│  python state_manage.py --lock          │
-│    definition/tables/Sales.tmdl         │
-│    --task_id fix-yoy-calc-1734700200    │
-└─────────────────────────────────────────┘
-    │
-    ├─ Lock acquired ────────► Proceed with write
-    │
-    └─ Lock denied ──────────► STOP
-                               │
-                               ▼
-                    ┌─────────────────────────┐
-                    │ ⚠️ RESOURCE LOCKED        │
-                    │                          │
-                    │ File: Sales.tmdl         │
-                    │ Locked by: task-abc-123  │
-                    │                          │
-                    │ Wait for other task to   │
-                    │ complete, or force       │
-                    │ release with --force     │
-                    └─────────────────────────┘
-```
 
 **Lock Cleanup:**
 - Locks are automatically released when task is archived
@@ -1609,87 +1784,166 @@ BEFORE FILE WRITE
 
 ---
 
-##### 7.0.8.7 Model Schema Caching Strategy
+##### 7.0.8.10 Fallback Script Reference
 
-The `model_schema` in state.json caches table/column/measure/relationship metadata to avoid repeated MCP calls.
+Scripts are provided for fallback state management when Claude-native JSON operations are unavailable.
 
-**Cache Invalidation Rules:**
+**PowerShell (Windows - Primary Fallback):**
 
-| Event | Cache Action |
-|-------|--------------|
-| Session start | Refresh from MCP/TMDL |
-| After IMPLEMENT workflow | Refresh affected tables |
-| After MERGE workflow | Full refresh |
-| MCP operation fails | Mark as stale, refresh on next read |
-| Manual request | `--refresh_schema` |
-
-**Staleness Detection:**
-```python
-def is_schema_stale(state):
-    if not state["model_schema"]["last_synced"]:
-        return True
-
-    last_sync = parse_iso(state["model_schema"]["last_synced"])
-    # Stale if older than 1 hour or different session
-    return (now() - last_sync).total_seconds() > 3600
-```
-
-**Refresh Strategy:**
-- **MCP Mode:** Call `table_operations.list()`, `measure_operations.list()`
-- **Fallback Mode:** Parse TMDL files from `.SemanticModel/definition/`
-
----
-
-##### 7.0.8.8 Specialist Naming Convention
-
-**Canonical Agent Names:**
-
-| Role | Agent File | findings.md Section |
-|------|------------|---------------------|
-| Orchestrator | `powerbi-artifact-designer.md` | Section 1, 4, 6 |
-| DAX Specialist | `powerbi-dax-specialist.md` | Section 2 |
-| M-Code Specialist | `powerbi-mcode-specialist.md` | Section 3 |
-| Validators | Various (`powerbi-dax-review-agent.md`, etc.) | Section 5 |
-
-**Deprecated Naming:**
-The following names appear in older documents and are deprecated:
-- `visual_analyst.md` → Use Orchestrator for analysis tasks
-- `visual_specialist.md` → Use Orchestrator for PBIR tasks
-
----
-
-##### 7.0.8.9 CLI Command Reference
-
-Complete CLI interface for `state_manage.py`:
+Location: `.claude/tools/state_manage.ps1`
 
 ```bash
-# Session Management
-python state_manage.py --summary                    # Show state summary
-python state_manage.py --refresh_schema             # Refresh model_schema from source
-python state_manage.py --reset                      # Clear all state (dangerous)
+# Session
+state_manage.ps1 -Summary
+state_manage.ps1 -Reset
 
-# Task Management
-python state_manage.py --create_task "task-name"    # Create new task, returns task_id
-python state_manage.py --update_stage <id> <stage>  # Update current_stage
-python state_manage.py --complete <id>              # Mark task completed
-python state_manage.py --fail <id> "reason"         # Mark task failed
-python state_manage.py --archive <id>               # Archive completed task
-python state_manage.py --list_tasks                 # List active tasks
+# Tasks
+state_manage.ps1 -CreateTask "name" -Workflow "type"
+state_manage.ps1 -Complete "task_id"
+state_manage.ps1 -Archive "task_id"
 
-# Lock Management
-python state_manage.py --lock <path> --task_id <id>     # Acquire lock
-python state_manage.py --release <path> --task_id <id>  # Release lock
-python state_manage.py --list_locks                     # List all locks
-python state_manage.py --force_release <path>           # Force release (admin)
+# Locks
+state_manage.ps1 -Lock "path" -TaskId "id"
+state_manage.ps1 -Release "path" -TaskId "id"
+```
 
-# Schema Cache
-python state_manage.py --get_schema                 # Return cached model_schema
-python state_manage.py --set_schema <json>          # Update model_schema (after MCP)
+**CMD (Windows - Minimal Fallback):**
+
+Location: `.claude/tools/state_manage.cmd`
+
+```bash
+state_manage.cmd create_task "name" "workflow"
+state_manage.cmd summary
+```
+
+**Bash + jq (macOS/Linux):**
+
+Location: `.claude/tools/state_manage.sh`
+
+```bash
+state_manage.sh summary
+state_manage.sh create_task "name" "workflow"
+state_manage.sh complete "task_id"
+state_manage.sh lock "path" "task_id"
+state_manage.sh release "path" "task_id"
 ```
 
 ---
 
-#### 7.0.9 Error Handling and Fallback Logic
+#### 7.0.9 Distribution Strategy (Zero-Dependency)
+
+**Distribution Philosophy: Desktop First with Dual Installation Paths**
+
+The skill is distributed as a zip file with **two installation paths**:
+
+| Path | Entry Point | Target User | Philosophy |
+|------|-------------|-------------|------------|
+| **Quick Install** | `install.bat` / `install.sh` | Non-technical | Convenience |
+| **Manual Setup** | `MANUAL_SETUP.md` | Technical/Auditors | Transparency |
+
+> **SCOPE: Desktop Mode Only** - Fabric/Azure connections are out of scope for v1.0.
+
+---
+
+##### 7.0.9.1 Runtime Dependencies (No Python Required)
+
+| Dependency | Version | Purpose | Required |
+|------------|---------|---------|----------|
+| **Claude Code** | 1.0+ | Skill execution | Yes |
+| **PowerShell** | 5.1+ | State management fallback | Yes (Windows) |
+| **Power BI Modeling MCP** | Latest | Semantic model operations | Yes |
+
+**Note:** Python is NOT required for core functionality. Python is only needed for optional telemetry addon.
+
+---
+
+##### 7.0.9.2 Distribution Artifact Structure
+
+```
+powerbi-analyst-skill-v1.0.0.zip
+├── install.bat                    # Windows installer (no Python)
+├── install.sh                     # macOS/Linux installer
+├── MANUAL_SETUP.md                # Step-by-step manual guide
+├── README.txt
+├── payload/
+│   └── .claude/
+│       ├── skills/powerbi-analyst/
+│       │   ├── SKILL.md
+│       │   └── addons/
+│       ├── agents/
+│       └── tools/
+│           ├── state_manage.ps1   # PowerShell
+│           ├── state_manage.cmd   # CMD minimal
+│           ├── state_manage.sh    # Bash + jq
+│           └── telemetry/         # Optional Python
+└── optional/
+    └── telemetry-setup.bat        # Separate telemetry installer
+```
+
+---
+
+##### 7.0.9.3 Quick Install Path (No Python)
+
+The `install.bat` script:
+1. Verifies PowerShell is available
+2. Detects Power BI Modeling MCP (prompts to download if missing)
+3. Copies skill files to `.claude/`
+4. Configures Claude Desktop for MCP
+5. No Python installation required
+
+---
+
+##### 7.0.9.4 Desktop Mode Configuration
+
+```json
+{
+  "mcpServers": {
+    "powerbi-modeling": {
+      "command": "C:\\Program Files\\PowerBI Modeling MCP\\powerbi-modeling-mcp.exe",
+      "args": [],
+      "env": {}
+    }
+  }
+}
+```
+
+Empty `env` block ensures Windows Integrated Authentication.
+
+---
+
+##### 7.0.9.5 Telemetry Addon (Optional)
+
+Telemetry requires separate installation:
+
+1. Install Python 3.10+
+2. `pip install opentelemetry-sdk opentelemetry-exporter-otlp arize-phoenix`
+3. Copy `addons/telemetry.md` to skill root
+4. Start Phoenix: `python -m phoenix.server.main serve`
+
+**Telemetry is NOT installed by default.**
+
+---
+
+##### 7.0.9.6 Compatibility Header
+
+SKILL.md includes compatibility header for future tools:
+
+```yaml
+compatibility:
+  claude_code: ">=1.0.0"
+  copilot: "experimental"
+
+state_management:
+  preferred: claude_native
+  fallbacks:
+    - backend: powershell
+    - backend: cmd
+    - backend: bash
+```
+
+---
+
+#### 7.0.10 Error Handling and Fallback Logic
 
 Defines how the skill handles errors and falls back to file-based operations.
 
@@ -1746,7 +2000,7 @@ Proceeding with fallback method...
 
 ---
 
-#### 7.0.10 Validation Gate Integration
+#### 7.0.11 Validation Gate Integration
 
 Defines validation checkpoints and their blocking behavior.
 
@@ -1812,7 +2066,136 @@ VALIDATION GATE
 
 ---
 
-#### 7.0.11 Human-in-the-Loop Patterns
+#### 7.0.11.1 Measure Verification Protocol
+
+After a DAX Specialist creates or modifies a measure, the Orchestrator enforces live validation against a running model.
+
+**Why Live Testing is Required:**
+- You cannot "test" a text file — TMDL is just code on disk
+- DAX syntax validation catches errors, but not logic bugs
+- Only a live engine can evaluate the measure against actual data
+
+**Verification Sequence:**
+
+```
+DAX SPECIALIST COMPLETES MEASURE
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 1: Define the Test Query                                  │
+│  ─────────────────────────────                                  │
+│  Create a DAX query that evaluates the new measure alongside    │
+│  a 'Control' (e.g., a simple SUM of the same column).           │
+│                                                                 │
+│  Example for YoY Growth measure:                                │
+│  EVALUATE                                                       │
+│  SUMMARIZECOLUMNS(                                              │
+│    'Date'[Year],                                                │
+│    "New Measure", [YoY Growth %],                               │
+│    "Control", DIVIDE(SUM(Sales[Amount]), SUM(Sales[PY Amount])) │
+│  )                                                              │
+└─────────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 2: Connect to Live Model                                  │
+│  ─────────────────────────────                                  │
+│  Priority:                                                      │
+│  1. Desktop connection (if PBI Desktop is running)              │
+│  2. Fabric dev workspace (if configured)                        │
+│  3. Skip live test (warn user, mark as "Unverified")            │
+│                                                                 │
+│  MCP: mcp.connection_operations.connect()                       │
+│  MCP: mcp.database_operations.refresh() ← picks up TMDL changes │
+└─────────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 3: Execute Query                                          │
+│  ─────────────────────                                          │
+│  MCP: mcp.dax_query_operations.execute(test_query)              │
+│                                                                 │
+│  Capture results for analysis.                                  │
+└─────────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 4: Automated Assertions                                   │
+│  ────────────────────────────                                   │
+│                                                                 │
+│  CHECK 1: Flatline Detection                                    │
+│  ─────────────────────────────                                  │
+│  If measure returns SAME value for every row:                   │
+│  → Likely missing relationship or incorrect filter context      │
+│  → Flag as ERROR, suggest fix before proceeding                 │
+│                                                                 │
+│  CHECK 2: NULL/Blank Detection                                  │
+│  ─────────────────────────────                                  │
+│  If measure returns NULL/BLANK for all rows:                    │
+│  → Likely referencing wrong column or missing data              │
+│  → Flag as WARNING, prompt user to verify                       │
+│                                                                 │
+│  CHECK 3: Logic Verification                                    │
+│  ─────────────────────────────                                  │
+│  For time intelligence (YoY, QoQ, etc.):                        │
+│  → Query two separate periods                                   │
+│  → Manually calculate expected result                           │
+│  → Compare to measure result                                    │
+│  → If mismatch > 1%, flag as ERROR                              │
+│                                                                 │
+│  CHECK 4: Control Comparison                                    │
+│  ─────────────────────────────                                  │
+│  Compare new measure to control measure:                        │
+│  → Results should be logically consistent                       │
+│  → Flag unexpected deviations                                   │
+└─────────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 5: Update Findings                                        │
+│  ───────────────────────                                        │
+│                                                                 │
+│  In findings.md Section 2 (DAX Logic):                          │
+│                                                                 │
+│  **Verification Status:** ✅ PASSED                              │
+│  - Flatline check: Passed (values vary by dimension)            │
+│  - Logic check: YoY for 2024 = 12.3% (expected: 12.3%)          │
+│  - Control comparison: Within tolerance                         │
+│  - Live model: Power BI Desktop (localhost:54321)               │
+│                                                                 │
+│  OR                                                             │
+│                                                                 │
+│  **Verification Status:** ⚠️ UNVERIFIED                          │
+│  - No live model available                                      │
+│  - Recommend: Open Power BI Desktop before implementation       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Truth File Testing (Advanced):**
+
+For critical measures, store expected results in `.claude/tasks/<task-id>/truth.csv`:
+
+```csv
+Year,Expected_YoY_Growth
+2022,0.00
+2023,0.15
+2024,0.12
+```
+
+The verification step compares actual query results against truth file:
+- Match within tolerance (default 0.1%) → PASS
+- Mismatch → FAIL with detailed comparison
+
+**Skip Conditions:**
+
+Live verification can be skipped when:
+- User explicitly requests `--skip-verify`
+- No live model is available (with warning)
+- Measure is a formatting-only change (display, folder)
+
+---
+
+#### 7.0.12 Human-in-the-Loop Patterns
 
 Defines when the skill requires explicit user confirmation.
 
@@ -1902,9 +2285,28 @@ A backup will be created before deletion.
 
 ---
 
-#### 7.0.12 Format-Specific Handling
+#### 7.0.13 Format-Specific Handling
 
 Defines how the skill handles different Power BI project formats.
+
+> **⚠️ CRITICAL: Hybrid Architecture Limit**
+>
+> The Microsoft Power BI Modeling MCP **cannot handle PBIR (Report/Visual) operations**.
+> The MCP is strictly limited to **Semantic Model** operations:
+> - ✅ Measures, Calculated Columns, Tables, Relationships (MCP)
+> - ❌ Pages, Visuals, Layouts, Interactions (File-based only)
+>
+> **The skill MUST retain file-based agents for all operations inside the `.Report` folder:**
+> - `powerbi-visual-locator` - Find visuals in PBIR structure
+> - `powerbi-visual-type-recommender` - Suggest visual types
+> - `powerbi-page-layout-designer` - Generate layout coordinates
+> - `powerbi-interaction-designer` - Design cross-filtering
+> - `powerbi-pbir-page-generator` - Generate page JSON files
+> - `powerbi-pbir-validator` - Validate PBIR JSON structure
+> - `powerbi-visual-implementer-apply` - Apply visual changes
+>
+> **This is a permanent architectural constraint**, not a temporary limitation.
+> Monitor Microsoft's MCP repository for future `report_operations` support (Q8 decision).
 
 **Format Strategy: PBIP Preferred, Others with Guidance**
 
@@ -2023,6 +2425,856 @@ Limitations:
 - CREATE_PAGE workflow unavailable
 - Visual changes require manual Power BI Desktop work
 
+---
+
+#### 7.0.13.1 PBIR Schema Version Detection
+
+PBIR files contain `$schema` URLs that specify the JSON schema version. The skill must detect and handle different schema versions to ensure compatibility.
+
+**Schema URL Structure:**
+
+```
+https://developer.microsoft.com/json-schemas/fabric/item/report/definition/<component>/<version>/schema.json
+```
+
+**Key Schema Components and Versions:**
+
+| Component | Schema Path | Known Versions | Notes |
+|-----------|-------------|----------------|-------|
+| definition.pbir | `definitionProperties` | 1.0.0, 2.0.0 | Report-level config |
+| visual.json | `visualContainer` | 2.0.0, 2.2.0, 2.4.0 | Individual visuals |
+| page.json | `page` | 1.0.0+ | Page definitions |
+| report.json | `report` | 1.0.0+ | Report metadata |
+
+**Detection Flow:**
+
+```
+PBIP PROJECT DETECTED
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 1: Read definition.pbir                                    │
+│  ───────────────────────────────────                             │
+│  Extract:                                                        │
+│  • "$schema" URL → definitionProperties version (1.0.0 or 2.0.0) │
+│  • "version" property → report format version (1.0 or 4.0+)      │
+└─────────────────────────────────────────────────────────────────┘
+    │
+    ├─ version = "1.0" ──────────────────────────────────────────┐
+    │                                                             │
+    │                                  ┌─────────────────────────┐
+    │                                  │  PBIR-LEGACY ONLY       │
+    │                                  │  ───────────────────    │
+    │                                  │  • Uses report.json     │
+    │                                  │  • No /definition folder│
+    │                                  │  • Limited editability  │
+    │                                  │  • Upgrade recommended  │
+    │                                  └─────────────────────────┘
+    │
+    └─ version = "4.0"+ ─────────────────────────────────────────┐
+                                                                  │
+                               ┌─────────────────────────────────┐
+                               │  PBIR ENHANCED (Full Support)   │
+                               │  ───────────────────────────    │
+                               │  • Uses /definition folder      │
+                               │  • Individual visual.json files │
+                               │  • Public JSON schemas          │
+                               │  • Full skill support           │
+                               └─────────────────────────────────┘
+                                                                  │
+                                                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 2: Sample Visual Schema Version                            │
+│  ────────────────────────────────────                            │
+│  Read first visual.json in pages/*/visuals/*/visual.json         │
+│  Extract "$schema" URL → visualContainer version                 │
+│  Store in state.json for template matching                       │
+└─────────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 3: Version Compatibility Check                             │
+│  ───────────────────────────────────                             │
+│  Compare detected version against skill's template versions      │
+│  • Templates at: .claude/visual-templates/*.json                 │
+│  • Current template version: 2.4.0                               │
+└─────────────────────────────────────────────────────────────────┘
+    │
+    ├─ Exact Match ────────────── ✅ Full compatibility
+    │
+    ├─ Minor Version Diff ─────── ⚠️ Warning, likely compatible
+    │   (e.g., templates 2.4.0, project 2.2.0)
+    │
+    └─ Major Version Diff ─────── ❌ Error with guidance
+        (e.g., templates 2.x, project 3.x)
+```
+
+**Version Compatibility Matrix:**
+
+| Project Schema | Template Schema | Status | Action |
+|----------------|-----------------|--------|--------|
+| 2.4.0 | 2.4.0 | ✅ Full | Proceed |
+| 2.2.0 | 2.4.0 | ⚠️ Compatible | Warn, proceed (templates may have extra properties) |
+| 2.0.0 | 2.4.0 | ⚠️ Compatible | Warn, proceed (older project, newer templates) |
+| 3.0.0+ | 2.4.0 | ❌ Unknown | Halt, recommend updating skill |
+
+**PBIR-Legacy Detection and Upgrade Guidance:**
+
+```
+⚠️ PBIR-LEGACY FORMAT DETECTED
+
+Your report uses PBIR-Legacy format (version 1.0).
+Visual editing features are limited in this format.
+
+To unlock full PBIR editing capabilities:
+
+UPGRADE IN POWER BI DESKTOP
+──────────────────────────────
+1. Open the report in Power BI Desktop
+2. Go to File → Options and settings → Options
+3. Under Preview features, enable "Store reports using
+   enhanced metadata format (PBIR)"
+4. Save As → Power BI Project (.pbip)
+
+NOTE: This upgrade is one-way. A 30-day backup is created
+automatically, but rollback via UI is not possible.
+
+[C]ontinue with limited editing (semantic model only)
+[A]bort and upgrade first
+```
+
+**Schema Version Extraction Code Pattern:**
+
+```python
+import json
+import re
+from pathlib import Path
+
+def detect_pbir_versions(pbip_path: Path) -> dict:
+    """Extract schema versions from a PBIP project."""
+    result = {
+        "definition_schema": None,
+        "definition_version": None,
+        "visual_schema": None,
+        "is_pbir_enhanced": False
+    }
+
+    # Read definition.pbir
+    definition_path = pbip_path / ".Report" / "definition.pbir"
+    if definition_path.exists():
+        with open(definition_path) as f:
+            definition = json.load(f)
+
+        # Extract schema version from URL
+        schema_url = definition.get("$schema", "")
+        match = re.search(r"/(\d+\.\d+\.\d+)/schema\.json", schema_url)
+        if match:
+            result["definition_schema"] = match.group(1)
+
+        # Extract report format version
+        result["definition_version"] = definition.get("version", "1.0")
+        result["is_pbir_enhanced"] = float(result["definition_version"]) >= 4.0
+
+    # Sample first visual.json for visualContainer schema
+    if result["is_pbir_enhanced"]:
+        pages_path = pbip_path / ".Report" / "definition" / "pages"
+        if pages_path.exists():
+            for visual_json in pages_path.glob("*/visuals/*/visual.json"):
+                with open(visual_json) as f:
+                    visual = json.load(f)
+                schema_url = visual.get("$schema", "")
+                match = re.search(r"visualContainer/(\d+\.\d+\.\d+)/", schema_url)
+                if match:
+                    result["visual_schema"] = match.group(1)
+                break  # Only need first visual
+
+    return result
+```
+
+**State.json Schema Version Storage:**
+
+```json
+{
+  "session": { ... },
+  "model_schema": { ... },
+  "pbir_info": {
+    "format": "pbir_enhanced",
+    "definition_schema_version": "2.0.0",
+    "definition_version": "4.0",
+    "visual_schema_version": "2.4.0",
+    "template_compatibility": "full",
+    "detected_at": "2025-12-21T10:30:00Z"
+  }
+}
+```
+
+---
+
+#### 7.0.13.2 Future Schema Version Handling
+
+Microsoft periodically releases new PBIR schema versions. The skill should handle unknown future versions gracefully.
+
+**Unknown Version Strategy:**
+
+```
+🆕 NEW SCHEMA VERSION DETECTED
+
+Your project uses visualContainer schema version 3.0.0,
+but this skill was built for version 2.4.0.
+
+This may indicate:
+• A newer Power BI Desktop version was used
+• New visual features that require updated templates
+
+OPTIONS:
+[P] Proceed anyway (may work, may fail on new properties)
+[S] Skip visual editing (semantic model changes only)
+[U] Check for skill updates
+
+Detected schema: https://developer.microsoft.com/json-schemas/
+    fabric/item/report/definition/visualContainer/3.0.0/schema.json
+Expected schema: visualContainer/2.4.0
+```
+
+**Template Version Update Process:**
+
+When Microsoft releases a new schema version:
+
+1. **Detection:** Skill encounters unknown schema in user's project
+2. **Logging:** Record schema URL in analytics for tracking
+3. **Manual Update:** Plugin maintainer:
+   - Fetches new schema from Microsoft
+   - Updates templates in `.claude/visual-templates/`
+   - Tests against sample projects
+   - Releases updated skill version
+4. **Compatibility:** Old projects continue to work (templates are forward-compatible)
+
+---
+
+#### 7.0.14 Authentication Consolidation
+
+The migration from file-based operations to MCP requires consolidating multiple authentication paths into a unified model.
+
+**7.0.14.1 Current Authentication Landscape**
+
+| Current Method | Tool/Script | Use Case |
+|----------------|-------------|----------|
+| Device Code Flow (MSAL) | `xmla_agent/get_token.py` | XMLA queries to Fabric |
+| Service Principal | pbi-tools CLI | CI/CD deployment |
+| PowerShell Cmdlets | MicrosoftPowerBIMgmt | Interactive deployment |
+| Windows Integrated | Power BI Desktop | Local Analysis Services |
+
+**7.0.14.2 MCP Authentication Model**
+
+The MCP uses **Azure Identity SDK** for all credential handling:
+
+> "Your credentials are always handled securely through the official Azure Identity SDK - we never store or manage tokens directly."
+
+**Authentication by Connection Type:**
+
+| Connection Type | Authentication | User Action Required |
+|-----------------|---------------|---------------------|
+| **PBIP (File)** | None | No auth (local files) |
+| **Power BI Desktop** | Windows Integrated | None (uses logged-in user) |
+| **Fabric Workspace** | Azure Identity SDK | Browser sign-in (first time) |
+
+**Azure Identity SDK Credential Chain:**
+
+The MCP follows Azure's `DefaultAzureCredential` pattern, attempting credentials in order:
+
+```
+1. EnvironmentCredential → Service principal from env vars
+2. ManagedIdentityCredential → Azure managed identity
+3. AzureCliCredential → `az login` session
+4. AzureDeveloperCliCredential → `azd login` session
+5. InteractiveBrowserCredential → Browser-based sign-in
+```
+
+**7.0.14.3 Migration Mapping**
+
+| Current Auth | MCP Equivalent | Notes |
+|--------------|----------------|-------|
+| Device Code (MSAL) | InteractiveBrowserCredential | Azure Identity handles flow |
+| Service Principal | EnvironmentCredential | Set `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID` |
+| PowerShell | Not needed | MCP handles internally |
+| Windows Integrated | Auto-detected | MCP uses for Desktop connection |
+
+**7.0.14.4 Unified Authentication Flow**
+
+```
+USER INVOKES SKILL
+    │
+    ├─ Connection Type: PBIP
+    │   └─ No authentication required
+    │   └─ Read/write TMDL files directly
+    │
+    ├─ Connection Type: Desktop
+    │   └─ Connect to local Analysis Services
+    │   └─ Windows Integrated Auth (automatic)
+    │
+    └─ Connection Type: Fabric
+        │
+        ├─ Check Azure CLI session (`az account show`)
+        │   └─ If valid → Use AzureCliCredential
+        │
+        ├─ Check environment variables
+        │   └─ If set → Use EnvironmentCredential (service principal)
+        │
+        └─ Fall back to interactive browser
+            └─ User signs in once
+            └─ Token cached by Azure Identity SDK
+```
+
+**7.0.14.5 Credential Storage and Caching**
+
+**MCP Approach (recommended):**
+- Azure Identity SDK manages token caching
+- Tokens stored in OS credential store (Windows Credential Manager, macOS Keychain)
+- Automatic token refresh
+- No custom cache files needed
+
+**Deprecated Approach (remove):**
+- `xmla_agent/.msal_token_cache.bin` - MSAL cache file
+- Custom token serialization in get_token.py
+
+**Migration Action:**
+- [ ] Remove `xmla_agent/get_token.py` dependency
+- [ ] Remove `.msal_token_cache.bin` from project
+- [ ] Update XMLA query agents to use MCP's `dax_query_operations.execute()`
+- [ ] Document Azure CLI setup for Fabric access
+
+**7.0.14.6 Authentication Error Handling**
+
+| Error | Cause | User Message | Recovery |
+|-------|-------|--------------|----------|
+| `AuthenticationError` | No valid credentials | "Please sign in to Azure: Run `az login` or set service principal environment variables" | Guide to Azure CLI |
+| `ClientAuthenticationError` | Invalid credentials | "Authentication failed. Check your Azure credentials." | Re-authenticate |
+| `CredentialUnavailableError` | No credential source | "No Azure credentials found. For Fabric connection, run `az login` first." | Azure CLI setup |
+| `TokenExpiredError` | Cached token expired | (Silent refresh attempted first) | Auto-retry with refresh |
+
+**Error Handling Template:**
+
+```
+❌ AUTHENTICATION REQUIRED
+
+This workflow requires access to your Fabric workspace,
+but no valid Azure credentials were found.
+
+To authenticate, you have several options:
+
+1. AZURE CLI (Recommended for interactive use):
+   Run: az login
+   Then: az account set --subscription <your-subscription-id>
+
+2. SERVICE PRINCIPAL (Recommended for automation):
+   Set environment variables:
+   - AZURE_CLIENT_ID=<your-client-id>
+   - AZURE_CLIENT_SECRET=<your-client-secret>
+   - AZURE_TENANT_ID=<your-tenant-id>
+
+3. SWITCH TO PBIP MODE:
+   If you don't need live query execution, you can work
+   with PBIP files directly (no authentication required).
+
+[R] Retry after signing in
+[P] Switch to PBIP mode
+[H] Help with Azure setup
+```
+
+**7.0.14.7 Fabric Tenant Compatibility**
+
+> "Connecting to a Semantic Model in a Fabric workspace may not work in your tenant due to the ongoing rollout of the client ID used for authentication."
+
+**Tenant Compatibility Check:**
+
+```python
+# Before attempting Fabric connection
+try:
+    result = mcp.connection_operations.connect(
+        connection_type="fabric",
+        workspace_id=workspace_id,
+        dataset_id=dataset_id
+    )
+except AuthenticationError as e:
+    if "client_id" in str(e) or "not authorized" in str(e):
+        # Known tenant rollout issue
+        display_fabric_compatibility_warning()
+```
+
+**Fallback Message:**
+
+```
+⚠️ FABRIC CONNECTION NOT AVAILABLE
+
+Your tenant may not yet support the MCP client ID for Fabric connections.
+This is a known issue during Microsoft's rollout phase.
+
+ALTERNATIVES:
+1. Use PBIP mode for semantic model editing (file-based, no auth)
+2. Use Power BI Desktop for live query testing (local connection)
+3. Check with your tenant admin about MCP client ID authorization
+4. Monitor: https://github.com/microsoft/powerbi-modeling-mcp/issues
+
+[P] Proceed with PBIP mode
+[D] Try Desktop connection instead
+```
+
+---
+
+#### 7.0.15 Analytics and Testing Integration
+
+The skill maintains existing analytics collection and testing capabilities from the command-based architecture.
+
+**7.0.15.1 Analytics Continuation**
+
+Current commands end with an analytics phase that runs:
+```bash
+python .claude/tools/token_analyzer.py --full
+python .claude/tools/analytics_merger.py
+```
+
+**Skill Integration Approach:**
+
+Analytics are triggered via Claude Code hooks, not embedded in the skill prompt:
+
+```
+Pre-command Hook: Record workflow_start event
+Post-command Hook: Run analytics scripts
+```
+
+**Hook Configuration (.claude/hooks.json):**
+
+```json
+{
+  "skill_complete": {
+    "command": "python .claude/tools/token_analyzer.py --full && python .claude/tools/analytics_merger.py",
+    "trigger": "on_skill_exit"
+  }
+}
+```
+
+**Analytics Data Flow:**
+
+```
+SKILL EXECUTION
+    │
+    ├─ state.json records:
+    │   └─ workflow_type, start_time, mcp_available, artifacts_created
+    │
+    ├─ findings.md records:
+    │   └─ Agent invocations, validation results, user decisions
+    │
+    └─ WORKFLOW COMPLETE
+        │
+        └─ Post-hook triggers:
+            ├─ token_analyzer.py → Parse Claude logs for token usage
+            └─ analytics_merger.py → Aggregate into agent_analytics.json
+```
+
+**Key Files:**
+| File | Purpose | Location |
+|------|---------|----------|
+| `token_analyzer.py` | Parse Claude Code JSONL logs | `.claude/tools/` |
+| `analytics_merger.py` | Aggregate metrics | `.claude/tools/` |
+| `agent_analytics.json` | Aggregated results | `agent_scratchpads/_analytics/` |
+
+**No Changes Required:**
+- Analytics scripts continue to work unchanged
+- Hook-based triggering replaces explicit command calls
+- Same output format and storage location
+
+**7.0.15.2 Playwright Testing Integration**
+
+The `powerbi-playwright-tester` agent is **KEPT unchanged** for browser-based dashboard testing.
+
+**Testing Architecture:**
+
+```
+IMPLEMENT WORKFLOW
+    │
+    ├─ Apply code changes (MCP or file-based)
+    │
+    ├─ Deploy to Power BI Service (MCP or pbi-tools)
+    │
+    └─ Phase: TESTING
+        │
+        ├─ Check for test plan (findings.md Section 3)
+        │   └─ If no tests defined → Skip
+        │
+        └─ Invoke powerbi-playwright-tester
+            │
+            ├─ Uses Playwright MCP
+            │   └─ browser_navigate, browser_click, browser_snapshot
+            │
+            ├─ Executes test cases from Section 3
+            │
+            └─ Records results to findings.md Section 6
+```
+
+**Test Result Storage:**
+
+Results are stored in the findings.md file:
+
+```markdown
+## Section 6: Test Results
+
+### Test Execution Summary
+- **Date:** 2025-12-21 14:30:00
+- **Dashboard URL:** https://app.powerbi.com/reports/abc123
+- **Tests Executed:** 5
+- **Passed:** 4
+- **Failed:** 1
+
+### Test Case Results
+
+#### TC-001: Verify Total Revenue displays correctly ✅
+**Status:** PASSED
+**Evidence:** Screenshot saved to `test-evidence/tc-001.png`
+**Actual Value:** $1,234,567.89
+**Expected:** Matches source data
+
+#### TC-002: Verify YoY Growth calculation ❌
+**Status:** FAILED
+**Evidence:** Screenshot saved to `test-evidence/tc-002.png`
+**Actual Value:** 15.5%
+**Expected:** 18.2%
+**Notes:** Discrepancy due to missing Q4 data in filter
+```
+
+**Testing in MCP Mode vs Fallback Mode:**
+
+| Aspect | MCP Mode | Fallback Mode |
+|--------|----------|---------------|
+| Deployment | `mcp.database_operations.deploy()` | pbi-tools CLI |
+| Wait for ready | MCP provides status | Poll refresh status |
+| Testing | Same (Playwright MCP) | Same (Playwright MCP) |
+| Evidence capture | Same (screenshots) | Same (screenshots) |
+
+**Test Evidence Storage:**
+
+```
+agent_scratchpads/
+└── <timestamp>-<problem>/
+    ├── findings.md         # Contains Section 6 test results
+    └── test-evidence/      # Screenshots and logs
+        ├── tc-001.png
+        ├── tc-002.png
+        └── browser-console.log
+```
+
+**7.0.15.3 Test Plan Generation**
+
+Test cases are generated during the planning phase (EVALUATE/CREATE workflows) and stored in findings.md Section 3:
+
+```markdown
+## Section 3: Test Cases
+
+### TC-001: Verify measure displays correctly
+**Type:** Visual verification
+**Steps:**
+1. Navigate to Sales Overview page
+2. Locate "Total Revenue" card
+3. Verify format matches "$#,###.##"
+**Expected:** Value displays in currency format with 2 decimals
+
+### TC-002: Verify filter interaction
+**Type:** Interactive test
+**Steps:**
+1. Select "2024" in Year slicer
+2. Observe Total Revenue card update
+**Expected:** Value changes to show 2024 data only
+```
+
+**7.0.15.4 Integration Points**
+
+| Integration | Before (Commands) | After (Skill) |
+|-------------|-------------------|---------------|
+| Analytics trigger | Explicit bash in command | Hook-based (post-skill) |
+| Test storage | findings.md Section 6 | findings.md Section 6 (unchanged) |
+| Evidence location | test-evidence/ | test-evidence/ (unchanged) |
+| Playwright usage | Same agent | Same agent (KEEP) |
+| Token analysis | token_analyzer.py | token_analyzer.py (unchanged) |
+
+---
+
+**7.0.15.5 OTEL Strategy: Real-Time Telemetry**
+
+The skill upgrades from "Post-Mortem Logs" (Level 1) to **Level 3: Real-Time Telemetry** using OpenTelemetry (OTEL).
+
+**Telemetry Levels:**
+
+| Level | Description | Current State |
+|-------|-------------|---------------|
+| Level 1 | Post-mortem logs (JSONL parsing) | ✅ Current (token_analyzer.py) |
+| Level 2 | Structured events (custom format) | Not implemented |
+| **Level 3** | **Real-time OTEL traces** | **NEW - Optional** |
+
+**Benefits of OTEL:**
+- Industry-standard tracing format
+- Real-time visibility into agent execution
+- Span hierarchy shows agent → MCP call relationships
+- Compatible with many observability platforms (Jaeger, Zipkin, Arize Phoenix)
+
+**OTEL Architecture:**
+
+```
+SKILL EXECUTION
+    │
+    ├─ Create root span: "powerbi-analyst.workflow"
+    │   ├─ Attribute: workflow_type = "evaluate"
+    │   ├─ Attribute: mcp_mode = "full" | "fallback"
+    │   └─ Attribute: project_path = "..."
+    │
+    ├─ Child span: "dax_specialist.invoke"
+    │   ├─ Duration: 2.5s
+    │   ├─ Attribute: measures_generated = 2
+    │   └─ Child span: "mcp.measure_operations.create"
+    │       └─ Duration: 150ms
+    │
+    └─ Export to OTEL endpoint → Arize Phoenix dashboard
+```
+
+**Trace Propagation:**
+- Root span created by skill.md (orchestrator)
+- Child spans created by each specialist agent
+- MCP operations create leaf spans
+- Trace context propagated via state.json
+
+---
+
+**7.0.15.6 Prerequisites for Telemetry**
+
+**Required:**
+- Python 3.9+
+- OpenTelemetry SDK (`opentelemetry-sdk`)
+- OTEL OTLP Exporter (`opentelemetry-exporter-otlp`)
+
+**Optional (Recommended for Visualization):**
+- **Arize Phoenix** - Open-source LLM observability dashboard
+  - Installation: `pip install arize-phoenix`
+  - GitHub: https://github.com/Arize-ai/phoenix
+
+**requirements.txt Update:**
+
+```txt
+# Core dependencies
+# ... existing deps ...
+
+# Telemetry (optional - uncomment to enable)
+# opentelemetry-sdk>=1.20.0
+# opentelemetry-exporter-otlp>=1.20.0
+# arize-phoenix>=4.0.0  # For local dashboard
+```
+
+**Starting Arize Phoenix Locally:**
+
+```bash
+# Start Phoenix server (default port 6006)
+python -m phoenix.server.main serve
+
+# Or with Docker
+docker run -p 6006:6006 arizephoenix/phoenix:latest
+```
+
+---
+
+**7.0.15.7 Telemetry Configuration**
+
+The `setup.py` installer prompts the user to enable telemetry:
+
+```
+[3/4] Telemetry configuration
+      Enable OpenTelemetry tracing? (requires arize-phoenix) [y/N]: y
+
+      Configuring telemetry...
+      ✅ OTEL endpoint: http://localhost:6006/v1/traces
+      ✅ Service name: powerbi-analyst-skill
+
+      Note: Start Arize Phoenix before using the skill:
+            python -m phoenix.server.main serve
+```
+
+**Configuration Generated (if enabled):**
+
+The installer sets environment variables in the MCP server configuration:
+
+```json
+{
+  "mcpServers": {
+    "powerbi-modeling": {
+      "command": "C:/path/to/powerbi-modeling-mcp.exe",
+      "args": [],
+      "env": {
+        "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+        "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:6006/v1/traces",
+        "OTEL_SERVICE_NAME": "powerbi-analyst-skill"
+      }
+    }
+  }
+}
+```
+
+**Runtime Behavior:**
+
+```
+IF CLAUDE_CODE_ENABLE_TELEMETRY == "1":
+    1. Initialize OTEL TracerProvider
+    2. Create BatchSpanProcessor with OTLP exporter
+    3. Wrap agent invocations in spans
+    4. Export traces to configured endpoint
+ELSE:
+    1. Skip OTEL initialization
+    2. Use existing post-mortem analytics (token_analyzer.py)
+```
+
+**Telemetry Disabled Warning (if endpoint unavailable):**
+
+```
+⚠️ TELEMETRY UNAVAILABLE
+
+OpenTelemetry is enabled but the endpoint is not responding:
+  http://localhost:6006/v1/traces
+
+Options:
+  [1] Start Arize Phoenix: python -m phoenix.server.main serve
+  [2] Continue without telemetry
+  [3] Disable telemetry permanently (re-run setup.py)
+```
+
+---
+
+#### 7.0.16 UX Requirements
+
+**Single Entry Point: `/power-bi-assistant`**
+
+Users interact with the skill through a single command. Internal agents are not exposed as separate invocable commands.
+
+```
+USER INTERFACE
+
+/power-bi-assistant  ← Single entry point (user-invocable)
+        │
+        └─ Internal agents (hidden from help menu):
+            ├─ powerbi-dax-specialist
+            ├─ powerbi-mcode-specialist
+            ├─ powerbi-visual-locator
+            ├─ powerbi-page-layout-designer
+            ├─ powerbi-pbir-validator
+            └─ ... (other specialist agents)
+```
+
+**User Experience Flow:**
+
+```
+USER: /power-bi-assistant
+
+SKILL: Welcome to the Power BI Analyst. What would you like to do?
+
+  [1] Evaluate - Diagnose issues in a Power BI project
+  [2] Create   - Create new measures, columns, tables, or visuals
+  [3] Implement - Apply planned changes and deploy
+  [4] Merge    - Compare and merge two Power BI projects
+  [5] Help     - Learn about capabilities and troubleshooting
+
+USER: 1
+
+SKILL: Please provide the path to your Power BI project (.pbip folder or .pbix file).
+```
+
+**"Aggressive Help" for Permission Errors:**
+
+When users encounter permission issues (e.g., missing MCP tools, folder access), the skill provides exact JSON configuration snippets rather than generic instructions.
+
+**Example - MCP Not Configured:**
+
+```
+❌ CONFIGURATION REQUIRED
+
+The Power BI Modeling MCP is not configured in your Claude Desktop settings.
+
+📋 Copy this exact JSON into your claude_desktop_config.json:
+
+{
+  "mcpServers": {
+    "powerbi-modeling": {
+      "command": "C:\\Program Files\\PowerBI Modeling MCP\\powerbi-modeling-mcp.exe",
+      "args": [],
+      "env": {}
+    }
+  }
+}
+
+📂 Config file location:
+   %APPDATA%\Claude\claude_desktop_config.json
+
+After adding this, restart Claude Desktop.
+```
+
+**Example - Folder Permission Error:**
+
+```
+❌ FOLDER ACCESS DENIED
+
+Claude Code cannot access: C:\Users\John\Documents\PowerBI Projects
+
+📋 Add this folder to your allowed list in .claude/settings.json:
+
+{
+  "permissions": {
+    "allow": [
+      "C:/Users/John/Documents/PowerBI Projects/**"
+    ]
+  }
+}
+
+📂 Settings file location:
+   C:\Users\John\code\.claude\settings.json
+```
+
+**Example - Desktop Not Running:**
+
+```
+❌ CONNECTION FAILED: Power BI Desktop not detected
+
+The MCP requires Power BI Desktop to be running with a file open.
+
+📋 Steps to fix:
+   1. Open Power BI Desktop
+   2. Open your .pbix or .pbip file
+   3. Wait for the model to fully load
+   4. Try your command again
+
+💡 The skill will auto-detect the open file once Desktop is running.
+```
+
+**Help Menu Visibility:**
+
+| Element | Visibility | Reason |
+|---------|------------|--------|
+| `/power-bi-assistant` | ✅ Visible in `/help` | Single user entry point |
+| `powerbi-dax-specialist` | ❌ Hidden | Internal agent |
+| `powerbi-mcode-specialist` | ❌ Hidden | Internal agent |
+| `powerbi-visual-locator` | ❌ Hidden | Internal agent |
+| Other specialist agents | ❌ Hidden | Internal agents |
+
+**Authentication Guidance:**
+
+For Desktop Mode (v1.0 scope), the only auth message needed is:
+
+```
+🖥️ DESKTOP MODE
+
+This skill connects to Power BI Desktop using Windows Integrated Authentication.
+
+Prerequisites:
+  ✓ Power BI Desktop installed and running
+  ✓ A .pbix or .pbip file open in Desktop
+
+No Azure login or service principal configuration required.
+```
+
+---
+
 **7.1 Create Skill Structure**
 - [ ] Create `.claude/skills/powerbi-analyst/` folder
 - [ ] Create `skill.md` with full skill definition (expand from placeholder)
@@ -2049,17 +3301,40 @@ Limitations:
 
 ### Phase 8: Cleanup
 
-**8.1 Remove Deprecated Code**
-- [ ] Delete replaced agent files
-- [ ] Delete Python TMDL parsing scripts (if not needed for PBIR)
-- [ ] Delete Python XMLA scripts
-- [ ] Update tool documentation
+**8.1 Files to CREATE**
 
-**8.2 Final Documentation**
-- [ ] Update README.md with new architecture
-- [ ] Update CLAUDE.md
-- [ ] Create architecture diagram
-- [ ] Document breaking changes
+| File | Location | Purpose |
+|------|----------|---------|
+| `install.bat` | `payload/` | Windows batch installer (Quick Install path) |
+| `MANUAL_SETUP.md` | `payload/` | Step-by-step manual installation guide |
+| `powerbi-dax-specialist.md` | `.claude/agents/` | DAX code generation specialist agent |
+| `powerbi-mcode-specialist.md` | `.claude/agents/` | M/Power Query code generation specialist agent |
+| `setup.py` | `payload/` | Desktop Mode configuration script |
+| `requirements.txt` | `payload/` | Python dependencies (minimal) |
+
+**8.2 Files to DELETE**
+
+| File/Folder | Reason |
+|-------------|--------|
+| `xmla_agent/` | Replaced by MCP - no custom XMLA scripts needed |
+| Deprecated agents | Any agents replaced by MCP operations |
+| Python XMLA scripts | Authentication handled by MCP's Azure Identity SDK |
+| Custom MSAL/token scripts | Eliminated - MCP handles auth internally |
+
+**8.3 Files to UPDATE**
+
+| File | Changes |
+|------|---------|
+| `README.md` | New architecture, single entry point (`/power-bi-assistant`) |
+| `CLAUDE.md` | Updated workflow references |
+| `.claude/README.md` | Remove references to deleted agents |
+| `.claude/settings.json` | Add skill allowlist configuration |
+
+**8.4 Final Documentation**
+- [ ] Create architecture diagram showing MCP + File-based hybrid
+- [ ] Document Desktop Mode configuration
+- [ ] Document "Aggressive Help" error messages
+- [ ] Update troubleshooting guide
 
 **Estimated Effort:** 2-4 hours
 
@@ -2079,15 +3354,32 @@ Limitations:
 - Document manual workarounds
 - Monitor MCP issues on GitHub
 
-**Authentication Complexity:**
-- Fabric auth may not work in all tenants
-- Desktop connection requires running instance
-- Azure Identity SDK dependencies
+**Authentication Complexity:** ✅ RISK REDUCED
+
+By using the Microsoft Power BI Modeling MCP, authentication is **offloaded to the Azure Identity SDK** (built into the MCP binary). This **reduces our risk** significantly:
+
+| Previous Risk | MCP Mitigation |
+|---------------|----------------|
+| Custom MSAL token scripts | ❌ Eliminated - Azure Identity handles token acquisition |
+| Token cache management | ❌ Eliminated - OS credential store used |
+| Device code flow implementation | ❌ Eliminated - MCP handles internally |
+| Service principal configuration | ✅ Simplified - just set 3 env vars |
+
+**Remaining Risk: User Environment Configuration**
+
+The risk shifts from "auth implementation" to "user environment readiness":
+- Is `az login` active? (for Fabric connections)
+- Is Desktop running? (for Desktop connections)
+- Are service principal env vars set? (for CI/CD)
 
 **Mitigation:**
-- Support all three connection types
-- Provide clear auth troubleshooting
-- Test in multiple environments
+- `setup.py` can diagnose environment issues:
+  - Check for `az` CLI installation
+  - Verify `az account show` returns valid session
+  - Test MCP connectivity before completing install
+- Support all three connection types (Desktop, Fabric, PBIP)
+- Provide clear auth troubleshooting in error messages (see 7.0.14.6)
+- Document Azure CLI setup for Fabric access
 
 ### 5.2 Medium Risk
 
@@ -2121,31 +3413,38 @@ Limitations:
 
 ---
 
-## 6. Success Criteria
+## 6. Success Criteria (Definition of Done)
 
-### 6.1 Functional
+### 6.1 Functional (Desktop Mode)
 
-- [ ] All 4 commands work with MCP backend
-- [ ] Can connect to Power BI Desktop
-- [ ] Can connect to Fabric workspace
-- [ ] Can connect to PBIP folder
-- [ ] Transactions rollback on failure
-- [ ] Deployment works via MCP
-- [ ] PBIR agents work unchanged
+- [ ] All 4 workflows work with MCP backend (Evaluate, Create, Implement, Merge)
+- [ ] Can connect to Power BI Desktop via Windows Integrated Auth
+- [ ] PBIR agents work unchanged for Report/Visual operations
+- [ ] Single entry point `/power-bi-assistant` surfaces all workflows
+- [ ] "Aggressive Help" provides copy-paste JSON for configuration errors
 
-### 6.2 Quality
+### 6.2 Architecture
 
-- [ ] Agent count reduced from 27 to ~18 (net reduction of 9, with 2 new specialists)
-- [ ] No pbi-tools dependency for semantic model ops
-- [ ] Python dependencies reduced
-- [ ] Error messages are clear and actionable
+- [ ] **Hybrid Architecture documented**: MCP for Semantic Model + File-based for PBIR
+- [ ] **Agent count reduced**: From 27 to ~18 (net reduction of 9, with 2 new specialists)
+- [ ] **No pbi-tools dependency** for semantic model operations
+- [ ] **Empty `env` block** as default Desktop Mode configuration
 
-### 6.3 Documentation
+### 6.3 Distribution & Packaging
 
-- [ ] README updated with MCP architecture
-- [ ] Skill documentation complete
-- [ ] Troubleshooting guide updated
-- [ ] Breaking changes documented
+- [ ] **Dual installation paths** documented and functional:
+  - Quick Install: `install.bat` for non-technical users
+  - Manual Setup: `MANUAL_SETUP.md` for transparency/auditability
+- [ ] **Desktop Mode defaults** in all generated configurations
+- [ ] **Telemetry disabled by default** (no user prompts in installer)
+- [ ] **Explicit runtime dependencies** listed in MANUAL_SETUP.md
+
+### 6.4 Documentation
+
+- [ ] README updated with new architecture and single entry point
+- [ ] MANUAL_SETUP.md provides full transparency for manual installation
+- [ ] Troubleshooting guide includes "Aggressive Help" examples
+- [ ] Breaking changes documented (commands → single skill)
 
 ---
 
@@ -2169,19 +3468,367 @@ Limitations:
 
 ## 8. Open Questions
 
-1. **Offline Support:** Should we keep file-based agents for offline use (no Desktop/Fabric)?
+### Resolved Questions
 
-2. **PBIR via MCP:** Will Microsoft add report support to MCP? If so, when?
+#### Q4: Version Control Strategy ✅ RESOLVED (2025-12-21)
 
-3. **Skill Distribution:** How will we distribute the skill with MCP dependency?
+**Decision: Option B - PBIP as Source of Truth with Live Model Testing**
 
-4. **Version Control:** MCP works on live models - how do we maintain TMDL for git?
-   - Option A: Export TMDL after changes
-   - Option B: Keep PBIP as source of truth, sync via MCP
+The MCP supports two complementary connection modes:
+- **PBIP Folder Connection**: Reads/writes TMDL files directly (headless, Git-friendly)
+- **Live Model Connection**: Desktop or Fabric for query execution and testing
 
-5. **Transaction Scope:** Can we batch all changes in one transaction, or per-object?
+**Hybrid Workflow Architecture:**
 
-6. **Error Recovery:** If MCP fails mid-operation, what's the recovery path?
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  EDIT PHASE (Headless - PBIP as Source of Truth)                │
+│  ───────────────────────────────────────────────                │
+│  • Agent writes DAX/M code to TMDL files in PBIP folder         │
+│  • MCP uses PBIP folder connection for schema operations        │
+│  • Git always has the current state                             │
+│  • No live model required for code generation                   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  TEST PHASE (Live Model as Test Bench)                          │
+│  ─────────────────────────────────────                          │
+│  • MCP connects to live session (Desktop OR Fabric dev)         │
+│  • MCP refreshes/reconnects to pick up TMDL changes             │
+│  • Agent runs execute_query to validate DAX                     │
+│  • Unit tests compare results against truth files               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  VERIFICATION (Automated Assertions)                            │
+│  ───────────────────────────────────                            │
+│  • Check for "flatline" (same value every row = missing rel)    │
+│  • Logic check (manual calculation verification)                │
+│  • Compare against control measures                             │
+│  • Mark findings.md as "Verified" if passed                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Why this approach:**
+- If you only edit the Live Model, you risk changes not being saved to Git
+- PBIP files are the primary target; Live Session is only a Test Bench
+- Repository is always the "Source of Truth"
+- Tests are performed against the actual code that will be deployed
+
+**Connection Priority for Testing:**
+1. If Power BI Desktop is open → use Desktop connection
+2. If Fabric dev workspace configured → use Fabric connection
+3. If neither available → skip live testing, warn user
+
+---
+
+#### Q5: Transaction Scope ✅ RESOLVED (2025-12-21)
+
+**Decision: Per-Workflow Transaction with Checkpoint Commits**
+
+The MCP's `transaction_operations` supports begin/commit/rollback. Strategy:
+
+```
+WORKFLOW START
+    │
+    ▼
+transaction_operations.begin()
+    │
+    ├── Operation 1: Create helper measure
+    ├── Operation 2: Create main measure
+    ├── Operation 3: Update visual bindings
+    │
+    ▼
+[All operations succeed?]
+    │
+    ├── YES → transaction_operations.commit()
+    │         └── Changes persisted to TMDL files
+    │
+    └── NO  → transaction_operations.rollback()
+              └── All changes reverted, TMDL unchanged
+```
+
+**Transaction Boundaries:**
+- One transaction per workflow invocation (EVALUATE, CREATE, IMPLEMENT, etc.)
+- Related changes grouped together (e.g., measure + its dependencies)
+- PBIR visual changes are NOT part of MCP transactions (file-based)
+
+**Checkpoint Pattern for Long Workflows:**
+```
+CREATE_PAGE workflow (many artifacts):
+  ├── Transaction 1: Create all measures (atomic)
+  │   └── Commit if all measures succeed
+  ├── Transaction 2: Create calculated columns (atomic)
+  │   └── Commit if all columns succeed
+  └── File operations: Create PBIR visuals (no transaction)
+      └── Versioned copy provides rollback
+```
+
+---
+
+#### Q6: Error Recovery ✅ RESOLVED (2025-12-21)
+
+**Decision: Automatic Rollback + State Preservation + User Guidance**
+
+**Error Detection:**
+| Error Type | Detection | Recovery |
+|------------|-----------|----------|
+| MCP connection lost | Connection timeout | Retry once, then prompt user |
+| DAX syntax error | MCP validation response | Show error, suggest fix |
+| Transaction failure | MCP rollback triggered | Auto-rollback, preserve findings.md |
+| PBIR file error | JSON parse failure | Restore from versioned copy |
+| Partial completion | Task marked failed | Resume from last checkpoint |
+
+**Recovery Flow:**
+```
+ERROR OCCURS
+    │
+    ▼
+┌─────────────────────────────────────────┐
+│  Step 1: Automatic Rollback             │
+│  • MCP: transaction_operations.rollback()│
+│  • PBIR: Restore from versioned copy    │
+└─────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────┐
+│  Step 2: Preserve State                 │
+│  • findings.md: Mark task as FAILED     │
+│  • state.json: Record failure details   │
+│  • Keep all diagnostic information      │
+└─────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────┐
+│  Step 3: User Guidance                  │
+│  ❌ OPERATION FAILED                    │
+│                                         │
+│  Error: [specific error message]        │
+│  Changes have been rolled back.         │
+│                                         │
+│  To retry:                              │
+│    • Fix: [suggested fix]               │
+│    • Run: "retry the last operation"    │
+│                                         │
+│  Diagnostic info saved to:              │
+│    .claude/tasks/<task-id>/findings.md  │
+└─────────────────────────────────────────┘
+```
+
+**State Cleanup:**
+- Failed tasks remain in `active_tasks` until explicitly archived
+- Resource locks are released on failure
+- User can resume or start fresh
+
+---
+
+#### Q7: Offline Support ✅ RESOLVED (2025-12-22)
+
+**Decision: Option A - Keep File-Based Agents as Fallback**
+
+> Should we keep file-based agents for offline use when MCP is unavailable?
+
+**Decision:** Yes - maintain file-based agents as graceful fallback.
+
+**Rationale:**
+- File-based agents already exist and work (current implementation)
+- Provides fallback when MCP is unavailable (not installed, broken, incompatible)
+- Minimal maintenance burden (already built)
+- Users without MCP can still use the skill in degraded mode
+
+**Clarification on "Offline":**
+
+The term "offline" was clarified during design discussion:
+- **NOT about Desktop running:** PBIP folder connection via MCP is already headless
+- **IS about MCP availability:** What happens when MCP itself is unavailable
+
+**MCP Connection Modes (from Q4):**
+| Mode | Requirement | Capability |
+|------|-------------|------------|
+| PBIP Folder | Just the folder | Headless - read/write TMDL, schema ops |
+| Desktop | Desktop open | Live testing - execute DAX queries |
+| Fabric | Cloud access | Live testing - execute DAX queries |
+
+**Fallback Behavior:**
+
+```
+USER INVOKES SKILL
+    │
+    ├─ MCP Available?
+    │   │
+    │   ├─ YES → Use MCP (preferred)
+    │   │        • Live validation
+    │   │        • Schema operations via API
+    │   │        • Data queries for context
+    │   │
+    │   └─ NO → Use File-Based Fallback (Section 7.0.9)
+    │            • Parse TMDL files directly
+    │            • LLM-based validation (best effort)
+    │            • No live data queries
+    │            • Clear warning to user about degraded mode
+```
+
+**File-Based Agents Retained:**
+- `powerbi-verify-pbiproject-folder-setup` - TMDL parsing
+- `powerbi-code-locator` - Grep-based code search
+- `powerbi-data-context-agent` - XMLA queries (separate from MCP)
+- `powerbi-pattern-discovery` - File-based pattern extraction
+
+**User Experience in Fallback Mode:**
+```
+⚠️ MCP NOT AVAILABLE
+
+The Power BI Modeling MCP is not available. Operating in fallback mode.
+
+Limitations:
+• No live DAX validation (syntax check only)
+• No data sampling for context
+• Schema read from TMDL files (may be stale)
+
+To enable full functionality, install the Power BI Modeling MCP:
+https://github.com/microsoft/powerbi-modeling-mcp
+
+[C] Continue in fallback mode
+[H] Help with MCP installation
+```
+
+---
+
+#### Q8: PBIR via MCP ✅ RESOLVED (2025-12-22)
+
+**Decision: Option B - Monitor and Adapt**
+
+> Will Microsoft add report support to MCP? If so, when?
+
+**Current State:**
+- Power BI Modeling MCP supports **semantic model only** (measures, tables, columns, relationships)
+- **Report/visual editing (PBIR) is NOT supported** by MCP
+- All PBIR agents work with files directly (JSON editing)
+
+**Decision:** Keep file-based PBIR agents now, monitor Microsoft roadmap, adapt if/when support is added.
+
+**Current Architecture (Unchanged):**
+```
+SEMANTIC MODEL OPERATIONS          REPORT OPERATIONS
+        │                                 │
+        ▼                                 ▼
+┌─────────────────┐              ┌─────────────────┐
+│  Power BI MCP   │              │  File-Based     │
+│  ─────────────  │              │  ─────────────  │
+│  • Measures     │              │  • page.json    │
+│  • Tables       │              │  • visual.json  │
+│  • Columns      │              │  • config blobs │
+│  • Relationships│              │  • layout       │
+└─────────────────┘              └─────────────────┘
+```
+
+**PBIR Agents Retained (File-Based):**
+- `powerbi-visual-locator` - Find visuals in PBIR structure
+- `powerbi-visual-type-recommender` - Suggest visual types
+- `powerbi-page-layout-designer` - Generate layout coordinates
+- `powerbi-interaction-designer` - Design cross-filtering
+- `powerbi-pbir-page-generator` - Generate page JSON files
+- `powerbi-pbir-validator` - Validate PBIR JSON structure
+- `powerbi-visual-implementer-apply` - Apply visual changes
+
+**Monitoring Plan:**
+- Check Microsoft's MCP repository quarterly: https://github.com/microsoft/powerbi-modeling-mcp
+- Watch for `report_operations` or `visual_operations` in MCP changelog
+- If added: Evaluate migration of PBIR agents to MCP
+
+**Future Migration (If PBIR MCP Support Added):**
+```
+IF Microsoft adds report_operations to MCP:
+    │
+    ├─ Evaluate API capabilities vs current file-based
+    │
+    ├─ If MCP provides equivalent functionality:
+    │   └─ Migrate PBIR agents to use MCP
+    │   └─ Keep file-based as fallback (per Q7 decision)
+    │
+    └─ If MCP is limited:
+        └─ Keep file-based for complex operations
+        └─ Use MCP for simple operations
+```
+
+---
+
+#### Q9: Skill Distribution ✅ RESOLVED (2025-12-22)
+
+**Decision: Option A (Manual) Now, Option D (Install Script) Later**
+
+> How will we distribute the skill with MCP dependency?
+
+**Phase 1 (Current): Manual Installation**
+- Users clone the repository or copy `.claude/` folder
+- MCP documented as prerequisite in README
+- Setup steps documented
+
+**Installation Documentation:**
+```markdown
+## Prerequisites
+
+1. Claude Code CLI installed
+2. Power BI Modeling MCP installed:
+   - Download from: https://github.com/microsoft/powerbi-modeling-mcp
+   - Follow Microsoft's installation instructions
+
+## Installation
+
+1. Clone this repository:
+   git clone https://github.com/<org>/powerbi-analyst-plugin.git
+
+2. Copy the skill to your project:
+   cp -r powerbi-analyst-plugin/.claude/ your-project/.claude/
+
+3. Verify installation:
+   - Open Claude Code in your project
+   - Type: /power-bi-assistant
+   - Should see skill options
+```
+
+**Phase 2 (Future): GitHub Release + Install Script**
+- Create versioned GitHub releases
+- Provide install script that:
+  - Copies files to `.claude/`
+  - Checks for MCP installation
+  - Validates prerequisites
+  - Provides clear error messages
+
+**Future Install Script Concept:**
+```bash
+#!/bin/bash
+# install-powerbi-skill.sh
+
+# Check prerequisites
+if ! command -v claude &> /dev/null; then
+    echo "❌ Claude Code CLI not found. Install from: https://claude.ai/code"
+    exit 1
+fi
+
+# Check for MCP (platform-specific)
+# ... MCP detection logic ...
+
+# Copy skill files
+cp -r .claude/ ~/.claude/skills/powerbi-analyst/
+
+echo "✅ Power BI Analyst skill installed"
+echo "Run '/power-bi-assistant' to get started"
+```
+
+**Version Compatibility Matrix (Future):**
+| Skill Version | MCP Version | Claude Code Version |
+|---------------|-------------|---------------------|
+| 1.0.x | 1.x | 1.x |
+| (to be defined as versions are released) |
+
+**Rationale:**
+- Focus on making skill work first
+- Distribution polish can come later
+- Manual installation is sufficient for initial users
+- Install script is a nice-to-have enhancement
 
 ---
 
@@ -2191,6 +3838,219 @@ Limitations:
 2. **This Week:** Set up MCP and test connection types (Phase 2.1)
 3. **Decide:** Offline support strategy (Question 1)
 4. **Prioritize:** Start with /evaluate command (most used)
+
+---
+
+## Appendix C: Command → Workflow Phase Mapping
+
+This appendix provides detailed phase-by-phase mapping from current slash commands to skill workflows, documenting which agents are replaced by MCP, which are kept, and which are enhanced.
+
+---
+
+### C.1 `/evaluate-pbi-project-file` → EVALUATE Workflow
+
+**Purpose:** Diagnose issues with existing Power BI code and propose fixes.
+
+| Current Phase | Skill Equivalent | Agent Changes |
+|---------------|------------------|---------------|
+| **Phase 1: Validation & Setup** | Same | REPLACE `powerbi-verify-pbiproject-folder-setup` → `mcp.connection_operations.connect()` |
+| **Phase 2: Scratchpad** | Same | KEEP (file-based, no MCP needed) |
+| **Phase 3: Clarification** | Same | KEEP (LLM reasoning, human-in-the-loop) |
+| **Phase 4: Data Context** | MCP-enhanced | REPLACE `powerbi-data-context-agent` (Python XMLA) → `mcp.dax_query_operations.execute()` |
+| **Phase 5: Code Location** | MCP-enhanced | REPLACE `powerbi-code-locator` (grep TMDL) → `mcp.measure_operations.get()` |
+| **Phase 6: Planning** | Same | KEEP `powerbi-dashboard-update-planner` (LLM reasoning) |
+| **Phase 7: Verification** | Same | KEEP `power-bi-verification` (LLM semantic review) |
+| **Phase 8: Completion** | Same | KEEP (file-based summary) |
+
+**Net Agent Changes:**
+- Removed: 2 (`powerbi-verify-pbiproject-folder-setup`, `powerbi-code-locator`)
+- Replaced: 1 (`powerbi-data-context-agent` → MCP)
+- Kept: 3 (`powerbi-dashboard-update-planner`, `power-bi-verification`, scratchpad ops)
+
+---
+
+### C.2 `/create-pbi-artifact` → CREATE_ARTIFACT Workflow
+
+**Purpose:** Create new measures, calculated columns, tables, or visuals through interactive specification.
+
+| Current Phase | Skill Equivalent | Agent Changes |
+|---------------|------------------|---------------|
+| **Phase 1: Validation & Setup** | Same | REPLACE `powerbi-verify-pbiproject-folder-setup` → `mcp.connection_operations.connect()` |
+| **Phase 2: Scratchpad** | Same | KEEP |
+| **Phase 3: Data Model Analysis** | MCP-enhanced | REPLACE `powerbi-data-model-analyzer` → `mcp.table_operations.list()` + `mcp.column_operations.list()` |
+| **Phase 3.5: Decomposition** | Same | KEEP `powerbi-artifact-decomposer` (LLM reasoning) |
+| **Phase 4: Data Understanding** | Enhanced | KEEP `powerbi-data-understanding-agent` + ADD data sampling via `mcp.dax_query_operations.execute()` |
+| **Phase 5: Pattern Discovery** | MCP-enhanced | ENHANCE `powerbi-pattern-discovery` + use `mcp.measure_operations.list()` |
+| **Phase 6: Code Generation** | Specialist | REMOVE `powerbi-artifact-designer` → skill.md (main LLM thread) delegates to DAX Specialist or M-Code Specialist |
+| **Phase 7: Completion** | Same | KEEP |
+
+**Specialist Delegation (Phase 6):**
+- Measure, Calculated Column, KPI → **DAX Specialist** with `mcp.dax_query_operations.validate()`
+- Partition, Named Expression, Table (Import) → **M-Code Specialist** with `mcp.partition_operations`
+- Visual → skill.md (main LLM thread) handles directly (PBIR, not MCP)
+
+**Net Agent Changes:**
+- Removed: 3 (`powerbi-verify-pbiproject-folder-setup`, `powerbi-data-model-analyzer`, `powerbi-artifact-designer`)
+- Added: 2 (DAX Specialist, M-Code Specialist)
+- Kept: 3 (`powerbi-artifact-decomposer`, `powerbi-data-understanding-agent`, `powerbi-pattern-discovery`)
+
+---
+
+### C.3 `/create-pbi-page-specs` → CREATE_PAGE Workflow
+
+**Purpose:** Create complete specifications for a new Power BI report page.
+
+| Current Phase | Skill Equivalent | Agent Changes |
+|---------------|------------------|---------------|
+| **Phase 1: Prerequisites** | Same | REPLACE → `mcp.connection_operations.connect()` + PBIR detection (Section 7.0.12.1) |
+| **Phase 2: Scratchpad** | Same | KEEP |
+| **Phase 3: Question Analysis** | Same | KEEP `powerbi-page-question-analyzer` (LLM reasoning) |
+| **Phase 4: Schema Analysis** | MCP-enhanced | REPLACE `powerbi-data-model-analyzer` → MCP schema ops |
+| **Phase 5: Decomposition** | Same | KEEP `powerbi-artifact-decomposer` (page mode) |
+| **Phase 6A: Measure Specs** | Specialist | Same as CREATE_ARTIFACT Phase 6 (DAX Specialist) |
+| **Phase 6B: Visual Specs** | Same | KEEP `powerbi-visual-type-recommender`, `powerbi-data-understanding-agent` (visual mode) |
+| **Phase 7: Layout Design** | Same | KEEP `powerbi-page-layout-designer` (PBIR only) |
+| **Phase 8: Interaction Design** | Same | KEEP `powerbi-interaction-designer` (PBIR only) |
+| **Phase 9: PBIR Generation** | Same | KEEP `powerbi-pbir-page-generator` (PBIR only) |
+| **Phase 10: Helper Pages** | Same | KEEP (orchestrator logic) |
+| **Phase 11: Validation** | Enhanced | KEEP `power-bi-verification` + ADD `mcp.dax_query_operations.validate()` |
+| **Phase 12: Summary** | Same | KEEP |
+
+**Net Agent Changes:**
+- Removed: 2 (`powerbi-verify-pbiproject-folder-setup`, `powerbi-data-model-analyzer`)
+- Enhanced: 1 (`power-bi-verification` with MCP validation)
+- Kept: 7 (all PBIR agents, question analyzer, decomposer, visual recommender)
+
+---
+
+### C.4 `/implement-deploy-test-pbi-project-file` → IMPLEMENT Workflow
+
+**Purpose:** Apply proposed changes from findings.md to the project, deploy, and test.
+
+| Current Phase | Skill Equivalent | Agent Changes |
+|---------------|------------------|---------------|
+| **Phase 1: Validation** | Same | KEEP (read findings.md, extract metadata) |
+| **Phase 2a: Apply Code** | MCP transactional | REPLACE `powerbi-code-implementer-apply` → `mcp.transaction_operations.begin()` + `mcp.measure_operations.create/update()` + `mcp.transaction_operations.commit()` |
+| **Phase 2b: Apply Visuals** | Same | KEEP `powerbi-visual-implementer-apply` (PBIR only) |
+| **Phase 2.5: TMDL Validation** | MCP implicit | REMOVE `powerbi-tmdl-syntax-validator` (MCP validates on operation) |
+| **Phase 2.6: PBIR Validation** | Same | KEEP `powerbi-pbir-validator` (PBIR only) |
+| **Phase 3: DAX Validation** | MCP-enhanced | ENHANCE `powerbi-dax-review-agent` + `mcp.dax_query_operations.validate()` |
+| **Phase 4: Deployment** | MCP | REPLACE pbi-tools CLI → `mcp.database_operations.deploy()` |
+| **Phase 5: Testing** | Same | KEEP `powerbi-playwright-tester` |
+| **Phase 6: Consolidation** | Same | KEEP (update findings.md) |
+| **Phase 7: Summary** | Same | KEEP |
+
+**Transaction Pattern:**
+```
+mcp.transaction_operations.begin()
+  ├── For each measure in Section 2.A:
+  │     mcp.measure_operations.create/update()
+  ├── Validation: mcp.dax_query_operations.validate()
+  └── mcp.transaction_operations.commit() OR rollback()
+
+Then: PBIR changes (file-based, versioned copy provides rollback)
+```
+
+**Net Agent Changes:**
+- Removed: 2 (`powerbi-code-implementer-apply`, `powerbi-tmdl-syntax-validator`)
+- Enhanced: 1 (`powerbi-dax-review-agent` with MCP)
+- Kept: 3 (`powerbi-visual-implementer-apply`, `powerbi-pbir-validator`, `powerbi-playwright-tester`)
+
+---
+
+### C.5 `/analyze-pbi-dashboard` → ANALYZE Workflow
+
+**Purpose:** Create business-friendly documentation of an existing Power BI dashboard.
+
+| Current Phase | Skill Equivalent | Agent Changes |
+|---------------|------------------|---------------|
+| **Phase 1: Validation** | Same | REPLACE → `mcp.connection_operations.connect()` |
+| **Phase 2: Page Discovery** | Same | KEEP (PBIR file reading) |
+| **Phase 3: Measure Analysis** | MCP-enhanced | ENHANCE: use `mcp.measure_operations.list()` + `mcp.measure_operations.get()` |
+| **Phase 4: Business Synthesis** | Same | KEEP (LLM translation) |
+| **Phase 5: Output** | Same | KEEP (markdown generation) |
+
+**Net Agent Changes:**
+- Removed: 1 (`powerbi-verify-pbiproject-folder-setup`)
+- Enhanced: 1 (measure extraction via MCP)
+- Kept: All PBIR analysis, LLM synthesis
+
+---
+
+### C.6 `/merge-powerbi-projects` → MERGE Workflow
+
+**Purpose:** Compare two Power BI projects and merge changes.
+
+| Current Phase | Skill Equivalent | Agent Changes |
+|---------------|------------------|---------------|
+| **Phase 1: Validate Input** | Dual connection | ENHANCE: `mcp.connection_operations.connect(project_a)` + `mcp.connection_operations.connect(project_b)` |
+| **Phase 2: Comparison** | MCP-enhanced | ENHANCE `powerbi-compare-project-code` + use MCP to extract both model schemas |
+| **Phase 3: Business Analysis** | Same | KEEP `powerbi-code-understander` (LLM reasoning) |
+| **Phase 4: User Decisions** | Same | KEEP (human-in-the-loop) |
+| **Phase 5: Parse Decisions** | Same | KEEP (orchestrator logic) |
+| **Phase 6: Execute Merge** | MCP transactional | REPLACE `powerbi-code-merger` → `mcp.transaction_operations` for atomic merge |
+| **Phase 6.5: TMDL Validation** | MCP implicit | REMOVE (MCP validates on operation) |
+| **Phase 6.6: DAX Validation** | MCP-enhanced | ENHANCE with `mcp.dax_query_operations.validate()` |
+| **Phase 7: Final Report** | Same | KEEP |
+
+**Dual Connection Pattern:**
+```
+connection_a = mcp.connection_operations.connect(project_a_path)
+connection_b = mcp.connection_operations.connect(project_b_path)
+
+# Extract schemas from both
+schema_a = mcp.table_operations.list(connection=connection_a)
+schema_b = mcp.table_operations.list(connection=connection_b)
+
+# Compare using LLM
+differences = powerbi-compare-project-code(schema_a, schema_b)
+
+# Apply merge decisions with transaction
+mcp.transaction_operations.begin(connection=connection_a)
+  for decision in user_decisions:
+    if decision.choice == "comparison":
+      mcp.measure_operations.update(definition_from_b)
+mcp.transaction_operations.commit()
+```
+
+**Net Agent Changes:**
+- Removed: 2 (`powerbi-code-merger`, `powerbi-tmdl-syntax-validator`)
+- Enhanced: 2 (`powerbi-compare-project-code`, DAX validation)
+- Kept: 1 (`powerbi-code-understander`)
+
+---
+
+### C.7 Summary: Agent Migration Matrix
+
+| Agent | Current Role | Migration Status | Replacement |
+|-------|--------------|------------------|-------------|
+| `powerbi-verify-pbiproject-folder-setup` | Validate project | REMOVE | `mcp.connection_operations.connect()` |
+| `powerbi-data-model-analyzer` | Extract schema | REMOVE | `mcp.table/column/measure_operations.list()` |
+| `powerbi-data-context-agent` | Query data (XMLA) | REMOVE | `mcp.dax_query_operations.execute()` |
+| `powerbi-code-locator` | Find measures | REMOVE | `mcp.measure_operations.get()` |
+| `powerbi-code-implementer-apply` | Apply TMDL changes | REMOVE | `mcp.transaction_operations` + ops |
+| `powerbi-code-merger` | Apply merge | REMOVE | `mcp.transaction_operations` |
+| `powerbi-tmdl-syntax-validator` | Validate TMDL | REMOVE | MCP validates implicitly |
+| `powerbi-artifact-designer` | Generate code | REMOVE | Orchestration → skill.md; Code → Specialists |
+| `powerbi-pattern-discovery` | Find patterns | ENHANCE | + MCP measure listing |
+| `powerbi-dax-review-agent` | DAX validation | ENHANCE | + `mcp.dax_query_operations.validate()` |
+| `powerbi-compare-project-code` | Compare models | ENHANCE | + MCP schema extraction |
+| `powerbi-dashboard-update-planner` | Plan changes | KEEP | LLM reasoning |
+| `power-bi-verification` | Semantic review | KEEP | LLM reasoning |
+| `powerbi-artifact-decomposer` | Break down artifacts | KEEP | LLM reasoning |
+| `powerbi-data-understanding-agent` | Interactive Q&A | KEEP | LLM reasoning |
+| `powerbi-code-understander` | Explain differences | KEEP | LLM reasoning |
+| All PBIR agents (6) | Visual/page editing | KEEP | MCP doesn't support reports |
+| `powerbi-playwright-tester` | Browser testing | KEEP | Playwright MCP |
+| NEW: `powerbi-dax-specialist` | DAX code generation | ADD | With MCP validation |
+| NEW: `powerbi-mcode-specialist` | M code generation | ADD | With MCP ops |
+
+**Summary:**
+- REMOVED: 8 agents (replaced by MCP operations or skill.md)
+- ENHANCED: 3 agents (augmented with MCP)
+- KEPT: 14 agents (LLM reasoning, PBIR, testing)
+- ADDED: 2 specialists (DAX, M-Code)
+- **NET: 27 → 18 agents** (9 reduction)
 
 ---
 
@@ -2233,7 +4093,7 @@ Key operations:
 | powerbi-pbir-validator | KEEP | (PBIR) |
 | powerbi-page-* (5 agents) | KEEP | (PBIR) |
 | powerbi-dashboard-update-planner | KEEP | (LLM reasoning) |
-| powerbi-artifact-designer | REFACTOR | Becomes Orchestrator for specialists |
+| powerbi-artifact-designer | REMOVE | Orchestration → skill.md; Code → Specialists |
 | powerbi-artifact-decomposer | KEEP | (LLM reasoning) |
 | powerbi-data-understanding-agent | KEEP | (LLM reasoning) |
 | power-bi-verification | KEEP | (LLM reasoning) |
