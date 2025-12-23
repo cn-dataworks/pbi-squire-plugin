@@ -19,6 +19,7 @@
 | 7 | Add UX polish (glossary, errors, FAQ) | ✅ Complete |
 | 8 | Create installer scripts | ✅ Complete |
 | 9 | Final cleanup (remove obsolete files) | ✅ Complete |
+| 10 | Template Harvesting workflow | ✅ Complete |
 
 ---
 
@@ -332,6 +333,95 @@ specs/migrate_to_skill_and_pbi_mcp/
 
 ---
 
+### 2025-12-22: Step 10 - Template Harvesting Workflow
+
+**Actions:**
+
+**Updated SPEC.md:**
+- Added Section 7.0.6 Workflow 7: HARVEST_TEMPLATES
+- Added to Intent Classification table (HARVEST intent)
+- Updated agent inventory from 19 to 20 agents
+- Added `powerbi-template-harvester.md` to agent manifest
+- Updated workflow summary table
+
+**Created Agent:**
+- `.claude/agents/powerbi-template-harvester.md`
+  - Scans PBIR visuals and extracts unique patterns
+  - Classifies by visual type + binding pattern
+  - Deduplicates based on structure hash
+  - Sanitizes with `{{PLACEHOLDER}}` syntax
+  - Saves to local staging `.templates/harvested/`
+
+**Updated SKILL.md:**
+- Added HARVEST_TEMPLATES workflow section
+- Added trigger action for template harvesting
+- Added to Quick Start examples
+
+**Workflow Architecture (Hybrid Storage):**
+```
+PROJECT (Local Staging)                    PLUGIN (Shared Library)
+─────────────────────────                  ──────────────────────────
+MyProject/                                 pbir-visuals/
+├── .templates/                            └── visual-templates/
+│   └── harvested/                             ├── card-single-measure.json
+│       ├── bar-chart-category-y.json          └── [promoted templates]
+│       └── manifest.json
+│
+└── .Report/definition/pages/*/visuals/    ← Source visuals scanned here
+```
+
+**Commands:**
+- `/harvest-templates` - Scan and extract unique visual patterns
+- `/review-templates` - Compare harvested vs existing library
+- `/promote-templates` - Copy selected to pbir-visuals plugin
+
+**Naming Convention:**
+- `[visual-type]-[binding-pattern].json`
+- Examples: `bar-chart-category-y.json`, `card-single-measure.json`
+
+**Result:** Template harvesting workflow integrated into powerbi-analyst skill
+
+---
+
+### 2025-12-22: Step 10b - Import Starter Template Library
+
+**Actions:**
+
+**Imported Templates from pbir-visuals:**
+- Copied 17 templates from `C:\Users\AndrewNorthrup\code\pbir-visuals\visual-templates\`
+- Destination: `.claude/skills/powerbi-analyst/assets/visual-templates/`
+
+**Templates Imported:**
+| Template | Type |
+|----------|------|
+| `card-single-measure.json` | Card |
+| `line-chart-category-y.json` | Line Chart |
+| `line-chart-multi-y.json` | Line Chart |
+| `line-chart-with-series.json` | Line Chart |
+| `bar-chart-category-y.json` | Bar Chart |
+| `bar-chart-with-series.json` | Bar Chart |
+| `clustered-column-multi-measure.json` | Column Chart |
+| `table-basic.json` | Table |
+| `matrix-basic.json` | Matrix |
+| `pie-chart.json` | Pie Chart |
+| `scatter-bubble-chart.json` | Scatter/Bubble |
+| `azure-map-gradient.json` | Azure Map |
+| `azure-map-bubble.json` | Azure Map |
+| `slicer-between-date.json` | Slicer |
+| `slicer-dropdown.json` | Slicer |
+| `slicer-list-multiselect.json` | Slicer |
+| `image-static.json` | Image |
+
+**Created:**
+- `assets/visual-templates/README.md` - Template catalog with placeholder reference
+
+**Updated:**
+- `SKILL.md` - Added visual-templates to References section
+
+**Result:** Skill now includes 17 starter templates for visual creation
+
+---
+
 ## Files to Clean Up (End of Migration)
 
 These files in `specs/migrate_to_skill_and_pbi_mcp/` should be evaluated for cleanup:
@@ -357,6 +447,9 @@ These files in `specs/migrate_to_skill_and_pbi_mcp/` should be evaluated for cle
 | 19 agents (not 18) | SPEC missed `powerbi-pattern-discovery` which Phase 5 says to enhance | 2025-12-22 |
 | Cleanup at end | Safer - may discover unexpected dependencies during implementation | 2025-12-22 |
 | Zero-dependency architecture | Python not required for core functionality per SPEC 7.0.8 | 2025-12-22 |
+| 20 agents (added harvester) | Template Harvesting workflow requires dedicated agent | 2025-12-22 |
+| Hybrid template storage | Local staging → review → promote to shared library allows curation | 2025-12-22 |
+| Descriptive template naming | `[visual-type]-[binding-pattern].json` based on chart type per user preference | 2025-12-22 |
 
 ---
 

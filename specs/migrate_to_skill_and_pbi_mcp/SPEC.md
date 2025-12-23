@@ -185,9 +185,9 @@ Specialists read from `state.json` and write their outputs to `findings.md`. The
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Target Agent Inventory (19 total)
+### 3.2 Target Agent Inventory (20 total)
 
-> **Definitive Inventory** - Reconciled 2025-12-22. This is the authoritative list.
+> **Definitive Inventory** - Reconciled 2025-12-22, updated for Template Harvesting. This is the authoritative list.
 
 #### 3.2.1 Summary Table
 
@@ -201,8 +201,9 @@ Specialists read from `state.json` and write their outputs to `findings.md`. The
 | Page Design | 5 | KEEP |
 | Merge Workflow | 1 | KEEP (enhance) |
 | Pattern Discovery | 1 | KEEP (enhance) |
+| Template Harvesting | 1 | NEW |
 | Testing | 1 | KEEP |
-| **Total** | **19** | |
+| **Total** | **20** | |
 
 #### 3.2.2 Complete Agent Manifest
 
@@ -226,7 +227,8 @@ Specialists read from `state.json` and write their outputs to `findings.md`. The
 | 16 | `powerbi-pbir-page-generator.md` | Page Design | KEEP | PBIR only |
 | 17 | `powerbi-compare-project-code.md` | Merge | ENHANCE | Add MCP model reads |
 | 18 | `powerbi-pattern-discovery.md` | Discovery | ENHANCE | Use MCP for measure list |
-| 19 | `powerbi-playwright-tester.md` | Testing | KEEP | Browser testing |
+| 19 | `powerbi-template-harvester.md` | Template Harvesting | NEW | PBIR visual template extraction |
+| 20 | `powerbi-playwright-tester.md` | Testing | KEEP | Browser testing |
 
 #### 3.2.3 Deleted Agents (10 total)
 
@@ -827,6 +829,7 @@ Defines how the skill maps natural language requests to specific workflows. The 
 | **IMPLEMENT** | Apply changes | apply, deploy, implement, execute, run, push | References to existing findings.md or previous analysis |
 | **ANALYZE** | Document existing | explain, document, what does, understand, describe, analyze, summarize | User asking about existing dashboard, not changing it |
 | **MERGE** | Compare/merge projects | merge, compare, diff, combine, sync, reconcile | User mentions two projects or versions |
+| **HARVEST** | Extract visual templates | harvest, extract, template, save visual, reuse visual, template library | User wants to capture visual formatting for reuse |
 
 **Intent Detection Flow:**
 
@@ -1252,6 +1255,169 @@ Each workflow is a condensed version of the corresponding command, with MCP inte
 
 ---
 
+##### Workflow 7: HARVEST_TEMPLATES (Extract Visual Templates)
+
+**Corresponds to:** `/harvest-templates`, `/review-templates`, `/promote-templates`
+
+**Purpose:** Extract reusable PBIR visual templates from existing dashboards, deduplicate, and optionally promote to a shared template library.
+
+**Storage Architecture (Hybrid):**
+
+```
+PROJECT (Local Staging)                    PLUGIN (Shared Library)
+─────────────────────────                  ──────────────────────────
+MyProject/                                 pbir-visuals/
+├── .templates/                            └── visual-templates/
+│   └── harvested/                             ├── card-single-measure.json
+│       ├── bar-chart-category-y.json          ├── line-chart-with-series.json
+│       └── table-with-totals.json             └── [promoted templates]
+│
+└── .Report/definition/pages/*/visuals/    ← Source visuals scanned here
+```
+
+**Naming Convention:**
+```
+[visual-type]-[binding-pattern].json
+
+Examples:
+- bar-chart-category-y.json      (bar chart with category axis)
+- line-chart-multi-measure.json  (line chart with multiple Y values)
+- card-single-measure.json       (card showing one measure)
+- matrix-rows-columns-values.json (matrix with all three roles)
+- slicer-dropdown.json           (dropdown slicer)
+```
+
+**Naming Logic:**
+1. `visualType` property → kebab-case base (`barChart` → `bar-chart`)
+2. Data binding pattern → suffix based on query roles used
+3. Collision handling → append `-v2`, `-v3` if structure differs but name matches
+
+**Condensed Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  PHASE 1: HARVEST (/harvest-templates)                              │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. VALIDATE PROJECT (must have .Report folder)
+   └─ Check for .Report/definition/pages/ structure
+
+2. SCAN VISUALS
+   └─ Glob: .Report/definition/pages/*/visuals/*/visual.json
+   └─ Read each visual.json
+
+3. CLASSIFY EACH VISUAL
+   └─ Extract: visualType, query.queryState roles, objects
+   └─ Generate descriptive name based on pattern
+   └─ Check for existing template with same name
+
+4. DEDUPLICATE
+   └─ Hash visual structure (excluding position, name, GUIDs)
+   └─ Group by visual type + binding pattern
+   └─ Keep unique structures only
+
+5. SANITIZE (Create Template)
+   └─ Replace specific values with {{PLACEHOLDER}} syntax:
+       - name → {{VISUAL_NAME}}
+       - position x/y/z/width/height → {{X}}, {{Y}}, etc.
+       - table names → {{TABLE_NAME}}, {{CATEGORY_TABLE}}, etc.
+       - column/measure names → {{COLUMN_NAME}}, {{MEASURE_NAME}}, etc.
+       - filter GUIDs → {{FILTER_GUID}}
+       - title text → {{TITLE}}
+   └─ Preserve: $schema, visualType, formatting objects
+
+6. SAVE TO LOCAL STAGING
+   └─ Create .templates/harvested/ if not exists
+   └─ Write: .templates/harvested/[descriptive-name].json
+   └─ Generate harvest manifest: .templates/harvested/manifest.json
+
+7. REPORT RESULTS
+   └─ Summary: X visuals scanned, Y unique patterns, Z new templates
+   └─ List templates created with naming rationale
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  PHASE 2: REVIEW (/review-templates)                                │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. LOAD HARVESTED
+   └─ Read .templates/harvested/manifest.json
+   └─ List all harvested templates
+
+2. LOAD EXISTING LIBRARY
+   └─ Scan pbir-visuals/visual-templates/*.json (if plugin installed)
+   └─ Or warn if plugin not available
+
+3. COMPARE
+   └─ For each harvested template:
+       - Check if similar exists in library (by name or structure hash)
+       - Flag: NEW, DUPLICATE, VARIANT
+
+4. PRESENT FOR REVIEW
+   └─ Show each template with status
+   └─ Allow user to mark for promotion: [P]romote, [S]kip, [R]ename
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  PHASE 3: PROMOTE (/promote-templates)                              │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. VALIDATE PLUGIN PATH
+   └─ Check pbir-visuals plugin location
+   └─ Abort if not found (with install guidance)
+
+2. COPY SELECTED TEMPLATES
+   └─ Copy marked templates to pbir-visuals/visual-templates/
+   └─ Use approved names (may have been renamed in review)
+
+3. UPDATE PLUGIN DOCUMENTATION
+   └─ Append to visual-templates/README.md table
+   └─ Add placeholder documentation for new templates
+
+4. PROMPT FOR COMMIT
+   └─ Show git status of pbir-visuals
+   └─ Offer: "Commit changes to pbir-visuals? [y/n]"
+   └─ If yes: git add + commit with descriptive message
+
+5. CLEANUP LOCAL
+   └─ Remove promoted templates from .templates/harvested/
+   └─ Update manifest.json
+```
+
+**Template Sanitization Rules:**
+
+| Original Value | Placeholder | Notes |
+|----------------|-------------|-------|
+| Visual name (GUID) | `{{VISUAL_NAME}}` | Always replace |
+| Position x | `{{X}}` | Always replace |
+| Position y | `{{Y}}` | Always replace |
+| Position z | `{{Z}}` | Always replace |
+| Width | `{{WIDTH}}` | Always replace |
+| Height | `{{HEIGHT}}` | Always replace |
+| Tab order | `{{TAB_ORDER}}` | Always replace |
+| Title text | `{{TITLE}}` | Always replace |
+| Filter GUIDs | `{{FILTER_GUID}}` | Always replace |
+| Primary table | `{{TABLE_NAME}}` | For single-table visuals |
+| Primary measure | `{{MEASURE_NAME}}` | For single-measure visuals |
+| Category table | `{{CATEGORY_TABLE}}` | For visuals with Category role |
+| Category column | `{{CATEGORY_COLUMN}}` | For visuals with Category role |
+| Series table | `{{SERIES_TABLE}}` | For visuals with Series/Legend role |
+| Series column | `{{SERIES_COLUMN}}` | For visuals with Series/Legend role |
+| Multiple measures | `{{MEASURE_1_NAME}}`, etc. | Numbered for multi-measure |
+
+**Preserved Values (Not Replaced):**
+- `$schema` URL
+- `visualType`
+- Formatting objects (colors, fonts, axis settings)
+- Default boolean flags
+- Static configuration
+
+**Agent:**
+- `powerbi-template-harvester.md` - Handles scan, classify, deduplicate, sanitize
+
+**MCP-Specific Changes:**
+- None (PBIR-only workflow, no semantic model operations)
+
+---
+
 **Workflow Summary Table:**
 
 | Workflow | Key MCP Benefits | PBIR Required | Agents Replaced |
@@ -1262,6 +1428,7 @@ Each workflow is a condensed version of the corresponding command, with MCP inte
 | IMPLEMENT | Transactional changes, deployment | Optional | code-implementer, tmdl-validator |
 | ANALYZE | Measure extraction | **Yes** | data-model-analyzer |
 | MERGE | Dual-model connect, atomic merge | No | compare, merger |
+| HARVEST_TEMPLATES | None (PBIR-only) | **Yes** | None (new workflow) |
 
 #### 7.0.7 Specialist Delegation Rules
 

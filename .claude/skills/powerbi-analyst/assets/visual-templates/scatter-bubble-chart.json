@@ -1,0 +1,156 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "{{VISUAL_NAME}}",
+  "position": {
+    "x": {{X}},
+    "y": {{Y}},
+    "z": {{Z}},
+    "height": {{HEIGHT}},
+    "width": {{WIDTH}},
+    "tabOrder": {{TAB_ORDER}}
+  },
+  "visual": {
+    "visualType": "scatterChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{CATEGORY_TABLE}}"
+                    }
+                  },
+                  "Property": "{{CATEGORY_COLUMN}}"
+                }
+              },
+              "queryRef": "{{CATEGORY_TABLE}}.{{CATEGORY_COLUMN}}",
+              "nativeQueryRef": "{{CATEGORY_COLUMN}}",
+              "active": true
+            }
+          ]
+        },
+        "X": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{X_MEASURE_TABLE}}"
+                    }
+                  },
+                  "Property": "{{X_MEASURE_NAME}}"
+                }
+              },
+              "queryRef": "{{X_MEASURE_TABLE}}.{{X_MEASURE_NAME}}",
+              "nativeQueryRef": "{{X_MEASURE_NAME}}",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{Y_MEASURE_TABLE}}"
+                    }
+                  },
+                  "Property": "{{Y_MEASURE_NAME}}"
+                }
+              },
+              "queryRef": "{{Y_MEASURE_TABLE}}.{{Y_MEASURE_NAME}}",
+              "nativeQueryRef": "{{Y_MEASURE_NAME}}"
+            }
+          ]
+        },
+        "Size": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{SIZE_MEASURE_TABLE}}"
+                    }
+                  },
+                  "Property": "{{SIZE_MEASURE_NAME}}"
+                }
+              },
+              "queryRef": "{{SIZE_MEASURE_TABLE}}.{{SIZE_MEASURE_NAME}}",
+              "nativeQueryRef": "{{SIZE_MEASURE_NAME}}"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "categoryLabels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_CATEGORY_LABELS}}"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryAxis": [
+        {
+          "properties": {
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_X_AXIS_TITLE}}"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "valueAxis": [
+        {
+          "properties": {
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_Y_AXIS_TITLE}}"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'{{TITLE}}'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

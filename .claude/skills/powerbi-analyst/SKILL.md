@@ -37,6 +37,7 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 - "Apply the changes" → IMPLEMENT workflow
 - "What does this dashboard do?" → ANALYZE workflow
 - "Merge these two projects" → MERGE workflow
+- "Extract templates from this report" → HARVEST_TEMPLATES workflow
 
 **File Patterns:**
 - `*.pbip`, `*.pbix`, `*.tmdl`, `*.bim`
@@ -153,6 +154,40 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 
 ---
 
+### HARVEST_TEMPLATES (Extract Visual Templates)
+
+**Use when:** User wants to extract reusable visual templates from existing dashboards.
+
+**Commands:** `/harvest-templates`, `/review-templates`, `/promote-templates`
+
+**Process:**
+1. **Harvest** - Scan .Report folder for all visuals
+2. Classify visuals by type and binding pattern
+3. Deduplicate (keep unique structures only)
+4. Sanitize (replace specifics with `{{PLACEHOLDER}}` syntax)
+5. Save to local staging: `.templates/harvested/`
+6. **Review** - Compare against existing library, mark for promotion
+7. **Promote** - Copy selected to `pbir-visuals/visual-templates/`
+
+**Naming Convention:**
+```
+[visual-type]-[binding-pattern].json
+
+Examples:
+- bar-chart-category-y.json
+- line-chart-multi-measure.json
+- card-single-measure.json
+- slicer-dropdown.json
+```
+
+**Storage (Hybrid):**
+- Local staging: `[project]/.templates/harvested/`
+- Shared library: `pbir-visuals/visual-templates/` (after promotion)
+
+**Output:** Template files + harvest manifest
+
+---
+
 ## Specialist Agents
 
 The orchestrator delegates to specialized agents based on artifact type:
@@ -225,10 +260,20 @@ This skill includes reference documentation:
 ### `assets/findings_template.md`
 Template for Task Blackboard used by all workflows.
 
-### `references/` (to be populated)
-- DAX patterns and best practices
-- M-Code patterns and query folding guide
-- Visual templates and PBIR structure
+### `assets/visual-templates/`
+17 reusable PBIR visual templates with `{{PLACEHOLDER}}` syntax:
+- Cards, line charts, bar charts, column charts
+- Tables, matrices, pie charts, scatter charts
+- Azure maps (gradient, bubble)
+- Slicers (date range, dropdown, multi-select)
+- Static images
+
+See `assets/visual-templates/README.md` for full catalog.
+
+### `references/`
+- `getting-started.md` - Onboarding guide with data masking workflow
+- `glossary.md` - Technical terms explained
+- `troubleshooting-faq.md` - Common issues and solutions
 
 ---
 
@@ -239,3 +284,4 @@ Template for Task Blackboard used by all workflows.
 3. **Need a whole page?** → "Build a regional performance dashboard page"
 4. **Ready to apply?** → "Implement the changes from findings.md"
 5. **Want to understand?** → "Analyze this dashboard and explain what it does"
+6. **Build template library?** → "Harvest visual templates from this report"
