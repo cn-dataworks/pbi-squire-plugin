@@ -23,6 +23,7 @@
 | 10b | Import starter template library | ✅ Complete |
 | 10c | Public template repository migration | ✅ Complete |
 | 10d | Runtime preflight checks | ✅ Complete |
+| 11 | Plugin distribution restructure | ✅ Complete |
 
 ---
 
@@ -552,6 +553,67 @@ After install: gh auth login
 
 ---
 
+### 2025-12-23: Step 11 - Plugin Distribution Restructure
+
+**Actions:**
+
+**Problem Identified:**
+- Skills in `.claude/skills/` are project-local only
+- For plugin distribution, skills/commands/agents must be at repo root level
+- Per Claude Code docs: "Don't put commands/, agents/, skills/ inside .claude/"
+
+**Created Root-Level Plugin Structure:**
+```
+powerbi-analyst-plugin/
+├── .claude-plugin/
+│   ├── plugin.json         ← Already existed
+│   └── marketplace.json    ← Already existed
+├── skills/                 ← NEW (plugin distribution)
+│   └── powerbi-analyst/
+│       ├── SKILL.md
+│       ├── install.ps1
+│       ├── install.sh
+│       ├── assets/
+│       └── references/
+├── commands/               ← NEW (plugin distribution)
+│   ├── evaluate-pbi-project-file.md
+│   ├── create-pbi-artifact.md
+│   ├── create-pbi-page-specs.md
+│   ├── implement-deploy-test-pbi-project-file.md
+│   ├── merge-powerbi-projects.md
+│   └── analyze-pbi-dashboard.md
+├── agents/                 ← NEW (plugin distribution)
+│   └── [20 agent files]
+├── INSTALL.md              ← NEW (installation guide)
+└── .claude/                ← KEPT (for development)
+```
+
+**Created INSTALL.md:**
+- Plugin installation: `/plugin marketplace add` + `/plugin install`
+- Team installation: via `.claude/settings.json`
+- Manual installation: clone and copy to `~/.claude/skills/`
+- Post-installation setup (run installer script)
+- Requirements and verification steps
+- Troubleshooting section
+
+**Installation Commands (for users):**
+```bash
+# Plugin method (recommended)
+/plugin marketplace add cn-dataworks/powerbi-analyst-plugin
+/plugin install powerbi-analyst@cn-dataworks-plugins
+
+# Team method (via settings.json)
+{ "plugins": ["cn-dataworks/powerbi-analyst-plugin"] }
+
+# Manual method
+git clone https://github.com/cn-dataworks/powerbi-analyst-plugin
+cp -r skills/powerbi-analyst ~/.claude/skills/
+```
+
+**Result:** Plugin ready for distribution via Claude Code plugin system
+
+---
+
 ## Files to Clean Up (End of Migration)
 
 These files in `specs/migrate_to_skill_and_pbi_mcp/` should be evaluated for cleanup:
@@ -582,6 +644,7 @@ These files in `specs/migrate_to_skill_and_pbi_mcp/` should be evaluated for cle
 | Descriptive template naming | `[visual-type]-[binding-pattern].json` based on chart type per user preference | 2025-12-22 |
 | Public template repository | Enables community contributions via standard GitHub PR workflow | 2025-12-23 |
 | Runtime detection over config | Simpler, always accurate, no stale config; check dependencies when command runs | 2025-12-23 |
+| Plugin distribution structure | Root-level skills/commands/agents/ for plugin install; keep .claude/ for dev | 2025-12-23 |
 
 ---
 
