@@ -1259,21 +1259,50 @@ Each workflow is a condensed version of the corresponding command, with MCP inte
 
 **Corresponds to:** `/harvest-templates`, `/review-templates`, `/promote-templates`
 
-**Purpose:** Extract reusable PBIR visual templates from existing dashboards, deduplicate, and optionally promote to a shared template library.
+**Purpose:** Extract reusable PBIR visual templates from existing dashboards, deduplicate, and optionally promote to a public template library via Pull Request.
 
-**Storage Architecture (Hybrid):**
+**Public Template Repository:**
 
 ```
-PROJECT (Local Staging)                    PLUGIN (Shared Library)
-─────────────────────────                  ──────────────────────────
-MyProject/                                 pbir-visuals/
-├── .templates/                            └── visual-templates/
-│   └── harvested/                             ├── card-single-measure.json
-│       ├── bar-chart-category-y.json          ├── line-chart-with-series.json
-│       └── table-with-totals.json             └── [promoted templates]
-│
-└── .Report/definition/pages/*/visuals/    ← Source visuals scanned here
+github.com/cn-dataworks/pbir-visuals (PUBLIC)
+└── visual-templates/
+    ├── card-single-measure.json
+    ├── line-chart-with-series.json
+    ├── bar-chart-category-y.json
+    └── ... (community-contributed templates)
 ```
+
+**Storage Architecture:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  USER'S PROJECT (Local Staging)                                     │
+│  ───────────────────────────────                                    │
+│  MyProject/                                                         │
+│  ├── .templates/                                                    │
+│  │   └── harvested/              ← Extracted templates staged here  │
+│  │       ├── bar-chart-xyz.json                                     │
+│  │       └── manifest.json                                          │
+│  └── .Report/definition/pages/   ← Source visuals scanned here      │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              │  /promote-templates (creates PR)
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  PUBLIC REPO: github.com/cn-dataworks/pbir-visuals                  │
+│  ─────────────────────────────────────────────────                  │
+│  • Anyone can fork and submit PRs                                   │
+│  • Templates fetched via raw.githubusercontent.com                  │
+│  • CONTRIBUTING.md guides contributors                              │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Benefits of Public Repository:**
+- **Community contributions** - Anyone can submit templates via PR
+- **Discoverability** - Templates searchable on GitHub
+- **Version control** - Track template changes and history
+- **Independence** - Works without this private skill installed
+- **Standard workflow** - Fork → Branch → PR (familiar to developers)
 
 **Naming Convention:**
 ```
@@ -1291,6 +1320,138 @@ Examples:
 1. `visualType` property → kebab-case base (`barChart` → `bar-chart`)
 2. Data binding pattern → suffix based on query roles used
 3. Collision handling → append `-v2`, `-v3` if structure differs but name matches
+
+---
+
+**Capability Tiers (Runtime Detection):**
+
+Commands are available based on runtime capability checks. No configuration file required -
+dependencies are checked when each command runs, with helpful feedback if requirements aren't met.
+
+| Command | Tier | Requirements | Fallback |
+|---------|------|--------------|----------|
+| `/harvest-templates` | 1 - Always | PBIR .Report folder | Error with conversion guidance |
+| `/review-templates` | 2 - Read-Only | Harvested templates + Internet | Offline: skip comparison |
+| `/promote-templates` | 3 - Contributor | GitHub CLI + authenticated | Manual PR instructions |
+
+---
+
+**Preflight Checks:**
+
+Each phase performs runtime checks before execution. Failed checks produce actionable error messages.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  PREFLIGHT: /harvest-templates                                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+CHECK 1: Project path provided or detectable
+├─ Pass: Continue
+└─ Fail: "Please specify a Power BI project path, or run from within a project folder."
+
+CHECK 2: .Report folder exists (PBIR format)
+├─ Pass: Continue
+└─ Fail:
+   "❌ No .Report folder found in [project-path].
+
+    Template harvesting requires PBIR format (Power BI Enhanced Report).
+
+    To convert your project:
+    1. Open your .pbix in Power BI Desktop
+    2. File → Save As → Select 'Power BI Project (*.pbip)'
+    3. Re-run /harvest-templates on the new .pbip project"
+
+CHECK 3: .Report/definition/pages/ contains visuals
+├─ Pass: Continue
+└─ Fail:
+   "⚠️ No visuals found in [project-path].Report/definition/pages/
+
+    This report appears to be empty or uses a different structure.
+    Ensure the report has at least one page with visuals."
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  PREFLIGHT: /review-templates                                       │
+└─────────────────────────────────────────────────────────────────────┘
+
+CHECK 1: Harvested templates exist
+├─ Pass: Continue
+└─ Fail:
+   "❌ No harvested templates found.
+
+    Run /harvest-templates first to extract templates from your report."
+
+CHECK 2: manifest.json is valid
+├─ Pass: Continue
+└─ Fail:
+   "❌ Invalid or corrupted manifest.json in .templates/harvested/
+
+    Delete the .templates/harvested/ folder and re-run /harvest-templates"
+
+CHECK 3: GitHub API reachable (for comparison)
+├─ Pass: Continue with full comparison
+└─ Warn (non-blocking):
+   "⚠️ Cannot reach GitHub API. Continuing in offline mode.
+
+    Review will show harvested templates without library comparison.
+    Promotion will not be available until connectivity is restored."
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  PREFLIGHT: /promote-templates                                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+CHECK 1: Templates marked for promotion
+├─ Pass: Continue
+└─ Fail:
+   "❌ No templates marked for promotion.
+
+    Run /review-templates first and mark templates with [P]romote."
+
+CHECK 2: GitHub CLI installed
+├─ Command: gh --version
+├─ Pass: Continue
+└─ Fail:
+   "❌ GitHub CLI (gh) is not installed.
+
+    Template promotion requires the GitHub CLI to create Pull Requests.
+
+    To install:
+    • Windows:  winget install GitHub.cli
+    • macOS:    brew install gh
+    • Linux:    See https://cli.github.com/
+
+    After installing, run: gh auth login
+
+    ─────────────────────────────────────────────
+    ALTERNATIVE: Manual Pull Request
+    ─────────────────────────────────────────────
+    If you prefer not to install gh CLI:
+    1. Go to https://github.com/cn-dataworks/pbir-visuals
+    2. Click 'Fork' to create your copy
+    3. Upload templates via 'Add file' → 'Upload files'
+    4. Click 'Contribute' → 'Open pull request'"
+
+CHECK 3: GitHub CLI authenticated
+├─ Command: gh auth status
+├─ Pass: Continue (show username)
+└─ Fail:
+   "❌ GitHub CLI is not authenticated.
+
+    Run: gh auth login
+
+    Follow the prompts to authenticate with your GitHub account.
+    You'll need a GitHub account (free) to contribute templates."
+
+CHECK 4: Can reach github.com
+├─ Pass: Continue
+└─ Fail:
+   "❌ Cannot reach github.com
+
+    Check your internet connection and try again.
+    If you're behind a proxy, configure gh with:
+    gh config set http_proxy <proxy-url>"
+```
+
+---
 
 **Condensed Flow:**
 
@@ -1343,43 +1504,98 @@ Examples:
    └─ Read .templates/harvested/manifest.json
    └─ List all harvested templates
 
-2. LOAD EXISTING LIBRARY
-   └─ Scan pbir-visuals/visual-templates/*.json (if plugin installed)
-   └─ Or warn if plugin not available
+2. FETCH EXISTING PUBLIC LIBRARY
+   └─ WebFetch: https://api.github.com/repos/cn-dataworks/pbir-visuals/contents/visual-templates
+   └─ Parse directory listing to get existing template names
+   └─ Optionally fetch individual templates for structure comparison
 
 3. COMPARE
    └─ For each harvested template:
-       - Check if similar exists in library (by name or structure hash)
-       - Flag: NEW, DUPLICATE, VARIANT
+       - Check if name exists in public library
+       - If exists, fetch and compare structure hash
+       - Flag: NEW, DUPLICATE, VARIANT, IMPROVED
+   └─ Provide comparison summary
 
 4. PRESENT FOR REVIEW
-   └─ Show each template with status
+   └─ Show each template with status and diff (if variant)
    └─ Allow user to mark for promotion: [P]romote, [S]kip, [R]ename
+   └─ Store decisions in manifest.json
 
 ┌─────────────────────────────────────────────────────────────────────┐
-│  PHASE 3: PROMOTE (/promote-templates)                              │
+│  PHASE 3: PROMOTE (/promote-templates) - PR Workflow                │
 └─────────────────────────────────────────────────────────────────────┘
 
-1. VALIDATE PLUGIN PATH
-   └─ Check pbir-visuals plugin location
-   └─ Abort if not found (with install guidance)
+**Prerequisites:**
+- User must have GitHub CLI (`gh`) installed and authenticated
+- User must have permission to create forks (free for public repos)
 
-2. COPY SELECTED TEMPLATES
-   └─ Copy marked templates to pbir-visuals/visual-templates/
+**Workflow:**
+
+1. CHECK GITHUB AUTHENTICATION
+   └─ Run: gh auth status
+   └─ If not authenticated, prompt user to run: gh auth login
+
+2. SETUP FORK (First Time Only)
+   └─ Check if user already has fork: gh repo view cn-dataworks/pbir-visuals --json isFork
+   └─ If no fork exists:
+       - Create fork: gh repo fork cn-dataworks/pbir-visuals --clone=false
+       - Wait for fork creation to complete
+   └─ Clone or update local copy:
+       - If no local: gh repo clone [username]/pbir-visuals ~/pbir-visuals-fork
+       - If exists: cd ~/pbir-visuals-fork && git pull origin main
+
+3. CREATE FEATURE BRANCH
+   └─ Branch name: templates/[project-name]-[timestamp]
+   └─ Run: git checkout -b templates/sales-dashboard-20251223
+
+4. COPY SELECTED TEMPLATES
+   └─ Copy marked templates from .templates/harvested/ to fork
    └─ Use approved names (may have been renamed in review)
+   └─ Destination: ~/pbir-visuals-fork/visual-templates/
 
-3. UPDATE PLUGIN DOCUMENTATION
-   └─ Append to visual-templates/README.md table
-   └─ Add placeholder documentation for new templates
+5. COMMIT AND PUSH
+   └─ git add visual-templates/*.json
+   └─ git commit -m "Add [N] templates from [project-name]"
+   └─ git push origin [branch-name]
 
-4. PROMPT FOR COMMIT
-   └─ Show git status of pbir-visuals
-   └─ Offer: "Commit changes to pbir-visuals? [y/n]"
-   └─ If yes: git add + commit with descriptive message
+6. CREATE PULL REQUEST
+   └─ Run: gh pr create --repo cn-dataworks/pbir-visuals \
+           --title "Add templates: [list]" \
+           --body "[generated description with template details]"
+   └─ Display PR URL to user
 
-5. CLEANUP LOCAL
+7. CLEANUP LOCAL STAGING
    └─ Remove promoted templates from .templates/harvested/
-   └─ Update manifest.json
+   └─ Update manifest.json with PR reference
+   └─ Optionally delete local fork clone
+
+**Example PR Body (Auto-Generated):**
+```markdown
+## New Templates
+
+This PR adds the following visual templates extracted from [Project Name]:
+
+| Template | Type | Description |
+|----------|------|-------------|
+| bar-chart-category-y.json | Bar Chart | Category axis with single Y value |
+| card-single-measure.json | Card | Single KPI display |
+
+## Source
+- Extracted via `/harvest-templates` command
+- Project: [anonymized or user-provided name]
+
+## Checklist
+- [ ] Templates use {{PLACEHOLDER}} syntax correctly
+- [ ] Naming follows convention: [visual-type]-[binding-pattern].json
+- [ ] No project-specific data or formatting leaked
+```
+
+**Alternative: Manual PR (No gh CLI)**
+
+If user doesn't have gh CLI, provide manual instructions:
+1. Fork https://github.com/cn-dataworks/pbir-visuals
+2. Upload templates via GitHub web UI
+3. Create PR from your fork to cn-dataworks/pbir-visuals
 ```
 
 **Template Sanitization Rules:**
@@ -3438,6 +3654,270 @@ Prerequisites:
   ✓ A .pbix or .pbip file open in Desktop
 
 No Azure login or service principal configuration required.
+```
+
+---
+
+#### 7.0.17 MCP Compliance Protocol
+
+**Context:** Use this protocol whenever the user invokes powerbi-modeling-mcp or requests Power BI data modeling tasks. This protocol ensures safe handling of potentially sensitive data.
+
+---
+
+##### 7.0.17.1 Connection Integrity Check
+
+Before initializing any MCP tool use, the AI must classify the session intent and enforce the corresponding connection method.
+
+**Intent 1: Schema Management (Safe Mode)**
+
+| Attribute | Description |
+|-----------|-------------|
+| **Description** | Tasks involving creating measures, organizing tables, bulk renaming, or formatting DAX |
+| **Data Exposure** | None - metadata only |
+| **Use Cases** | Code review, measure creation, schema changes |
+
+**Protocol:**
+1. Instruct user to close Power BI Desktop
+2. Instruct user to delete `cache.abf` from the project's `.pbi` folder
+   - Path: `[ProjectName].Dataset\.pbi\cache.abf`
+3. **Mandatory Connection:** Connect ONLY via the PBIP Folder path
+4. **Verification:** Confirm `dax_query_operations` are unavailable
+
+```
+✅ SCHEMA MODE ACTIVE
+
+Connected via: PBIP Folder (C:\Projects\SalesAnalytics\)
+Desktop: Closed (verified)
+Cache: Deleted (cache.abf removed)
+
+Available Operations:
+• measure_operations.create/update/delete
+• table_operations.create/rename
+• column_operations.create/rename
+• relationship_operations.*
+
+Restricted Operations:
+• dax_query_operations.execute() ← BLOCKED
+• Data sampling ← BLOCKED
+```
+
+---
+
+**Intent 2: Data Validation (Live/Debug Mode)**
+
+| Attribute | Description |
+|-----------|-------------|
+| **Description** | Tasks requiring query execution, debugging circular dependencies, or performance testing |
+| **Data Exposure** | Yes - actual data values visible |
+| **Use Cases** | Debugging measures, testing calculations, data validation |
+
+**Protocol:**
+1. **Stop Condition:** Halt and request confirmation of data anonymization
+2. **Query:** "Have you applied `fxAnonymize` and refreshed with `ComplianceMode = TRUE`?"
+3. **If Unconfirmed:** Deny live connection. Provide the M-Code Anonymization Pattern (see 7.0.17.3)
+4. **If Confirmed:** Allow connection via Running Power BI Desktop
+
+```
+⚠️ LIVE MODE REQUESTED
+
+This mode allows query execution against actual data.
+
+Before proceeding, confirm:
+  □ fxAnonymize function exists in the model
+  □ ComplianceMode parameter = TRUE
+  □ Data has been refreshed with anonymization active
+
+Have you completed these steps? [Y/N]
+
+If NO: I'll provide the anonymization setup instructions.
+If YES: Proceeding with live connection.
+```
+
+---
+
+##### 7.0.17.2 PII Sensitivity Scanning (Metadata Only)
+
+The AI must perform a heuristic scan of the schema before recommending anonymization targets.
+
+**Trigger:** Upon initial connection to a PBIP folder (Schema Mode)
+
+**Action:** Analyze all `Table[Column]` names against standard PII patterns
+
+**Patterns to Flag:**
+
+| Category | Column Name Patterns |
+|----------|---------------------|
+| **Identity** | `Name`, `First`, `Last`, `Email`, `SSN`, `Social`, `ID` (if not FK), `User`, `Login` |
+| **Contact** | `Phone`, `Mobile`, `Fax`, `Address`, `Street`, `City`, `Zip`, `Postal` |
+| **Financial** | `Salary`, `Wage`, `Bonus`, `Commission`, `CreditCard`, `IBAN`, `Account` |
+
+**Output:** Present a markdown list of "Recommended Columns for Masking" to the user for review.
+
+```markdown
+🔍 PII SCAN RESULTS
+
+Scanning schema for potentially sensitive columns...
+
+**Recommended for Anonymization:**
+
+| Table | Column | Category | Confidence |
+|-------|--------|----------|------------|
+| Customer | CustomerName | Identity | High |
+| Customer | Email | Identity | High |
+| Customer | Phone | Contact | High |
+| Customer | Address | Contact | High |
+| Employee | SSN | Identity | High |
+| Employee | Salary | Financial | High |
+| Employee | BankAccount | Financial | Medium |
+
+**Not Flagged (Review Manually):**
+- Customer[CustomerID] - Appears to be FK, not PII
+- Sales[TransactionID] - System identifier
+
+Would you like me to generate the fxAnonymize function for these columns?
+```
+
+---
+
+##### 7.0.17.3 Anonymization Logic Injection (M-Code)
+
+When the user requests masking support or confirmation is needed for Live Mode, provide the standard deterministic hash pattern.
+
+**Standard M-Code Pattern: `fxAnonymize`**
+
+```m
+// Specification: Deterministic SHA256 Hash with Toggle
+// Usage: Create as 'fxAnonymize' and wrap sensitive columns
+// Dependencies: Requires 'ComplianceMode' parameter (type: logical)
+
+(InputString as any) as text =>
+let
+    RunAnonymization = ComplianceMode, // Must reference 'ComplianceMode' (type: logical) parameter
+    SourceText = Text.From(InputString),
+    HashText = Text.Start(Binary.ToText(Crypto.CreateHash(Algorithm.SHA256, Text.ToBinary(SourceText)), BinaryEncoding.Hex), 10),
+    Result = if RunAnonymization = true then HashText else SourceText
+in
+    if InputString = null then null else Result
+```
+
+**Required Parameter: `ComplianceMode`**
+
+```m
+// Create as Named Expression in Power Query
+true meta [IsParameterQuery=true, Type="Logical", IsParameterQueryRequired=true]
+```
+
+**Implementation in Table Partition:**
+
+```m
+let
+    Source = Sql.Database("server", "database"),
+    Customers = Source{[Schema="dbo", Item="Customers"]}[Data],
+
+    // Apply anonymization to sensitive columns
+    AnonymizedData = Table.TransformColumns(Customers, {
+        {"CustomerName", each fxAnonymize(_)},
+        {"Email", each fxAnonymize(_)},
+        {"Phone", each fxAnonymize(_)},
+        {"SSN", each fxAnonymize(_)}
+    })
+in
+    AnonymizedData
+```
+
+**Key Properties:**
+- **Deterministic:** Same input always produces same hash (enables joins, grouping)
+- **Irreversible:** SHA256 hash cannot be reversed to original value
+- **Toggle-Controlled:** `ComplianceMode = FALSE` bypasses anonymization for production
+- **Null-Safe:** Handles null values gracefully
+
+---
+
+##### 7.0.17.4 TMDL Annotation for Anonymization Status
+
+Add a comment block to the table's `.tmdl` file documenting anonymization configuration:
+
+```tmdl
+table Customer
+    lineageTag: abc-123-def
+
+    /// ╔════════════════════════════════════════════════════════════════╗
+    /// ║ ANONYMIZATION CONFIGURATION                                    ║
+    /// ╠════════════════════════════════════════════════════════════════╣
+    /// ║ Status: ENABLED                                                ║
+    /// ║ Function: fxAnonymize (SHA256 hash)                            ║
+    /// ║ Toggle: ComplianceMode parameter                               ║
+    /// ║                                                                ║
+    /// ║ Masked Columns:                                                ║
+    /// ║   • CustomerName (Identity)                                    ║
+    /// ║   • Email (Identity)                                           ║
+    /// ║   • Phone (Contact)                                            ║
+    /// ║   • SSN (Identity)                                             ║
+    /// ║                                                                ║
+    /// ║ Last Modified: 2025-12-23T10:00:00Z                            ║
+    /// ║ Modified By: powerbi-analyst skill                             ║
+    /// ╚════════════════════════════════════════════════════════════════╝
+
+    partition 'Customer-Partition' = m
+        mode: import
+        source = ...
+```
+
+---
+
+##### 7.0.17.5 PBIX File Warning
+
+When the user is working with a `.pbix` file (not `.pbip` folder), issue a warning:
+
+```
+⚠️ PBIX FORMAT DETECTED
+
+Warning: PBIX files contain compressed binary data.
+For strict compliance, please convert to PBIP format:
+
+1. Open the .pbix file in Power BI Desktop
+2. File → Save As → Select "Power BI Project (*.pbip)"
+3. Delete the original .pbix file
+4. Re-run this command on the new .pbip folder
+
+Benefits of PBIP:
+• Human-readable TMDL files (auditable)
+• Git-friendly (proper version control)
+• No cache.abf with pre-loaded data
+• Explicit data source connections
+
+Would you like instructions for conversion?
+```
+
+---
+
+##### 7.0.17.6 Connection Mode Decision Tree
+
+```
+USER REQUEST RECEIVED
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Does request require data access?                              │
+│  (query execution, debugging, validation with data)             │
+└─────────────────────────────────────────────────────────────────┘
+    │                           │
+    │ NO                        │ YES
+    ▼                           ▼
+┌─────────────┐     ┌─────────────────────────────────────────────┐
+│ SCHEMA MODE │     │  LIVE MODE GATE                             │
+│             │     │  ─────────────────                          │
+│ • Close     │     │  Ask: "Have you applied fxAnonymize         │
+│   Desktop   │     │        and refreshed with                   │
+│ • Delete    │     │        ComplianceMode = TRUE?"              │
+│   cache.abf │     │                                             │
+│ • Connect   │     │  ┌─────────┬─────────────┐                  │
+│   via PBIP  │     │  │ YES     │ NO/UNSURE   │                  │
+└─────────────┘     │  ▼         ▼             │                  │
+                    │ ALLOW     PROVIDE        │                  │
+                    │ LIVE      ANONYMIZATION  │                  │
+                    │ MODE      INSTRUCTIONS   │                  │
+                    └─────────────────────────────────────────────┘
 ```
 
 ---

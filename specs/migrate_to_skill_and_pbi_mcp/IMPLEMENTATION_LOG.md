@@ -20,6 +20,9 @@
 | 8 | Create installer scripts | ✅ Complete |
 | 9 | Final cleanup (remove obsolete files) | ✅ Complete |
 | 10 | Template Harvesting workflow | ✅ Complete |
+| 10b | Import starter template library | ✅ Complete |
+| 10c | Public template repository migration | ✅ Complete |
+| 10d | Runtime preflight checks | ✅ Complete |
 
 ---
 
@@ -422,6 +425,133 @@ MyProject/                                 pbir-visuals/
 
 ---
 
+### 2025-12-23: Step 10c - Public Template Repository Migration
+
+**Actions:**
+
+**Removed Local Template Copies:**
+- Deleted 17 JSON files from `.claude/skills/powerbi-analyst/assets/visual-templates/`
+- Templates now fetched from public repository at runtime
+
+**Created Public Repository Reference:**
+- Repository: `github.com/cn-dataworks/pbir-visuals`
+- Anyone can fork and submit templates via Pull Request
+- Templates fetched via `raw.githubusercontent.com`
+
+**Updated SPEC.md Workflow 7:**
+- Added public repository architecture diagram
+- Updated Phase 2 (REVIEW) to fetch from GitHub API
+- Updated Phase 3 (PROMOTE) with PR-based workflow:
+  - Check GitHub CLI authentication
+  - Fork repository (if needed)
+  - Create feature branch
+  - Copy templates to fork
+  - Create Pull Request via `gh pr create`
+- Added fallback manual PR instructions (no gh CLI)
+
+**Updated SKILL.md:**
+- Added "Public Template Repository" URL
+- Updated harvest workflow steps for PR-based promotion
+- Updated References section to point to public repo
+
+**Updated Template Harvester Agent:**
+- Added public repository reference
+- Added Phase 7: Review (compare against public library)
+- Added Phase 8: Promote (PR workflow with gh CLI)
+- Added error handling for GitHub authentication failures
+
+**Updated `assets/visual-templates/README.md`:**
+- Points to public repository for templates
+- Explains contribution workflow (fork → PR)
+- Documents `/harvest-templates`, `/review-templates`, `/promote-templates` commands
+
+**Architecture Change:**
+```
+BEFORE (Local Storage):                    AFTER (Public Repository):
+──────────────────────────                 ──────────────────────────────────
+.claude/skills/.../                        github.com/cn-dataworks/pbir-visuals/
+└── assets/visual-templates/               └── visual-templates/
+    ├── card-single-measure.json               ├── card-single-measure.json
+    └── [17 template files]                    └── [community templates]
+
+                                           Workflow:
+                                           1. /harvest-templates → Local staging
+                                           2. /review-templates → Compare with public
+                                           3. /promote-templates → Create PR to public
+```
+
+**Benefits:**
+- Community contributions via standard GitHub workflow
+- Templates searchable and discoverable on GitHub
+- Version controlled with full history
+- Works independently of this private skill
+- Standard fork → branch → PR workflow familiar to developers
+
+**Result:** Template system now uses public repository with PR-based contributions
+
+---
+
+### 2025-12-23: Step 10d - Runtime Preflight Checks
+
+**Actions:**
+
+**Design Decision:**
+- Chose runtime detection over configuration file approach
+- Each command checks its requirements when run
+- No config file needed - simpler, always accurate
+
+**Updated SPEC.md Workflow 7:**
+- Added "Capability Tiers (Runtime Detection)" section
+- Added detailed "Preflight Checks" section with:
+  - `/harvest-templates`: Project path, PBIR format, visuals exist
+  - `/review-templates`: Harvested templates exist, GitHub API reachable
+  - `/promote-templates`: Templates marked, gh CLI installed, authenticated, network
+- Each check includes Pass/Fail actions with helpful error messages
+
+**Updated SKILL.md HARVEST_TEMPLATES:**
+- Added capability tiers table
+- Added preflight descriptions to each process step
+- Documented fallback behavior (manual PR instructions)
+
+**Updated Template Harvester Agent:**
+- Added Phase 0: Preflight Checks section
+- Documented all checks for each command
+- Included full error message templates
+
+**Capability Tier Summary:**
+```
+TIER 1: /harvest-templates    → Always available (needs PBIR project)
+TIER 2: /review-templates     → Needs harvested templates + internet (graceful offline)
+TIER 3: /promote-templates    → Needs GitHub CLI + authentication (manual PR fallback)
+```
+
+**Error Message Philosophy:**
+- Tell user what failed
+- Tell user why it matters
+- Tell user exactly how to fix it
+- Provide alternatives when possible
+
+**Example Error (gh not installed):**
+```
+❌ GitHub CLI not installed.
+
+To install:
+• Windows: winget install GitHub.cli
+• macOS:   brew install gh
+• Linux:   https://cli.github.com/
+
+After install: gh auth login
+
+─── ALTERNATIVE: Manual PR ───
+1. Fork https://github.com/cn-dataworks/pbir-visuals
+2. Upload templates via GitHub web UI
+3. Create pull request manually
+```
+
+**Result:** Template commands now perform runtime checks with actionable error messages
+
+---
+
 ## Files to Clean Up (End of Migration)
 
 These files in `specs/migrate_to_skill_and_pbi_mcp/` should be evaluated for cleanup:
@@ -450,6 +580,8 @@ These files in `specs/migrate_to_skill_and_pbi_mcp/` should be evaluated for cle
 | 20 agents (added harvester) | Template Harvesting workflow requires dedicated agent | 2025-12-22 |
 | Hybrid template storage | Local staging → review → promote to shared library allows curation | 2025-12-22 |
 | Descriptive template naming | `[visual-type]-[binding-pattern].json` based on chart type per user preference | 2025-12-22 |
+| Public template repository | Enables community contributions via standard GitHub PR workflow | 2025-12-23 |
+| Runtime detection over config | Simpler, always accurate, no stale config; check dependencies when command runs | 2025-12-23 |
 
 ---
 

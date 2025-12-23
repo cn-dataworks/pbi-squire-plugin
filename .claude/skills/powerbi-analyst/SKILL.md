@@ -160,14 +160,40 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 
 **Commands:** `/harvest-templates`, `/review-templates`, `/promote-templates`
 
+**Public Template Repository:** https://github.com/cn-dataworks/pbir-visuals
+
+**Capability Tiers (Runtime Detection):**
+
+| Command | Requirements | If Missing |
+|---------|--------------|------------|
+| `/harvest-templates` | PBIR .Report folder | Guide to convert PBIX → PBIP |
+| `/review-templates` | Harvested templates | Prompt to harvest first |
+| `/promote-templates` | GitHub CLI (`gh`) + authenticated | Manual PR instructions |
+
+Each command checks requirements at runtime and provides helpful error messages with next steps.
+
 **Process:**
-1. **Harvest** - Scan .Report folder for all visuals
-2. Classify visuals by type and binding pattern
-3. Deduplicate (keep unique structures only)
-4. Sanitize (replace specifics with `{{PLACEHOLDER}}` syntax)
-5. Save to local staging: `.templates/harvested/`
-6. **Review** - Compare against existing library, mark for promotion
-7. **Promote** - Copy selected to `pbir-visuals/visual-templates/`
+1. **Harvest** (`/harvest-templates`) - *Always available with PBIR project*
+   - Preflight: Verify .Report folder exists
+   - Scan .Report folder for all visuals
+   - Classify visuals by type and binding pattern
+   - Deduplicate (keep unique structures only)
+   - Sanitize (replace specifics with `{{PLACEHOLDER}}` syntax)
+   - Save to local staging: `.templates/harvested/`
+
+2. **Review** (`/review-templates`) - *Requires harvested templates*
+   - Preflight: Verify harvested templates exist
+   - Fetch existing templates from public repository
+   - Compare harvested against public library
+   - Flag as: NEW, DUPLICATE, VARIANT, IMPROVED
+   - Mark templates for promotion
+
+3. **Promote** (`/promote-templates`) - *Requires GitHub CLI*
+   - Preflight: Check `gh --version` and `gh auth status`
+   - If gh not installed → show install instructions + manual PR alternative
+   - If not authenticated → prompt `gh auth login`
+   - Fork public repo (if not already forked)
+   - Create feature branch, copy templates, create PR
 
 **Naming Convention:**
 ```
@@ -180,11 +206,11 @@ Examples:
 - slicer-dropdown.json
 ```
 
-**Storage (Hybrid):**
+**Storage:**
 - Local staging: `[project]/.templates/harvested/`
-- Shared library: `pbir-visuals/visual-templates/` (after promotion)
+- Public library: `github.com/cn-dataworks/pbir-visuals/visual-templates/` (via PR)
 
-**Output:** Template files + harvest manifest
+**Output:** Template files + harvest manifest + PR URL (on promotion)
 
 ---
 
@@ -260,15 +286,20 @@ This skill includes reference documentation:
 ### `assets/findings_template.md`
 Template for Task Blackboard used by all workflows.
 
-### `assets/visual-templates/`
-17 reusable PBIR visual templates with `{{PLACEHOLDER}}` syntax:
+### Visual Templates (Public Repository)
+PBIR visual templates with `{{PLACEHOLDER}}` syntax are maintained in a public repository:
+
+**GitHub:** https://github.com/cn-dataworks/pbir-visuals/visual-templates/
+
+Template types include:
 - Cards, line charts, bar charts, column charts
 - Tables, matrices, pie charts, scatter charts
 - Azure maps (gradient, bubble)
 - Slicers (date range, dropdown, multi-select)
 - Static images
 
-See `assets/visual-templates/README.md` for full catalog.
+Templates are fetched via `WebFetch` from raw.githubusercontent.com.
+See `assets/visual-templates/README.md` for usage and contribution instructions.
 
 ### `references/`
 - `getting-started.md` - Onboarding guide with data masking workflow

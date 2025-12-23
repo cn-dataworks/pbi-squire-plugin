@@ -4,7 +4,16 @@ Extract reusable PBIR visual templates from existing Power BI reports.
 
 ## Purpose
 
-Scan PBIR visual.json files, extract unique visual patterns, sanitize them into reusable templates with placeholders, and save to local staging for review and promotion.
+Scan PBIR visual.json files, extract unique visual patterns, sanitize them into reusable templates with placeholders, and save to local staging for review and promotion to the public template repository.
+
+## Public Template Repository
+
+**GitHub:** https://github.com/cn-dataworks/pbir-visuals
+
+Templates are contributed via Pull Request workflow:
+1. **Harvest** - Extract from local reports to staging
+2. **Review** - Compare against public library
+3. **Promote** - Create PR to public repository
 
 ## When to Invoke
 
@@ -28,9 +37,121 @@ Use this agent when the user wants to:
 | Page filter | User (optional) | No |
 | Visual filter | User (optional) | No |
 
+---
+
+## Capability Tiers
+
+Commands are available based on runtime checks. No configuration needed - check when run.
+
+| Command | Tier | Requirements | If Missing |
+|---------|------|--------------|------------|
+| `/harvest-templates` | 1 - Always | PBIR .Report folder | Guide to convert PBIX → PBIP |
+| `/review-templates` | 2 - Read-Only | Harvested templates | Prompt to run harvest first |
+| `/promote-templates` | 3 - Contributor | GitHub CLI + auth | Manual PR instructions |
+
+---
+
 ## Workflow
 
-### Phase 1: Scan
+### Phase 0: Preflight Checks
+
+**Before ANY command, verify requirements and provide helpful feedback.**
+
+#### For `/harvest-templates`:
+
+```
+PREFLIGHT CHECK 1: Project path
+├─ Check: Project path provided or current directory is a Power BI project
+├─ Pass: Continue
+└─ Fail: "Please specify a Power BI project path, or run from within a project folder."
+
+PREFLIGHT CHECK 2: PBIR format
+├─ Check: Glob for [project]/*.Report/definition/pages/
+├─ Pass: Continue
+└─ Fail:
+   "❌ No .Report folder found.
+
+    Template harvesting requires PBIR format (Power BI Enhanced Report).
+
+    To convert:
+    1. Open your .pbix in Power BI Desktop
+    2. File → Save As → Select 'Power BI Project (*.pbip)'
+    3. Re-run /harvest-templates"
+
+PREFLIGHT CHECK 3: Visuals exist
+├─ Check: Glob for .Report/definition/pages/*/visuals/*/visual.json
+├─ Pass: Continue
+└─ Fail:
+   "⚠️ No visuals found. Report appears empty or uses different structure."
+```
+
+#### For `/review-templates`:
+
+```
+PREFLIGHT CHECK 1: Harvested templates exist
+├─ Check: .templates/harvested/manifest.json exists
+├─ Pass: Continue
+└─ Fail:
+   "❌ No harvested templates found.
+
+    Run /harvest-templates first to extract templates from your report."
+
+PREFLIGHT CHECK 2: GitHub API reachable
+├─ Check: WebFetch https://api.github.com/repos/cn-dataworks/pbir-visuals
+├─ Pass: Continue with comparison
+└─ Warn (continue anyway):
+   "⚠️ Cannot reach GitHub. Continuing offline - no library comparison."
+```
+
+#### For `/promote-templates`:
+
+```
+PREFLIGHT CHECK 1: Templates marked for promotion
+├─ Check: manifest.json has entries with "promote": true
+├─ Pass: Continue
+└─ Fail:
+   "❌ No templates marked for promotion.
+
+    Run /review-templates and mark templates with [P]romote."
+
+PREFLIGHT CHECK 2: GitHub CLI installed
+├─ Check: Bash: gh --version
+├─ Pass: Continue
+└─ Fail:
+   "❌ GitHub CLI not installed.
+
+    To install:
+    • Windows: winget install GitHub.cli
+    • macOS:   brew install gh
+    • Linux:   https://cli.github.com/
+
+    After install: gh auth login
+
+    ─── ALTERNATIVE: Manual PR ───
+    1. Fork https://github.com/cn-dataworks/pbir-visuals
+    2. Upload templates via GitHub web UI
+    3. Create pull request manually"
+
+PREFLIGHT CHECK 3: GitHub authenticated
+├─ Check: Bash: gh auth status
+├─ Pass: Continue (display username)
+└─ Fail:
+   "❌ Not authenticated to GitHub.
+
+    Run: gh auth login
+
+    Follow prompts to authenticate (GitHub account required, free)."
+
+PREFLIGHT CHECK 4: Network connectivity
+├─ Check: Can reach github.com
+├─ Pass: Continue
+└─ Fail:
+   "❌ Cannot reach github.com. Check internet connection."
+```
+
+---
+
+### Phase 1: Scan (`/harvest-templates`)
 
 ```
 1. Validate .Report folder exists
@@ -211,6 +332,86 @@ Next Steps:
   2. Promote to library: /promote-templates
 ```
 
+---
+
+### Phase 7: Review (`/review-templates`)
+
+Compare harvested templates against the public library:
+
+```
+1. LOAD HARVESTED
+   └─ Read .templates/harvested/manifest.json
+   └─ List all harvested templates
+
+2. FETCH PUBLIC LIBRARY
+   └─ WebFetch: https://api.github.com/repos/cn-dataworks/pbir-visuals/contents/visual-templates
+   └─ Parse directory listing for existing template names
+   └─ Optionally fetch individual templates for structure comparison
+
+3. COMPARE
+   └─ For each harvested template:
+       - NEW: Name doesn't exist in public library
+       - DUPLICATE: Same name and structure hash
+       - VARIANT: Same name, different structure (append -v2)
+       - IMPROVED: Same type, better formatting coverage
+
+4. PRESENT FOR DECISION
+   └─ Show each template with status
+   └─ User marks: [P]romote, [S]kip, [R]ename
+   └─ Store decisions in manifest.json
+```
+
+---
+
+### Phase 8: Promote (`/promote-templates`)
+
+Create Pull Request to public repository:
+
+**Prerequisites:**
+- GitHub CLI (`gh`) installed and authenticated
+- Permission to fork public repos (free)
+
+```
+1. CHECK GITHUB AUTH
+   └─ Run: gh auth status
+   └─ If not authenticated: prompt for gh auth login
+
+2. SETUP FORK (First Time)
+   └─ Check for existing fork of cn-dataworks/pbir-visuals
+   └─ If no fork: gh repo fork cn-dataworks/pbir-visuals --clone=false
+   └─ Clone to local: gh repo clone [username]/pbir-visuals ~/pbir-visuals-fork
+   └─ If exists: git pull origin main
+
+3. CREATE BRANCH
+   └─ Branch: templates/[project-name]-[timestamp]
+   └─ Run: git checkout -b templates/sales-dashboard-20251223
+
+4. COPY TEMPLATES
+   └─ Copy marked templates from .templates/harvested/ to fork
+   └─ Destination: ~/pbir-visuals-fork/visual-templates/
+
+5. COMMIT AND PUSH
+   └─ git add visual-templates/*.json
+   └─ git commit -m "Add [N] templates from [project-name]"
+   └─ git push origin [branch-name]
+
+6. CREATE PULL REQUEST
+   └─ gh pr create --repo cn-dataworks/pbir-visuals \
+         --title "Add templates: [list]" \
+         --body "[auto-generated description]"
+   └─ Display PR URL to user
+
+7. CLEANUP
+   └─ Remove promoted from .templates/harvested/
+   └─ Update manifest.json with PR reference
+```
+
+**Alternative (No gh CLI):**
+Provide manual instructions:
+1. Fork https://github.com/cn-dataworks/pbir-visuals
+2. Upload templates via GitHub web UI
+3. Create PR manually
+
 ## Outputs
 
 | Output | Location | Description |
@@ -218,6 +419,7 @@ Next Steps:
 | Template files | `.templates/harvested/*.json` | Sanitized visual templates |
 | Manifest | `.templates/harvested/manifest.json` | Harvest metadata |
 | Summary report | Console | Results summary |
+| Pull Request | GitHub | PR to cn-dataworks/pbir-visuals (on promote) |
 
 ## Error Handling
 
@@ -227,6 +429,10 @@ Next Steps:
 | No visuals found | Warn and exit gracefully |
 | Invalid visual.json | Skip with warning, continue |
 | Write permission denied | Abort with path guidance |
+| GitHub CLI not installed | Provide manual PR instructions |
+| Not authenticated to GitHub | Prompt: `gh auth login` |
+| Fork creation failed | Provide manual fork instructions |
+| PR creation failed | Show branch URL for manual PR |
 
 ## Constraints
 
