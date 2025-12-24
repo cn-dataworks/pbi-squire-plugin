@@ -468,6 +468,95 @@ Specialists read from `state.json` and write their outputs to `findings.md`. The
 
 This section provides the complete specification for the skill, derived from readiness_analysis.md Section 1.1.
 
+#### 7.0.0 Official Skill Folder Structure (Claude Code Standard)
+
+> **Reference:** This structure is based on official Anthropic documentation:
+> - [Agent Skills Overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)
+> - [Claude Code Skills](https://code.claude.com/docs/en/skills)
+> - [Skills Cookbook](https://github.com/anthropics/claude-cookbooks/tree/main/skills)
+
+**Key Principle:** Skills must be **self-contained**. All related components (workflows, agents, scripts, resources) live INSIDE the skill folder.
+
+**Official Standard Structure:**
+
+```
+.claude/skills/
+└── skill-name/
+    ├── SKILL.md              # Required: Main entry point with YAML frontmatter
+    ├── workflows/            # User-invocable commands (slash commands)
+    │   ├── evaluate.md
+    │   └── create.md
+    ├── agents/               # Subagents invoked by the skill (not standalone)
+    │   ├── specialist-a.md
+    │   └── specialist-b.md
+    ├── scripts/              # Executable code (Python, PowerShell, Bash)
+    │   ├── install.ps1
+    │   └── helper.py
+    └── resources/            # Templates, reference docs, data files
+        ├── template.md
+        └── glossary.md
+```
+
+**Component Definitions:**
+
+| Folder | Purpose | Invocation |
+|--------|---------|------------|
+| `workflows/` | User-facing slash commands (`/evaluate`, `/create`) | User types `/command` |
+| `agents/` | Subagents that the skill delegates to via Task tool | Skill invokes internally |
+| `scripts/` | Executable utilities (installers, validators, helpers) | Claude runs via Bash |
+| `resources/` | Reference materials, templates, context documents | Claude reads as needed |
+
+**Progressive Disclosure:**
+- **Level 1 (Always loaded):** SKILL.md frontmatter (`name`, `description`) ~100 tokens
+- **Level 2 (On trigger):** SKILL.md body instructions <5k tokens
+- **Level 3 (As needed):** Files in subfolders (unlimited, loaded on demand)
+
+**SKILL.md Frontmatter Requirements:**
+
+```yaml
+---
+name: skill-name          # Max 64 chars, lowercase, letters/numbers/hyphens only
+description: |            # Max 1024 chars, explains what AND when to use
+  Brief description of what this skill does and when Claude should use it.
+---
+```
+
+**What NOT to do:**
+- ❌ Commands at repository root (`/commands/`) - should be `skill/workflows/`
+- ❌ Agents at repository root (`/agents/`) - should be `skill/agents/`
+- ❌ Scattered installation scripts - should be `skill/scripts/`
+
+**This Skill's Target Structure:**
+
+```
+skills/powerbi-analyst/
+├── SKILL.md                           # Main entry point
+├── workflows/                         # 7 user-invocable commands
+│   ├── evaluate-pbi-project-file.md
+│   ├── create-pbi-artifact.md
+│   ├── create-pbi-page-specs.md
+│   ├── implement-deploy-test-pbi-project-file.md
+│   ├── analyze-pbi-dashboard.md
+│   ├── merge-powerbi-projects.md
+│   └── harvest-templates.md
+├── agents/                            # 20 subagents
+│   ├── powerbi-dax-specialist.md
+│   ├── powerbi-mcode-specialist.md
+│   └── ... (18 more)
+├── scripts/                           # Installer and state management
+│   ├── install.ps1
+│   ├── install.sh
+│   ├── state_manage.ps1
+│   └── state_manage.sh
+└── resources/                         # Reference documentation
+    ├── getting-started.md
+    ├── glossary.md
+    ├── troubleshooting-faq.md
+    └── findings_template.md
+```
+
+---
+
 #### 7.0.1 Skill Metadata Block
 
 ```yaml

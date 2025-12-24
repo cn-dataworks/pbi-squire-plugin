@@ -25,6 +25,7 @@
 | 10d | Runtime preflight checks | ✅ Complete |
 | 11 | Plugin distribution restructure | ✅ Complete |
 | 12 | Update SPEC.md for actual implementation | ✅ Complete |
+| 13 | Restructure to official skill folder standard | ✅ Complete |
 
 ---
 
@@ -644,6 +645,88 @@ cp -r skills/powerbi-analyst ~/.claude/skills/
 - All CLI examples now show PowerShell and Bash syntax
 
 **Result:** SPEC.md now accurately reflects the implemented zero-dependency architecture
+
+---
+
+### 2025-12-24: Step 13 - Restructure to Official Skill Folder Standard
+
+**Problem Identified:**
+Based on review of official Anthropic documentation:
+- [Agent Skills Overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)
+- [Claude Code Skills](https://code.claude.com/docs/en/skills)
+- [Skills Cookbook](https://github.com/anthropics/claude-cookbooks/tree/main/skills)
+
+Our structure had components at repository root level instead of inside the skill folder.
+
+**Key Principle:** Skills must be **self-contained**. All related components live INSIDE the skill folder.
+
+**Before (Incorrect):**
+```
+powerbi-analyst-plugin/
+├── skills/powerbi-analyst/
+│   ├── SKILL.md
+│   ├── install.ps1          ← At skill root
+│   ├── install.sh           ← At skill root
+│   ├── references/          ← Wrong folder name
+│   └── assets/              ← Wrong folder name
+├── commands/                 ← WRONG: At repo root
+└── agents/                   ← WRONG: At repo root
+```
+
+**After (Correct - Official Standard):**
+```
+skills/powerbi-analyst/
+├── SKILL.md                 # Main entry point
+├── workflows/               # User-invocable commands (6 files)
+│   ├── evaluate-pbi-project-file.md
+│   ├── create-pbi-artifact.md
+│   ├── create-pbi-page-specs.md
+│   ├── implement-deploy-test-pbi-project-file.md
+│   ├── analyze-pbi-dashboard.md
+│   └── merge-powerbi-projects.md
+├── agents/                  # Subagents (20 files)
+│   ├── powerbi-dax-specialist.md
+│   ├── powerbi-mcode-specialist.md
+│   └── ... (18 more)
+├── scripts/                 # Executable code (4 files)
+│   ├── install.ps1
+│   ├── install.sh
+│   ├── state_manage.ps1
+│   └── state_manage.sh
+└── resources/               # Reference materials
+    ├── getting-started.md
+    ├── glossary.md
+    ├── troubleshooting-faq.md
+    ├── findings_template.md
+    └── visual-templates/
+```
+
+**Changes Made:**
+1. Created `workflows/`, `agents/`, `scripts/`, `resources/` inside skill folder
+2. Moved `commands/*.md` → `skills/powerbi-analyst/workflows/`
+3. Moved `agents/*.md` → `skills/powerbi-analyst/agents/`
+4. Moved `references/*` → `skills/powerbi-analyst/resources/`
+5. Moved `assets/*` → `skills/powerbi-analyst/resources/`
+6. Moved `install.ps1`, `install.sh` → `skills/powerbi-analyst/scripts/`
+7. Copied `state_manage.ps1`, `state_manage.sh` → `skills/powerbi-analyst/scripts/`
+8. Deleted old root-level `commands/` and `agents/` folders
+9. Deleted old `references/` and `assets/` folders
+
+**Updated SPEC.md:**
+- Added Section 7.0.0 "Official Skill Folder Structure (Claude Code Standard)"
+- Documents progressive disclosure model
+- Documents component definitions (workflows, agents, scripts, resources)
+
+**Component Definitions (from official docs):**
+
+| Folder | Purpose | Invocation |
+|--------|---------|------------|
+| `workflows/` | User-facing slash commands | User types `/command` |
+| `agents/` | Subagents that skill delegates to | Skill invokes via Task tool |
+| `scripts/` | Executable utilities | Claude runs via Bash |
+| `resources/` | Reference materials, templates | Claude reads as needed |
+
+**Result:** Skill now follows official Claude Code skill structure standards
 
 ---
 
