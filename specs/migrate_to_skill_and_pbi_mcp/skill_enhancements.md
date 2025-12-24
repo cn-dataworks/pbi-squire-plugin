@@ -18,6 +18,7 @@ This document tracks planned and proposed enhancements for the Power BI Analyst 
 |----|-------------|-------------|--------|-------|
 | ENH-001 | GitHub CI/CD for PBIP | Git management and CI/CD pipeline for Power BI projects | Proposed | See detailed proposal below |
 | ENH-002 | ANONYMIZE for Live Analysis | MCP Compliance Protocol + `/anonymize` workflow to enable safe live debugging | In Progress | SPEC.md 7.0.17 + workflow |
+| ENH-003 | Decouple Testing from Implementation | Separate test execution into standalone `/test-pbi-dashboard` workflow | Proposed | See detailed proposal below |
 
 ### Medium Priority
 
@@ -355,6 +356,139 @@ Claude: ✅ LIVE MODE UNLOCKED
 | Add `/anonymize` commands to SKILL.md | ⏳ Pending |
 | Create agent or orchestrator logic | ⏳ Pending |
 | Test end-to-end workflow | ⏳ Pending |
+
+---
+
+### ENH-003: Decouple Testing from Implementation Workflow
+
+**Priority:** High
+**Status:** Proposed
+**Proposed Date:** 2025-12-24
+
+#### Problem Statement
+
+The current `implement-deploy-test-pbi-project-file` workflow tightly couples three distinct concerns:
+1. **Implementation** (applying code/visual changes)
+2. **Deployment** (publishing to Power BI Service)
+3. **Testing** (browser-based validation via Playwright)
+
+This creates several issues:
+- Users cannot implement without also triggering testing infrastructure
+- Testing requires a deployed dashboard URL, creating circular dependencies
+- The workflow is heavyweight for simple "just apply my changes" requests
+- Testing logic (Playwright browser automation) is intertwined with code manipulation
+- Users who want to manually test or use different testing tools are forced into the Playwright path
+
+**Current Architecture (Problematic):**
+```
+/implement-deploy-test-pbi-project-file
+    ├── Phase 1-2: Apply Code/Visual Changes
+    ├── Phase 2.5-2.6: Validate TMDL/PBIR
+    ├── Phase 3: DAX Validation
+    ├── Phase 4: Deployment (optional)
+    └── Phase 5: Testing (optional but integrated)  ← Tightly coupled
+```
+
+#### Proposed Solution
+
+Split the workflow into two independent commands:
+
+**1. `/implement-pbi-changes` (Renamed/Refactored)**
+- Stops at implementation + validation
+- Creates test plan (Section 3) but does NOT execute it
+- Returns: Versioned project path + test plan ready for execution
+
+**2. `/test-pbi-dashboard` (New Standalone Workflow)**
+- Takes findings.md (with Section 3 test plan) + dashboard URL
+- Executes Playwright-based browser testing
+- Writes results to test-results/ folder
+- Can be run independently, multiple times, against any URL
+
+**New Architecture (Decoupled):**
+```
+/implement-pbi-changes
+    ├── Phase 1-2: Apply Code/Visual Changes
+    ├── Phase 2.5-2.6: Validate TMDL/PBIR
+    ├── Phase 3: DAX Validation
+    ├── Phase 4: Deployment (optional)
+    └── OUTPUT: findings.md with Section 3 (Test Plan)
+
+/test-pbi-dashboard  (NEW - standalone)
+    ├── INPUT: findings.md + dashboard URL
+    ├── Execute Playwright tests from Section 3
+    ├── Capture screenshots
+    └── OUTPUT: test-results/test_results.md
+```
+
+#### Benefits
+
+- **Separation of Concerns**: Implementation and testing are distinct operations
+- **Flexibility**: Users can choose when/if to run testing
+- **Repeatability**: Tests can be run multiple times against different environments (DEV, TEST, PROD)
+- **Alternative Testing**: Users can substitute their own testing approach
+- **Simpler Workflows**: Implement-only use case is cleaner and faster
+- **Better CI/CD Integration**: Separate steps can be orchestrated independently in pipelines
+
+#### Implementation Tasks
+
+| Task | Description | Status |
+|------|-------------|--------|
+| Rename workflow file | `implement-deploy-test-pbi-project-file.md` → `implement-pbi-changes.md` | ⏳ Pending |
+| Remove Phase 5 | Delete testing phase from implement workflow | ⏳ Pending |
+| Update Phase 4 output | Deployment optional; workflow ends after validation | ⏳ Pending |
+| Create `/test-pbi-dashboard` workflow | New standalone workflow for testing | ⏳ Pending |
+| Preserve `powerbi-playwright-tester` agent | Keep agent, invoke from new workflow | ⏳ Pending |
+| Update SKILL.md | Document new workflow separation | ⏳ Pending |
+| Update command examples | Show two-step flow in documentation | ⏳ Pending |
+
+#### New `/test-pbi-dashboard` Workflow Specification
+
+**Usage:**
+```bash
+/test-pbi-dashboard --findings "<path-to-findings.md>" --url "<dashboard-url>"
+```
+
+**Parameters:**
+- `--findings` (required): Path to findings.md with Section 3 test plan
+- `--url` (required): URL of deployed Power BI dashboard
+
+**Process:**
+1. Validate findings.md exists and has Section 3
+2. Parse test cases from Section 3
+3. Initialize Playwright browser session
+4. Execute each test case:
+   - Apply URL filters (if Filter Metadata exists)
+   - Capture screenshot
+   - Verify expected results
+5. Generate `test-results/test_results.md`
+6. Return summary (X passed, Y failed)
+
+**Example Session:**
+```bash
+# Step 1: Implement changes
+/implement-pbi-changes --findings "agent_scratchpads/20251224-fix-sales/findings.md"
+
+# Step 2: Deploy manually or via pbi-tools
+pbi-tools deploy . DEV
+
+# Step 3: Test the deployed dashboard
+/test-pbi-dashboard \
+  --findings "agent_scratchpads/20251224-fix-sales/findings.md" \
+  --url "https://app.powerbi.com/reports/abc123"
+```
+
+#### Dependencies
+
+- Existing `powerbi-playwright-tester` agent (reused, not modified)
+- Existing `power-bi-verification` agent (creates test plans, unchanged)
+- Playwright MCP (for browser automation)
+
+#### Migration Path
+
+1. **Phase 1**: Create new `/test-pbi-dashboard` workflow
+2. **Phase 2**: Deprecate testing phase in `/implement-deploy-test-pbi-project-file`
+3. **Phase 3**: Rename to `/implement-pbi-changes`
+4. **Phase 4**: Update all documentation and examples
 
 ---
 
