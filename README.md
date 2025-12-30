@@ -2,18 +2,34 @@
 
 Claude Code plugin for Power BI project analysis, modification, and deployment.
 
-## Installation
+## Quick Install (Recommended)
 
-```bash
-# Add the marketplace (one-time)
-/plugin marketplace add cn-dataworks/powerbi-analyst-plugin
+### One-Line Install (PowerShell)
 
-# Install the plugin
-/plugin install powerbi-analyst@cn-dataworks-powerbi-analyst-plugin
-
-# Verify installation
-/plugin list
+```powershell
+irm https://raw.githubusercontent.com/cn-dataworks/powerbi-analyst-plugin/main/install-plugin.ps1 | iex
 ```
+
+Or download and run manually:
+
+```powershell
+.\install-plugin.ps1
+```
+
+### Manual Install
+
+```powershell
+# Step 1: Clone the repository
+git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+
+# Step 2: Register with Claude Code
+claude -c "/plugin install $HOME\.claude\plugins\custom\powerbi-analyst"
+
+# Step 3: Verify
+claude -c "/plugin list"
+```
+
+See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 
 ## Skills
 
@@ -58,32 +74,16 @@ You can contribute new templates from your own reports:
 /promote-templates     Submit PR to public repository
 ```
 
-### Template Update Flow
+## Updating
 
+```powershell
+# Re-run the installer to pull latest changes
+.\install-plugin.ps1
+
+# Or manually:
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+git pull
 ```
-1. You harvest templates from your report
-2. Submit PR to cn-dataworks/pbir-visuals (public)
-3. Maintainer merges PR
-4. Maintainer bundles into skill release
-5. You get updates via: /plugin update powerbi-analyst@cn-dataworks-powerbi-analyst-plugin
-```
-
-Templates are versioned with the skill to ensure compatibility.
-
-## Updating the Plugin
-
-```bash
-# Check for updates
-/plugin list
-
-# Update to latest version
-/plugin update powerbi-analyst@cn-dataworks-powerbi-analyst-plugin
-```
-
-Updates include:
-- New/improved agents and workflows
-- Updated visual templates
-- Bug fixes and enhancements
 
 ## Requirements
 
