@@ -2,46 +2,48 @@
 
 Claude Code plugin for Power BI project analysis, modification, and deployment.
 
-## Quick Install (Recommended)
+## Quick Install
 
-### One-Line Install (PowerShell)
-
-```powershell
-irm https://raw.githubusercontent.com/cn-dataworks/powerbi-analyst-plugin/main/install-plugin.ps1 | iex
-```
-
-Or download and run manually:
+### Step 1: Clone the Repository
 
 ```powershell
-.\install-plugin.ps1
-```
-
-### Manual Install
-
-```powershell
-# Step 1: Clone the repository
 git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+```
 
-# Step 2: Register with Claude Code
-claude -c "/plugin install $HOME\.claude\plugins\custom\powerbi-analyst"
+### Step 2: Register with Claude Code
 
-# Step 3: Verify
-claude -c "/plugin list"
+Run from your home directory:
+
+```powershell
+cd $HOME
+claude
+```
+
+Inside Claude Code:
+```
+/plugin marketplace add ./.claude/plugins/custom/powerbi-analyst
+/plugin install powerbi-analyst
+```
+
+Choose **"Install for you"** when prompted.
+
+### Step 3: Bootstrap (per project)
+
+In each Power BI project, run:
+
+```powershell
+cd "C:\path\to\your\powerbi-project"
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
 ```
 
 See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 
 ### MCP Detection
 
-The installer automatically detects **Power BI Modeling MCP** and configures it if found:
+The plugin automatically detects **Power BI Modeling MCP**:
 
 - **Desktop Mode** (MCP found): Full validation, live DAX checking
 - **File-Only Mode** (no MCP): Core features work, no live validation
-
-To enable full features after installing MCP, re-run the installer:
-```powershell
-.\install-plugin.ps1
-```
 
 ## How It Works
 

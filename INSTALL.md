@@ -4,36 +4,64 @@ This plugin provides Power BI development assistance including DAX/M code genera
 
 ---
 
-## Quick Install (Recommended)
+## Quick Install
 
-### Option A: One-Line PowerShell Install
-
-```powershell
-irm https://raw.githubusercontent.com/cn-dataworks/powerbi-analyst-plugin/main/install-plugin.ps1 | iex
-```
-
-### Option B: Download and Run Script
+### Step 1: Clone the Repository
 
 ```powershell
-# Download the script
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cn-dataworks/powerbi-analyst-plugin/main/install-plugin.ps1" -OutFile "install-plugin.ps1"
-
-# Run it
-.\install-plugin.ps1
-```
-
-### Option C: Manual Steps
-
-```powershell
-# Step 1: Clone to the standard plugin location
 git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
-
-# Step 2: Register with Claude Code
-claude -c "/plugin install $HOME\.claude\plugins\custom\powerbi-analyst"
-
-# Step 3: Verify
-claude -c "/plugin list"
 ```
+
+### Step 2: Register as Marketplace
+
+Claude Code requires registering local plugins as a marketplace first. You must run this from your home directory:
+
+```powershell
+cd $HOME
+claude
+```
+
+Inside Claude Code, run these commands:
+
+```
+/plugin marketplace add ./.claude/plugins/custom/powerbi-analyst
+/plugin install powerbi-analyst
+```
+
+Choose **"Install for you"** when prompted (installs globally for all projects).
+
+### Step 3: Restart and Verify
+
+Exit Claude Code and restart:
+
+```
+/exit
+```
+
+```powershell
+claude
+```
+
+Then verify:
+
+```
+/plugin list
+```
+
+You should see `powerbi-analyst` under **cn-dataworks-plugins**.
+
+---
+
+## First Project Setup (Bootstrap)
+
+After installing the plugin, run bootstrap in each Power BI project to copy the tools:
+
+```powershell
+cd "C:\path\to\your\powerbi-project"
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+```
+
+See [Project Bootstrap](#project-bootstrap-first-run) section below for details.
 
 ---
 
@@ -75,7 +103,9 @@ Or if MCP is not installed:
 
    To enable full features:
        1. Install MCP: https://github.com/microsoft/powerbi-modeling-mcp
-       2. Re-run this installer: .\install-plugin.ps1
+       2. Re-run the installer from the plugin folder:
+          cd $HOME\.claude\plugins\custom\powerbi-analyst
+          .\install-plugin.ps1
 ```
 
 ### File-Only Mode vs Desktop Mode
@@ -94,7 +124,8 @@ Or if MCP is not installed:
 If you install Power BI Modeling MCP after the initial plugin installation:
 
 ```powershell
-# Re-run the installer to detect MCP and update Claude config
+# Navigate to plugin folder and re-run installer
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 .\install-plugin.ps1
 ```
 
@@ -108,6 +139,7 @@ The installer will:
 If you want to skip MCP auto-configuration:
 
 ```powershell
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 .\install-plugin.ps1 -SkipMcpConfig
 ```
 
@@ -295,44 +327,28 @@ Claude Code runs Git in a non-interactive shell, which means credential helpers 
 
 For teams, you have two options:
 
-### Option 1: Shared Setup Script
+### Option 1: Standard Install (Recommended)
 
-Have team members run the install script:
+Each team member runs the same install steps:
 
 ```powershell
-# Each team member runs:
-irm https://raw.githubusercontent.com/cn-dataworks/powerbi-analyst-plugin/main/install-plugin.ps1 | iex
-```
-
-### Option 2: Local Marketplace Registration
-
-For more control, register the plugin as a local marketplace:
-
-**Step 1**: Each team member clones the repo:
-```powershell
+# Step 1: Clone
 git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+
+# Step 2: Register (from home directory)
+cd $HOME
+claude
 ```
 
-**Step 2**: Create/edit `~\.claude\plugins\known_marketplaces.json`:
-```json
-{
-  "cn-dataworks-plugins": {
-    "source": {
-      "type": "directory",
-      "path": "C:\\Users\\USERNAME\\.claude\\plugins\\custom\\powerbi-analyst"
-    }
-  }
-}
+Inside Claude Code:
+```
+/plugin marketplace add ./.claude/plugins/custom/powerbi-analyst
+/plugin install powerbi-analyst
 ```
 
-**Step 3**: Install via marketplace reference:
-```
-/plugin install powerbi-analyst@cn-dataworks-plugins
-```
+### Option 2: Project-Level Configuration
 
-### Option 3: Project-Level Configuration
-
-Add to your project's `.claude/settings.json`:
+For project-specific installation, add to your project's `.claude/settings.json`:
 
 ```json
 {
@@ -344,23 +360,35 @@ Add to your project's `.claude/settings.json`:
 }
 ```
 
+Each team member still needs to clone the repo first.
+
 ---
 
 ## Updating the Plugin
 
-### Using the Install Script
-
-Re-running the script will pull the latest changes:
-
-```powershell
-.\install-plugin.ps1
-```
-
-### Manual Update
+### Pull Latest Changes
 
 ```powershell
 cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 git pull
+```
+
+### Update Project Tools
+
+After pulling, re-run bootstrap in your projects to get updated tools:
+
+```powershell
+cd "C:\path\to\your\powerbi-project"
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+```
+
+### Re-detect MCP (if newly installed)
+
+If you installed MCP after the initial setup:
+
+```powershell
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+.\install-plugin.ps1
 ```
 
 ---
@@ -428,15 +456,23 @@ If you see `terminal prompts disabled`:
 # Authenticate with GitHub CLI first
 gh auth login
 
-# Then try the install again
-.\install-plugin.ps1
+# Then try cloning again
+git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
 ```
 
 ### Plugin not showing in /plugin list
 
-Make sure you ran the install command:
+Make sure you registered the marketplace and installed the plugin:
+
 ```powershell
-claude -c "/plugin install $HOME\.claude\plugins\custom\powerbi-analyst"
+cd $HOME
+claude
+```
+
+Inside Claude Code:
+```
+/plugin marketplace add ./.claude/plugins/custom/powerbi-analyst
+/plugin install powerbi-analyst
 ```
 
 ### Skills not activating
@@ -449,12 +485,10 @@ The plugin works without MCP (File-Only mode) but with reduced validation.
 
 To enable full features:
 1. Install Power BI Modeling MCP from: https://github.com/microsoft/powerbi-modeling-mcp
-2. Re-run the installer:
+2. Re-run bootstrap in your project:
    ```powershell
-   .\install-plugin.ps1
+   & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
    ```
-
-The installer will detect MCP and configure Claude automatically.
 
 ### Need more help?
 
@@ -466,10 +500,12 @@ The installer will detect MCP and configure Claude automatically.
 
 ## Uninstalling
 
-```powershell
-# Remove the plugin registration
-claude -c "/plugin uninstall powerbi-analyst"
+Inside Claude Code:
+```
+/plugin uninstall powerbi-analyst
+```
 
-# Delete the files
+Then delete the files:
+```powershell
 Remove-Item -Recurse -Force "$HOME\.claude\plugins\custom\powerbi-analyst"
 ```
