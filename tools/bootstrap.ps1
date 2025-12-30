@@ -1,0 +1,298 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Bootstrap script for Power BI Analyst Plugin - copies tools to project directory.
+
+.DESCRIPTION
+    This script ensures the user's project has the necessary tools and helpers
+    from the plugin. It:
+    - Checks if local tools exist
+    - Compares versions
+    - Copies/updates tools as needed
+    - Creates the .claude directory structure
+
+.PARAMETER Force
+    Force update even if versions match.
+
+.PARAMETER Silent
+    Suppress output messages.
+
+.PARAMETER CheckOnly
+    Only check if update is needed, don't copy files.
+
+.EXAMPLE
+    .\bootstrap.ps1
+    .\bootstrap.ps1 -Force
+    .\bootstrap.ps1 -CheckOnly
+#>
+
+[CmdletBinding()]
+param(
+    [switch]$Force,
+    [switch]$Silent,
+    [switch]$CheckOnly
+)
+
+$ErrorActionPreference = "Stop"
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
+# Determine plugin path (this script is in {plugin}/tools/)
+$script:PluginPath = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+if (-not (Test-Path "$script:PluginPath\.claude-plugin")) {
+    # Fallback: script might be in {plugin}/tools/ directly
+    $script:PluginPath = Split-Path $PSScriptRoot -Parent
+}
+
+$script:PluginToolsPath = Join-Path $script:PluginPath "tools"
+$script:PluginResourcesPath = Join-Path $script:PluginPath "skills\powerbi-analyst\resources"
+$script:VersionFile = "version.txt"
+
+# Local paths (in user's project)
+$script:LocalClaudeDir = ".claude"
+$script:LocalToolsDir = ".claude\tools"
+$script:LocalHelpersDir = ".claude\helpers"
+
+# Files to copy
+$script:ToolFiles = @(
+    "token_analyzer.py",
+    "analytics_merger.py",
+    "tmdl_format_validator.py",
+    "tmdl_measure_replacer.py",
+    "pbir_visual_editor.py",
+    "pbi_project_validator.py",
+    "pbi_merger_utils.py",
+    "pbi_merger_schemas.json",
+    "extract_visual_layout.py",
+    "agent_logger.py",
+    "version.txt"
+)
+
+$script:HelperFiles = @(
+    "pbi-url-filter-encoder.md"
+)
+
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
+
+function Write-Info {
+    param([string]$Message)
+    if (-not $Silent) {
+        Write-Host "  [bootstrap] $Message" -ForegroundColor Cyan
+    }
+}
+
+function Write-Success {
+    param([string]$Message)
+    if (-not $Silent) {
+        Write-Host "  [bootstrap] $Message" -ForegroundColor Green
+    }
+}
+
+function Write-Warn {
+    param([string]$Message)
+    if (-not $Silent) {
+        Write-Host "  [bootstrap] $Message" -ForegroundColor Yellow
+    }
+}
+
+# ============================================================
+# VERSION FUNCTIONS
+# ============================================================
+
+function Get-PluginVersion {
+    $versionPath = Join-Path $script:PluginToolsPath $script:VersionFile
+    if (Test-Path $versionPath) {
+        return (Get-Content $versionPath -Raw).Trim()
+    }
+    return "0.0.0"
+}
+
+function Get-LocalVersion {
+    $versionPath = Join-Path $script:LocalToolsDir $script:VersionFile
+    if (Test-Path $versionPath) {
+        return (Get-Content $versionPath -Raw).Trim()
+    }
+    return $null
+}
+
+function Compare-Versions {
+    param(
+        [string]$PluginVersion,
+        [string]$LocalVersion
+    )
+
+    if ($null -eq $LocalVersion) {
+        return "missing"
+    }
+
+    $pluginParts = $PluginVersion.Split('.') | ForEach-Object { [int]$_ }
+    $localParts = $LocalVersion.Split('.') | ForEach-Object { [int]$_ }
+
+    for ($i = 0; $i -lt 3; $i++) {
+        $p = if ($i -lt $pluginParts.Count) { $pluginParts[$i] } else { 0 }
+        $l = if ($i -lt $localParts.Count) { $localParts[$i] } else { 0 }
+
+        if ($p -gt $l) { return "outdated" }
+        if ($p -lt $l) { return "newer" }
+    }
+
+    return "current"
+}
+
+# ============================================================
+# COPY FUNCTIONS
+# ============================================================
+
+function Initialize-LocalDirectories {
+    # Create .claude directory structure
+    if (-not (Test-Path $script:LocalClaudeDir)) {
+        New-Item -ItemType Directory -Path $script:LocalClaudeDir -Force | Out-Null
+        Write-Info "Created $script:LocalClaudeDir directory"
+    }
+
+    if (-not (Test-Path $script:LocalToolsDir)) {
+        New-Item -ItemType Directory -Path $script:LocalToolsDir -Force | Out-Null
+        Write-Info "Created $script:LocalToolsDir directory"
+    }
+
+    if (-not (Test-Path $script:LocalHelpersDir)) {
+        New-Item -ItemType Directory -Path $script:LocalHelpersDir -Force | Out-Null
+        Write-Info "Created $script:LocalHelpersDir directory"
+    }
+
+    # Create tasks directory for workflow outputs
+    $tasksDir = Join-Path $script:LocalClaudeDir "tasks"
+    if (-not (Test-Path $tasksDir)) {
+        New-Item -ItemType Directory -Path $tasksDir -Force | Out-Null
+        Write-Info "Created $tasksDir directory"
+    }
+}
+
+function Copy-ToolFiles {
+    $copied = 0
+    $skipped = 0
+
+    foreach ($file in $script:ToolFiles) {
+        $sourcePath = Join-Path $script:PluginToolsPath $file
+        $destPath = Join-Path $script:LocalToolsDir $file
+
+        if (Test-Path $sourcePath) {
+            Copy-Item -Path $sourcePath -Destination $destPath -Force
+            $copied++
+        } else {
+            Write-Warn "Tool file not found: $file"
+            $skipped++
+        }
+    }
+
+    Write-Info "Copied $copied tool files"
+    if ($skipped -gt 0) {
+        Write-Warn "Skipped $skipped missing files"
+    }
+}
+
+function Copy-HelperFiles {
+    $copied = 0
+
+    foreach ($file in $script:HelperFiles) {
+        $sourcePath = Join-Path $script:PluginResourcesPath $file
+        $destPath = Join-Path $script:LocalHelpersDir $file
+
+        if (Test-Path $sourcePath) {
+            Copy-Item -Path $sourcePath -Destination $destPath -Force
+            $copied++
+        } else {
+            Write-Warn "Helper file not found: $file"
+        }
+    }
+
+    Write-Info "Copied $copied helper files"
+}
+
+function Copy-DocsFiles {
+    # Copy documentation that might be useful locally
+    $docsSource = Join-Path $script:PluginToolsPath "docs"
+    $docsDir = Join-Path $script:LocalToolsDir "docs"
+
+    if (Test-Path $docsSource) {
+        if (-not (Test-Path $docsDir)) {
+            New-Item -ItemType Directory -Path $docsDir -Force | Out-Null
+        }
+        Copy-Item -Path "$docsSource\*" -Destination $docsDir -Force -Recurse
+        Write-Info "Copied documentation files"
+    }
+}
+
+# ============================================================
+# MAIN
+# ============================================================
+
+try {
+    $pluginVersion = Get-PluginVersion
+    $localVersion = Get-LocalVersion
+    $status = Compare-Versions -PluginVersion $pluginVersion -LocalVersion $localVersion
+
+    Write-Info "Plugin version: $pluginVersion"
+    Write-Info "Local version:  $(if ($localVersion) { $localVersion } else { '(not installed)' })"
+    Write-Info "Status: $status"
+
+    # Determine if we need to copy
+    $needsCopy = $false
+
+    switch ($status) {
+        "missing" {
+            Write-Info "Tools not found in project - will install"
+            $needsCopy = $true
+        }
+        "outdated" {
+            Write-Warn "Local tools are outdated - will update"
+            $needsCopy = $true
+        }
+        "newer" {
+            Write-Warn "Local tools are newer than plugin (manual edits?)"
+            if ($Force) {
+                Write-Info "Force flag set - will overwrite"
+                $needsCopy = $true
+            }
+        }
+        "current" {
+            Write-Success "Tools are up to date"
+            if ($Force) {
+                Write-Info "Force flag set - will refresh"
+                $needsCopy = $true
+            }
+        }
+    }
+
+    # Check-only mode
+    if ($CheckOnly) {
+        if ($needsCopy) {
+            Write-Info "Update available: $localVersion -> $pluginVersion"
+            exit 1  # Exit code 1 = update needed
+        } else {
+            Write-Success "No update needed"
+            exit 0  # Exit code 0 = current
+        }
+    }
+
+    # Perform copy if needed
+    if ($needsCopy) {
+        Initialize-LocalDirectories
+        Copy-ToolFiles
+        Copy-HelperFiles
+        Copy-DocsFiles
+
+        Write-Success "Bootstrap complete! Tools installed to $script:LocalToolsDir"
+        Write-Info "Version: $pluginVersion"
+    }
+
+    exit 0
+
+} catch {
+    Write-Host "  [bootstrap] ERROR: $_" -ForegroundColor Red
+    exit 1
+}

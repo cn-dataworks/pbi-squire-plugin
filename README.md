@@ -31,6 +31,18 @@ claude -c "/plugin list"
 
 See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 
+### MCP Detection
+
+The installer automatically detects **Power BI Modeling MCP** and configures it if found:
+
+- **Desktop Mode** (MCP found): Full validation, live DAX checking
+- **File-Only Mode** (no MCP): Core features work, no live validation
+
+To enable full features after installing MCP, re-run the installer:
+```powershell
+.\install-plugin.ps1
+```
+
 ## How It Works
 
 ### One Install, All Projects

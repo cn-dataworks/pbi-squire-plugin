@@ -37,6 +37,150 @@ claude -c "/plugin list"
 
 ---
 
+## MCP Detection
+
+The installer automatically checks for **Power BI Modeling MCP** and configures the plugin accordingly.
+
+### What Happens During Install
+
+```
+>> Checking for Power BI Modeling MCP...
+   [OK] Found: C:\path\to\powerbi-modeling-mcp.exe
+
+   Mode: Desktop Mode (full validation)
+
+   Capabilities:
+       [OK] DAX/M code generation
+       [OK] TMDL file editing
+       [OK] PBIR visual creation
+       [OK] Live DAX validation
+       [OK] Real-time error checking
+```
+
+Or if MCP is not installed:
+
+```
+>> Checking for Power BI Modeling MCP...
+   [!] MCP not found
+       The plugin will work in File-Only mode
+
+   Mode: File-Only Mode (limited validation)
+
+   Capabilities:
+       [OK] DAX/M code generation
+       [OK] TMDL file editing
+       [OK] PBIR visual creation
+       [--] Live DAX validation (requires MCP)
+       [--] Real-time error checking (requires MCP)
+
+   To enable full features:
+       1. Install MCP: https://github.com/microsoft/powerbi-modeling-mcp
+       2. Re-run this installer: .\install-plugin.ps1
+```
+
+### File-Only Mode vs Desktop Mode
+
+| Feature | File-Only Mode | Desktop Mode |
+|---------|----------------|--------------|
+| DAX/M code generation | ✅ | ✅ |
+| TMDL file editing | ✅ | ✅ |
+| PBIR visual creation | ✅ | ✅ |
+| Live DAX validation | ❌ | ✅ |
+| Real-time error checking | ❌ | ✅ |
+| Requires Power BI Desktop open | No | Yes |
+
+### Enabling MCP After Initial Install
+
+If you install Power BI Modeling MCP after the initial plugin installation:
+
+```powershell
+# Re-run the installer to detect MCP and update Claude config
+.\install-plugin.ps1
+```
+
+The installer will:
+1. Detect the newly installed MCP binary
+2. Update Claude's configuration to use it
+3. Show "Desktop Mode" in the capability summary
+
+### Skipping MCP Configuration
+
+If you want to skip MCP auto-configuration:
+
+```powershell
+.\install-plugin.ps1 -SkipMcpConfig
+```
+
+---
+
+## Project Bootstrap (First Run)
+
+When you first use the plugin in a Power BI project, it needs to copy Python tools and helper files to your project directory. This is called "bootstrapping."
+
+### Automatic Bootstrap
+
+Run the bootstrap script from your project directory:
+
+```powershell
+# Windows (from your Power BI project folder)
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+```
+
+```bash
+# macOS/Linux
+bash "$HOME/.claude/plugins/custom/powerbi-analyst/tools/bootstrap.sh"
+```
+
+### What Gets Created
+
+```
+YourProject/
+├── .claude/
+│   ├── state.json           ← Session state (tasks, locks)
+│   ├── tasks/               ← Task findings files
+│   ├── tools/               ← Python utilities
+│   │   ├── token_analyzer.py
+│   │   ├── tmdl_format_validator.py
+│   │   ├── analytics_merger.py
+│   │   ├── version.txt      ← Version tracking
+│   │   └── ...
+│   └── helpers/             ← Reference files
+│       └── pbi-url-filter-encoder.md
+└── YourProject.pbip
+```
+
+### Version Tracking
+
+The bootstrap script tracks versions so you know when updates are available:
+
+```powershell
+# Check if update needed (exit code 1 = update available)
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1" -CheckOnly
+
+# Force reinstall even if current
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1" -Force
+```
+
+### When to Re-run Bootstrap
+
+Re-run bootstrap after:
+- Updating the plugin (`git pull`)
+- Wanting to reset local tool modifications
+- Starting a new Power BI project
+
+### Git Considerations
+
+You can choose to:
+- **Commit `.claude/`** - Tools are versioned with your project (self-contained)
+- **Gitignore `.claude/`** - Tools are fetched fresh on each clone
+
+Add to `.gitignore` if you prefer fresh tools:
+```
+.claude/
+```
+
+---
+
 ## How the Plugin Works
 
 ### One Install, All Projects
@@ -301,7 +445,16 @@ Check that your project has a `.pbip` file or `.SemanticModel/` folder. The skil
 
 ### MCP not detected
 
-The skill works without MCP (File-Only mode) but with reduced validation. For full features, install Power BI Modeling MCP from: https://github.com/microsoft/powerbi-modeling-mcp
+The plugin works without MCP (File-Only mode) but with reduced validation.
+
+To enable full features:
+1. Install Power BI Modeling MCP from: https://github.com/microsoft/powerbi-modeling-mcp
+2. Re-run the installer:
+   ```powershell
+   .\install-plugin.ps1
+   ```
+
+The installer will detect MCP and configure Claude automatically.
 
 ### Need more help?
 

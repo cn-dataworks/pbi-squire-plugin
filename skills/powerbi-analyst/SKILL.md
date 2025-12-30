@@ -265,6 +265,67 @@ Tasks use the **Task Blackboard pattern** where specialists read/write to design
 
 ---
 
+## Project Setup (Bootstrap)
+
+The skill requires Python tools and helper files to be present in the user's project directory. These are automatically copied from the plugin on first workflow run.
+
+### Bootstrap Process
+
+**Automatic (recommended):** On first workflow execution, run bootstrap:
+
+```powershell
+# Windows
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+
+# macOS/Linux
+bash "$HOME/.claude/plugins/custom/powerbi-analyst/tools/bootstrap.sh"
+```
+
+**What gets created:**
+```
+YourProject/
+├── .claude/
+│   ├── state.json           ← Session state
+│   ├── tasks/               ← Task findings files
+│   ├── tools/               ← Python utilities (copied from plugin)
+│   │   ├── token_analyzer.py
+│   │   ├── tmdl_format_validator.py
+│   │   ├── analytics_merger.py
+│   │   ├── version.txt      ← Tracks tool version
+│   │   └── ...
+│   └── helpers/             ← Helper files (copied from plugin)
+│       └── pbi-url-filter-encoder.md
+└── YourProject.pbip
+```
+
+### Version Tracking
+
+The bootstrap script tracks versions to manage updates:
+
+| Command | Purpose |
+|---------|---------|
+| `bootstrap.ps1` | Install/update tools if needed |
+| `bootstrap.ps1 -CheckOnly` | Check if update available (exit code 1 = update needed) |
+| `bootstrap.ps1 -Force` | Force reinstall even if current |
+
+### Updating Tools
+
+When the plugin is updated, re-run bootstrap to get new tool versions:
+
+```powershell
+# Check if update needed
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1" -CheckOnly
+
+# Update tools
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+```
+
+### Manual Tool Edits
+
+If you edit local tools (`.claude/tools/*`), the version comparison will show "newer". Use `-Force` to overwrite with plugin versions if needed.
+
+---
+
 ## Validation Gates
 
 All changes pass through validation before completion:
