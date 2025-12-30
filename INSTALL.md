@@ -65,9 +65,16 @@ See [Project Bootstrap](#project-bootstrap-first-run) section below for details.
 
 ---
 
-## MCP Detection
+## MCP Detection (Recommended for Writing)
 
-The installer automatically checks for **Power BI Modeling MCP** and configures the plugin accordingly.
+**Power BI Modeling MCP is strongly recommended** if you plan to create or edit DAX measures, M queries, or other model artifacts.
+
+| Mode | Reading/Analyzing | Writing/Editing |
+|------|-------------------|-----------------|
+| File-Only | ✅ Works well | ⚠️ No validation - errors found when opening in PBI Desktop |
+| With MCP | ✅ Works well | ✅ Validates code compiles before writing |
+
+The installer automatically checks for MCP and configures the plugin accordingly.
 
 ### What Happens During Install
 

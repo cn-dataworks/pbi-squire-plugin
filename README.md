@@ -38,12 +38,22 @@ cd "C:\path\to\your\powerbi-project"
 
 See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 
-### MCP Detection
+### MCP (Recommended for Writing)
 
-The plugin automatically detects **Power BI Modeling MCP**:
+**Install Power BI Modeling MCP** if you plan to create or edit DAX/M code:
 
-- **Desktop Mode** (MCP found): Full validation, live DAX checking
-- **File-Only Mode** (no MCP): Core features work, no live validation
+| Mode | Reading | Writing |
+|------|---------|---------|
+| File-Only (no MCP) | ✅ Works | ⚠️ No compile validation |
+| Desktop Mode (MCP) | ✅ Works | ✅ Validates before writing |
+
+Install MCP from: https://github.com/microsoft/powerbi-modeling-mcp
+
+Then re-run the installer to detect it:
+```powershell
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+.\install-plugin.ps1
+```
 
 ## How It Works
 
