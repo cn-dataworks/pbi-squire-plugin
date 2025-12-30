@@ -31,6 +31,46 @@ claude -c "/plugin list"
 
 See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 
+## How It Works
+
+### One Install, All Projects
+
+The plugin installs **once** to a central location on your computer:
+
+```
+C:\Users\YourName\.claude\plugins\custom\powerbi-analyst\
+```
+
+After installation, it's automatically available in **every project** you open with Claude Code. No per-project setup required.
+
+### Per-Project Control
+
+**Disable in a specific project** - Create `.claude/settings.json` in that project:
+
+```json
+{
+  "plugins": {
+    "powerbi-analyst": {
+      "enabled": false
+    }
+  }
+}
+```
+
+**Enable only in specific projects** - Skip the global install, then add to each project's `.claude/settings.json`:
+
+```json
+{
+  "plugins": {
+    "powerbi-analyst": {
+      "path": "C:\\Users\\YourName\\.claude\\plugins\\custom\\powerbi-analyst"
+    }
+  }
+}
+```
+
+> **Note**: The plugin's skills only activate when they detect Power BI files (`.pbip`, `.SemanticModel/`). In non-Power BI projects, the skills won't trigger even if the plugin is installed globally.
+
 ## Skills
 
 | Skill | Description |
