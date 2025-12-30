@@ -1,0 +1,212 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "{{VISUAL_NAME}}",
+  "position": {
+    "x": {{X}},
+    "y": {{Y}},
+    "z": {{Z}},
+    "height": {{HEIGHT}},
+    "width": {{WIDTH}},
+    "tabOrder": {{TAB_ORDER}}
+  },
+  "visual": {
+    "visualType": "azureMap",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{LOCATION_TABLE}}"
+                    }
+                  },
+                  "Property": "{{LOCATION_COLUMN}}"
+                }
+              },
+              "queryRef": "{{LOCATION_TABLE}}.{{LOCATION_COLUMN}}",
+              "nativeQueryRef": "{{LOCATION_COLUMN}}",
+              "active": true
+            }
+          ]
+        },
+        "Size": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{SIZE_MEASURE_TABLE}}"
+                    }
+                  },
+                  "Property": "{{SIZE_MEASURE_NAME}}"
+                }
+              },
+              "queryRef": "{{SIZE_MEASURE_TABLE}}.{{SIZE_MEASURE_NAME}}",
+              "nativeQueryRef": "{{SIZE_MEASURE_NAME}}"
+            }
+          ]
+        },
+        "Tooltips": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "{{TOOLTIP_MEASURE_TABLE}}"
+                    }
+                  },
+                  "Property": "{{TOOLTIP_MEASURE_NAME}}"
+                }
+              },
+              "queryRef": "{{TOOLTIP_MEASURE_TABLE}}.{{TOOLTIP_MEASURE_NAME}}",
+              "nativeQueryRef": "{{TOOLTIP_MEASURE_NAME}}"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "mapControls": [
+        {
+          "properties": {
+            "defaultStyle": {
+              "expr": {
+                "Literal": {
+                  "Value": "'{{MAP_STYLE}}'"
+                }
+              }
+            },
+            "showStylePicker": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_STYLE_PICKER}}"
+                }
+              }
+            },
+            "showNavigationControls": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_NAV_CONTROLS}}"
+                }
+              }
+            },
+            "showSelectionControl": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_SELECTION_CONTROL}}"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryLabels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{SHOW_CATEGORY_LABELS}}"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "bubbleLayer": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "clusteringEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{ENABLE_CLUSTERING}}"
+                }
+              }
+            },
+            "clusteredBubbleRadius": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{CLUSTER_RADIUS}}L"
+                }
+              }
+            },
+            "markerRangeType": {
+              "expr": {
+                "Literal": {
+                  "Value": "'magnitude'"
+                }
+              }
+            },
+            "minBubbleRadius": {
+              "expr": {
+                "Literal": {
+                  "Value": "{{MIN_BUBBLE_RADIUS}}L"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "filledMap": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "heatMapLayer": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'{{TITLE}}'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

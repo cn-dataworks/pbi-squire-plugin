@@ -40,12 +40,58 @@ Claude Code plugin for Power BI project analysis, modification, and deployment.
 3. Ask Claude: "Help me fix the YoY growth measure" or "Create a new sales dashboard page"
 4. Claude will guide you through the appropriate workflow
 
+## Visual Templates
+
+The skill includes 17 PBIR visual templates for generating new visuals. Templates are bundled with the skill and work offline.
+
+### Using Templates
+
+Templates are used automatically when you create visuals via `/create-pbi-artifact`. The skill selects the appropriate template based on your request.
+
+### Contributing Templates
+
+You can contribute new templates from your own reports:
+
+```
+/harvest-templates     Extract templates from your report
+/review-templates      Compare against existing library
+/promote-templates     Submit PR to public repository
+```
+
+### Template Update Flow
+
+```
+1. You harvest templates from your report
+2. Submit PR to cn-dataworks/pbir-visuals (public)
+3. Maintainer merges PR
+4. Maintainer bundles into skill release
+5. You get updates via: /plugin update powerbi-analyst@cn-dataworks-powerbi-analyst-plugin
+```
+
+Templates are versioned with the skill to ensure compatibility.
+
+## Updating the Plugin
+
+```bash
+# Check for updates
+/plugin list
+
+# Update to latest version
+/plugin update powerbi-analyst@cn-dataworks-powerbi-analyst-plugin
+```
+
+Updates include:
+- New/improved agents and workflows
+- Updated visual templates
+- Bug fixes and enhancements
+
 ## Requirements
 
 - Claude Code (latest version)
 - Python 3.10+
 - Power BI Desktop (for testing)
 - Optional: Power BI Service access (for deployment)
+- Optional: GitHub CLI (`gh`) for template promotion
 
 ## Structure
 
@@ -53,6 +99,10 @@ Claude Code plugin for Power BI project analysis, modification, and deployment.
 powerbi-analyst-plugin/
 ├── skills/
 │   ├── powerbi-analyst/           # Main skill with 20+ agents
+│   │   ├── agents/                # Specialized agents
+│   │   ├── workflows/             # Workflow definitions
+│   │   └── resources/
+│   │       └── visual-templates/  # 17 bundled templates
 │   ├── power-bi-assistant/        # User guidance
 │   ├── powerbi-dashboard-analyzer/# Dashboard analysis
 │   └── powerbi-data-prep/         # M code specialist

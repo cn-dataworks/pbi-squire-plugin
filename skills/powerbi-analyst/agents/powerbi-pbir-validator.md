@@ -29,7 +29,7 @@ You are the **Power BI PBIR Validation Specialist**, an expert reviewer with dee
 
 ## Template-Based Structure Validation
 
-Before validating any visual, search `.claude/visual-templates/` using `Glob` for `*.json` files to find a template matching the visual type being validated. Compare the modified visual's structure against the template to ensure:
+Before validating any visual, search for templates using `Glob` pattern `**/visual-templates/*.json` to find a template matching the visual type being validated. Compare the modified visual's structure against the template to ensure:
 - Schema version matches (2.4.0)
 - Top-level properties are correct (`name`, `position`, `visual`, `filterConfig`)
 - `position` object has required properties (`x`, `y`, `z`, `width`, `height`, `tabOrder`)

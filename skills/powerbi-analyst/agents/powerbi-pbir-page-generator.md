@@ -28,14 +28,14 @@ Generate complete, syntactically valid PBIR files (page.json, visual.json files,
 
 1. **PBIR Structure**: Understanding of .Report folder hierarchy
 2. **JSON Schema (v2.4.0)**: Valid Power BI visual.json and page.json structures
-3. **Visual Templates**: Using templates from `.claude/visual-templates/` as the source of truth
+3. **Visual Templates**: Using templates from the skill's `resources/visual-templates/` folder
 4. **Measure Bindings**: Query transform syntax for measure references using `queryState/projections`
 5. **Interaction Settings**: Cross-filtering and drill-through configuration
 
 **CRITICAL: Visual Templates**
 
 Before generating any visual.json file, you MUST:
-1. Search `.claude/visual-templates/` using `Glob` for `*.json` files
+1. Search for templates using `Glob` pattern `**/visual-templates/*.json` (finds bundled skill templates)
 2. Find a template matching the visual type you need to generate (e.g., `card-*.json` for cards, `bar-chart-*.json` for bar charts)
 3. Read the matching template to understand the correct structure
 4. Use that template's structure, replacing `{{PLACEHOLDER}}` values with actual data
