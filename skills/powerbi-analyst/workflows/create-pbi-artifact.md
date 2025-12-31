@@ -13,6 +13,48 @@ This slash command creates comprehensive specifications for new Power BI artifac
 4. Designs complete DAX/M code with styling specifications
 5. Outputs findings.md ready for `/implement-deploy-test-pbi-project-file`
 
+## Tracing Output (Required)
+
+**IMPORTANT:** This workflow MUST output trace markers for visibility. See `resources/tracing-conventions.md` for full format.
+
+**On workflow start, output:**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 WORKFLOW: create-pbi-artifact
+   └─ Type: [artifact-type or auto-detect]
+   └─ Description: [brief description]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Before each phase, output:**
+```
+📋 PHASE [N]: [Phase Name]
+   └─ [What this phase does]
+```
+
+**When invoking agents, output:**
+```
+   └─ 🤖 [AGENT] [agent-name]
+   └─    Starting: [brief description]
+```
+
+**When using MCP tools, output:**
+```
+   └─ 🔌 [MCP] [tool-name]
+   └─    [context/parameters]
+   └─    ✅ Success / ❌ Error: [result]
+```
+
+**On workflow complete, output:**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ WORKFLOW COMPLETE: create-pbi-artifact
+   └─ Artifacts: [list of artifacts created]
+   └─ Output: [findings file path]
+   └─ Next: Run /implement-deploy-test-pbi-project-file
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
 ## Usage
 
 ```bash

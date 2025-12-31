@@ -340,6 +340,68 @@ Warnings are reported but don't block implementation.
 
 ---
 
+## Tracing & Observability
+
+The skill provides structured trace output to show workflow progress, agent invocations, and MCP tool usage.
+
+### Trace Output Format
+
+**Workflow Start:**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 WORKFLOW: [workflow-name]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Phase Markers:**
+```
+📋 PHASE [N]: [Phase Name]
+   └─ [Description of what's happening]
+```
+
+**Agent Invocations:**
+```
+   └─ 🤖 [AGENT] [agent-name]
+   └─    Starting: [brief description]
+   └─ 🤖 [AGENT] [agent-name] complete
+   └─    Result: [summary]
+```
+
+**MCP Tool Calls:**
+```
+   └─ 🔌 [MCP] [tool-name]
+   └─    [parameters or context]
+   └─    ✅ Success: [result summary]
+   └─    ❌ Error: [error message]
+```
+
+**Workflow Complete:**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ WORKFLOW COMPLETE: [workflow-name]
+   └─ Output: [file path or summary]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Icon Reference
+
+| Icon | Meaning |
+|------|---------|
+| 🚀 | Workflow start |
+| 📋 | Phase/step |
+| 🤖 | Agent invocation |
+| 🔌 | MCP tool call |
+| 📂 | File operation |
+| 🔍 | Search/discovery/validation |
+| ✏️ | Edit/write |
+| ✅ | Success |
+| ❌ | Error/failure |
+| ⚠️ | Warning |
+
+See `resources/tracing-conventions.md` for complete tracing documentation.
+
+---
+
 ## References
 
 This skill includes reference documentation:

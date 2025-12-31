@@ -11,6 +11,45 @@ This slash command creates a comprehensive analyst findings report for Power BI 
 2. Creating a structured scratchpad workspace
 3. Orchestrating specialized agents to locate, implement, and verify proposed changes
 
+## Tracing Output (Required)
+
+**IMPORTANT:** This workflow MUST output trace markers for visibility. See `resources/tracing-conventions.md` for full format.
+
+**On workflow start, output:**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 WORKFLOW: evaluate-pbi-project-file
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Before each phase, output:**
+```
+📋 PHASE [N]: [Phase Name]
+   └─ [What this phase does]
+```
+
+**When invoking agents, output:**
+```
+   └─ 🤖 [AGENT] [agent-name]
+   └─    Starting: [brief description]
+```
+
+**When using MCP tools, output:**
+```
+   └─ 🔌 [MCP] [tool-name]
+   └─    [context/parameters]
+   └─    ✅ Success / ❌ Error: [result]
+```
+
+**On workflow complete, output:**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ WORKFLOW COMPLETE: evaluate-pbi-project-file
+   └─ Output: [findings file path]
+   └─ Next: [suggested next step]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
 ## Usage
 
 ```bash
