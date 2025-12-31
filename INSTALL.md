@@ -74,6 +74,28 @@ See [Project Bootstrap](#project-bootstrap-first-run) section below for details.
 | File-Only | ✅ Works well | ⚠️ No validation - errors found when opening in PBI Desktop |
 | With MCP | ✅ Works well | ✅ Validates code compiles before writing |
 
+### Installing Power BI Modeling MCP
+
+**Option A: VS Code Extension (Recommended)**
+
+1. Open VS Code
+2. Go to Extensions (Ctrl+Shift+X)
+3. Search for "Power BI Modeling MCP"
+4. Install the extension by **Analysis Services**
+5. Re-run the plugin installer to detect it:
+   ```powershell
+   cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+   .\install-plugin.ps1
+   ```
+
+**Option B: Manual Install**
+
+See: https://github.com/microsoft/powerbi-modeling-mcp
+
+Then re-run the installer to detect it.
+
+### Verifying MCP Detection
+
 The installer automatically checks for MCP and configures the plugin accordingly.
 
 ### What Happens During Install

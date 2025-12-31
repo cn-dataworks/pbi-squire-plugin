@@ -47,13 +47,14 @@ See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 | File-Only (no MCP) | ✅ Works | ⚠️ No compile validation |
 | Desktop Mode (MCP) | ✅ Works | ✅ Validates before writing |
 
-Install MCP from: https://github.com/microsoft/powerbi-modeling-mcp
-
-Then re-run the installer to detect it:
-```powershell
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
-.\install-plugin.ps1
-```
+**Install via VS Code (Recommended):**
+1. Open VS Code → Extensions (Ctrl+Shift+X)
+2. Search "Power BI Modeling MCP" → Install (by Analysis Services)
+3. Re-run installer:
+   ```powershell
+   cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+   .\install-plugin.ps1
+   ```
 
 ## How It Works
 
