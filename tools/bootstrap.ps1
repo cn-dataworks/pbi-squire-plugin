@@ -20,17 +20,24 @@
 .PARAMETER CheckOnly
     Only check if update is needed, don't copy files.
 
+.PARAMETER PBIProjectPath
+    Path to your Power BI project folder(s). This path will be added to the
+    auto-approve permissions in settings.json so the analyst can read/edit
+    your TMDL files without prompting.
+
 .EXAMPLE
     .\bootstrap.ps1
     .\bootstrap.ps1 -Force
     .\bootstrap.ps1 -CheckOnly
+    .\bootstrap.ps1 -PBIProjectPath "C:\Projects\MyPowerBI"
 #>
 
 [CmdletBinding()]
 param(
     [switch]$Force,
     [switch]$Silent,
-    [switch]$CheckOnly
+    [switch]$CheckOnly,
+    [string]$PBIProjectPath
 )
 
 $ErrorActionPreference = "Stop"
@@ -229,7 +236,33 @@ function Copy-DocsFiles {
     }
 }
 
+function Get-PBIProjectPath {
+    # Prompt user for Power BI project path if not provided
+    if (-not $Silent) {
+        Write-Host ""
+        Write-Host "  ============================================================" -ForegroundColor Cyan
+        Write-Host "  POWER BI PROJECT PATH CONFIGURATION" -ForegroundColor Cyan
+        Write-Host "  ============================================================" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "  To allow the analyst to read/edit your Power BI files without" -ForegroundColor White
+        Write-Host "  prompting for permission each time, enter the path to your" -ForegroundColor White
+        Write-Host "  Power BI project folder." -ForegroundColor White
+        Write-Host ""
+        Write-Host "  Examples:" -ForegroundColor Gray
+        Write-Host "    C:\Projects\SalesReport" -ForegroundColor Gray
+        Write-Host "    C:\Users\Me\Documents\Power BI Projects" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "  Press Enter to skip (you can add paths later in settings.json)" -ForegroundColor Yellow
+        Write-Host ""
+    }
+
+    $path = Read-Host "  Enter Power BI project path (or press Enter to skip)"
+    return $path.Trim()
+}
+
 function Initialize-SettingsFile {
+    param([string]$PBIPath)
+
     # Create settings.json with recommended permissions if it doesn't exist
     $settingsPath = Join-Path $script:LocalClaudeDir "settings.json"
     $templatePath = Join-Path $script:TemplatesPath "settings.json"
@@ -237,15 +270,48 @@ function Initialize-SettingsFile {
     if (Test-Path $settingsPath) {
         Write-Info "settings.json already exists - skipping (won't overwrite your config)"
         Write-Info "To add recommended permissions, see: tools/templates/settings.json"
+
+        # If a PBI path was provided, offer to add it to existing config
+        if ($PBIPath -and (Test-Path $PBIPath)) {
+            Write-Info "To add your Power BI path, manually edit .claude/settings.json"
+            Write-Info "Add these lines to the 'allow' array:"
+            $normalizedPath = $PBIPath.Replace('\', '/')
+            Write-Host "      `"Read($normalizedPath/**)`"," -ForegroundColor Yellow
+            Write-Host "      `"Edit($normalizedPath/**)`"," -ForegroundColor Yellow
+            Write-Host "      `"Write($normalizedPath/**)`"" -ForegroundColor Yellow
+        }
         return
     }
 
-    if (Test-Path $templatePath) {
-        Copy-Item -Path $templatePath -Destination $settingsPath -Force
-        Write-Success "Created settings.json with auto-approve permissions"
-        Write-Info "Tools like Read, Glob, Grep, Edit will run without prompts"
-    } else {
+    if (-not (Test-Path $templatePath)) {
         Write-Warn "Settings template not found at: $templatePath"
+        return
+    }
+
+    # Read the template
+    $settings = Get-Content $templatePath -Raw | ConvertFrom-Json
+
+    # Add PBI project path permissions if provided
+    if ($PBIPath -and (Test-Path $PBIPath)) {
+        # Normalize path: use forward slashes for cross-platform compatibility
+        $normalizedPath = $PBIPath.Replace('\', '/')
+
+        # Add path-specific permissions
+        $settings.permissions.allow += "Read($normalizedPath/**)"
+        $settings.permissions.allow += "Edit($normalizedPath/**)"
+        $settings.permissions.allow += "Write($normalizedPath/**)"
+
+        Write-Success "Added permissions for: $PBIPath"
+    }
+
+    # Write the settings file
+    $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
+
+    Write-Success "Created settings.json with auto-approve permissions"
+    Write-Info "Tools like Read, Glob, Grep, Edit will run without prompts"
+
+    if ($PBIPath) {
+        Write-Info "Power BI project path added to permissions"
     }
 }
 
@@ -307,7 +373,14 @@ try {
         Copy-ToolFiles
         Copy-HelperFiles
         Copy-DocsFiles
-        Initialize-SettingsFile
+
+        # Get PBI project path (from parameter or prompt)
+        $pbiPath = $PBIProjectPath
+        if (-not $pbiPath -and -not $Silent -and -not $CheckOnly) {
+            $pbiPath = Get-PBIProjectPath
+        }
+
+        Initialize-SettingsFile -PBIPath $pbiPath
 
         Write-Success "Bootstrap complete! Tools installed to $script:LocalToolsDir"
         Write-Info "Version: $pluginVersion"
