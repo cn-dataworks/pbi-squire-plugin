@@ -6,10 +6,10 @@
       "Grep",
       "Edit",
       "Write",
-      "Bash(python *)",
-      "Bash(git *)",
-      "Bash(npm *)",
-      "Bash(npx *)"
+      "Bash(python:*)",
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)"
     ]
   }
 }
