@@ -74,6 +74,8 @@ $script:HelperFiles = @(
     "pbi-url-filter-encoder.md"
 )
 
+$script:TemplatesPath = Join-Path $script:PluginToolsPath "templates"
+
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
@@ -227,6 +229,26 @@ function Copy-DocsFiles {
     }
 }
 
+function Initialize-SettingsFile {
+    # Create settings.json with recommended permissions if it doesn't exist
+    $settingsPath = Join-Path $script:LocalClaudeDir "settings.json"
+    $templatePath = Join-Path $script:TemplatesPath "settings.json"
+
+    if (Test-Path $settingsPath) {
+        Write-Info "settings.json already exists - skipping (won't overwrite your config)"
+        Write-Info "To add recommended permissions, see: tools/templates/settings.json"
+        return
+    }
+
+    if (Test-Path $templatePath) {
+        Copy-Item -Path $templatePath -Destination $settingsPath -Force
+        Write-Success "Created settings.json with auto-approve permissions"
+        Write-Info "Tools like Read, Glob, Grep, Edit will run without prompts"
+    } else {
+        Write-Warn "Settings template not found at: $templatePath"
+    }
+}
+
 # ============================================================
 # MAIN
 # ============================================================
@@ -285,6 +307,7 @@ try {
         Copy-ToolFiles
         Copy-HelperFiles
         Copy-DocsFiles
+        Initialize-SettingsFile
 
         Write-Success "Bootstrap complete! Tools installed to $script:LocalToolsDir"
         Write-Info "Version: $pluginVersion"

@@ -86,7 +86,22 @@ The simplest approach - no data exposure at all.
 
 Create a version of your project with fake data that preserves structure and relationships.
 
-**Step-by-Step Guide:**
+**Automated Setup (Recommended):**
+
+Use the anonymization workflow to automatically detect and mask sensitive columns:
+
+```bash
+/setup-data-anonymization --project "<path-to-pbip>"
+```
+
+This workflow:
+1. Scans your project for columns with PII patterns (names, emails, SSN, phones, etc.)
+2. Generates conditional M code with a DataMode parameter
+3. Lets you toggle between "Real" and "Anonymized" data by changing the parameter
+
+See `powerbi-data-prep` skill documentation for details.
+
+**Manual Setup (Step-by-Step):**
 
 #### Step 1: Copy Your Project
 ```

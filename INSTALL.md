@@ -205,10 +205,66 @@ YourProject/
 │   │   ├── analytics_merger.py
 │   │   ├── version.txt      ← Version tracking
 │   │   └── ...
-│   └── helpers/             ← Reference files
-│       └── pbi-url-filter-encoder.md
+│   ├── helpers/             ← Reference files
+│   │   └── pbi-url-filter-encoder.md
+│   └── settings.json        ← Auto-approve permissions
 └── YourProject.pbip
 ```
+
+### Auto-Approve Permissions
+
+Bootstrap creates a `settings.json` that auto-approves common tools so you don't get prompted for every file read:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "Bash(python *)",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(npx *)"
+    ]
+  }
+}
+```
+
+**What this means:**
+- `Read`, `Glob`, `Grep` - File reading/searching runs without prompts
+- `Edit`, `Write` - File modifications run without prompts
+- `Bash(python *)` - Python scripts run without prompts
+- `Bash(git *)` - Git commands run without prompts
+
+**Customizing permissions:**
+
+If you want stricter or looser permissions, edit `.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep"
+    ]
+  }
+}
+```
+
+Or allow everything (use with caution):
+```json
+{
+  "permissions": {
+    "allow": ["*"]
+  }
+}
+```
+
+**Note:** Bootstrap won't overwrite an existing `settings.json`. To get the default permissions on an existing project, copy from `tools/templates/settings.json`.
 
 ### Version Tracking
 

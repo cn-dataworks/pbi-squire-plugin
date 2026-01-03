@@ -248,6 +248,34 @@ This skill integrates with existing Power BI workflows:
 - Use `/create-pbi-artifact` for DAX measures, calculated columns (DAX, not M)
 - Use `/evaluate-pbi-project-file` for debugging existing issues
 
+## Data Anonymization
+
+For working with sensitive client data while using MCP, use the anonymization workflow:
+
+```bash
+/setup-data-anonymization --project "<path-to-pbip>"
+```
+
+This workflow:
+1. **Detects sensitive columns** - Scans for PII patterns (names, emails, SSN, phones, etc.)
+2. **Generates masking M code** - Creates conditional transformations with DataMode parameter
+3. **Enables mode toggling** - Switch between Real and Anonymized data
+
+### Scripts for Anonymization
+
+- `scripts/sensitive_column_detector.py` - Scan for PII column patterns
+- `scripts/anonymization_generator.py` - Generate conditional masking M code
+
+### Toggling Data Mode
+
+After setup, toggle between modes in Power BI Desktop:
+1. Transform Data → Parameters → DataMode
+2. Set to "Real" (actual data) or "Anonymized" (masked data)
+3. Close & Apply to refresh
+
+See `workflows/setup-data-anonymization.md` for complete workflow details.
+See `references/anonymization_patterns.md` for masking template library.
+
 ## Scripts Reference
 
 ### `m_partition_editor.py`
@@ -259,6 +287,12 @@ Scan project to discover naming conventions, transformation patterns, and code o
 ### `query_folding_validator.py`
 Analyze M code to detect operations that break query folding and estimate performance impact.
 
+### `sensitive_column_detector.py`
+Scan TMDL files to identify columns likely containing sensitive/PII data based on naming patterns.
+
+### `anonymization_generator.py`
+Generate conditional masking M code for detected sensitive columns with DataMode parameter.
+
 ## References
 
 Load these as needed for detailed guidance:
@@ -268,6 +302,7 @@ Load these as needed for detailed guidance:
 - `references/common_transformations.md` - Library of M code patterns with examples
 - `references/tmdl_partition_structure.md` - TMDL partition formatting specification
 - `references/m_pattern_discovery.md` - How to interpret pattern analysis output
+- `references/anonymization_patterns.md` - M code templates for data masking
 
 ## Success Criteria
 

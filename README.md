@@ -96,6 +96,28 @@ After installation, it's automatically available in **every project** you open w
 
 > **Note**: The plugin's skills only activate when they detect Power BI files (`.pbip`, `.SemanticModel/`). In non-Power BI projects, the skills won't trigger even if the plugin is installed globally.
 
+### Auto-Approve Permissions
+
+Bootstrap creates `.claude/settings.json` with permissions so common tools run without prompts:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "Bash(python *)",
+      "Bash(git *)"
+    ]
+  }
+}
+```
+
+Customize by editing `.claude/settings.json`. See [INSTALL.md](INSTALL.md#auto-approve-permissions) for details.
+
 ## Skills
 
 | Skill | Description |
