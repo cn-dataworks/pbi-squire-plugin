@@ -45,6 +45,57 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 
 ---
 
+## Pre-Workflow Checks
+
+Before executing any workflow, perform these checks in order:
+
+### Step 1: Project Selection (Multi-Project Handling)
+
+When the user provides a folder path (not a specific .pbip file):
+
+1. Search for `*.pbip` files in the target folder
+2. **If 1 project found**: Use it automatically
+3. **If multiple projects found**: Ask user to select:
+   ```
+   Found N Power BI projects:
+   1. ProjectA/ProjectA.pbip
+   2. ProjectB/ProjectB.pbip
+
+   Which project would you like to work with?
+   ```
+4. **If 0 projects found**: Report error and suggest checking the path
+
+### Step 2: Anonymization Check (Before Data Queries)
+
+**After selecting a specific project**, check for anonymization configuration:
+
+1. Look for `.anonymization/config.json` **inside the project folder**
+   - Correct: `ProjectA/.anonymization/config.json`
+   - Wrong: `ParentFolder/.anonymization/config.json`
+
+2. **If config exists**: Verify `DataMode` parameter is set appropriately before sampling data
+
+3. **If config does NOT exist** and workflow will query data:
+   ```
+   ⚠️ This project doesn't have anonymization configured.
+   MCP queries may expose sensitive data.
+
+   Options:
+   1. Set up anonymization first (/setup-data-anonymization --project "<path>")
+   2. Proceed anyway (data is not sensitive)
+   3. Work in file-only mode (no data queries)
+   ```
+
+### Safe Operations (No Anonymization Check Needed)
+
+These operations don't expose data and can proceed without anonymization:
+- `dax_query_operations.validate()` — syntax check only
+- `measure_operations.list()` — metadata only
+- `table_operations.list()` — metadata only
+- File-based TMDL reads/edits
+
+---
+
 ## Workflows
 
 ### EVALUATE (Diagnose/Fix)

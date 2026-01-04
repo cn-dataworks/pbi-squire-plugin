@@ -43,6 +43,53 @@ MyProject/
 
 ---
 
+## Expected Folder Structure
+
+### Single Project
+```
+CustomerProjects/
+└── SalesReport/
+    ├── SalesReport.pbip
+    ├── SalesReport.SemanticModel/
+    ├── SalesReport.Report/
+    └── .anonymization/           ← Anonymization config (if set up)
+        └── config.json
+```
+
+### Multiple Projects in One Folder
+```
+CustomerProjects/
+├── ProjectA/
+│   ├── ProjectA.pbip
+│   ├── ProjectA.SemanticModel/
+│   ├── ProjectA.Report/
+│   └── .anonymization/           ← ProjectA's config
+│       └── config.json
+│
+├── ProjectA_20250115_143022/     ← Versioned copy (created during implementation)
+│   ├── ProjectA.pbip
+│   ├── ProjectA.SemanticModel/
+│   ├── ProjectA.Report/
+│   └── .anonymization/           ← Copied with version
+│       └── config.json
+│
+└── ProjectB/
+    ├── ProjectB.pbip
+    ├── ProjectB.SemanticModel/
+    └── .anonymization/           ← ProjectB's config (separate)
+        └── config.json
+```
+
+**Key points:**
+- Anonymization is configured **per-project**, not per-folder
+- Each `.anonymization/` folder lives inside its project folder
+- When projects are versioned (copied with timestamp), the `.anonymization/` folder is copied too
+- Each project can have different anonymization settings
+
+**When pointing to a folder with multiple projects:** The skill will ask which project you want to work with before proceeding.
+
+---
+
 ## Data Privacy & Masking Guide
 
 ### What Claude Can See

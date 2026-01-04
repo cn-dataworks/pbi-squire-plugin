@@ -359,7 +359,8 @@ function Initialize-SettingsFile {
 function Initialize-ClaudeMd {
     param([string]$PBIPath)
 
-    # Create or update CLAUDE.md with Power BI analyst instructions
+    # Create minimal CLAUDE.md that references the Power BI plugin
+    # Detailed instructions live in SKILL.md (updated with plugin, not user files)
     $claudeMdPath = "CLAUDE.md"
     $templatePath = Join-Path $script:TemplatesPath "CLAUDE.md"
 
@@ -368,39 +369,32 @@ function Initialize-ClaudeMd {
         return
     }
 
-    # Read template
+    # Read template and replace placeholders
     $content = Get-Content $templatePath -Raw
-
-    # Replace placeholders
     if ($PBIPath) {
         $normalizedPath = $PBIPath.Replace('\', '/')
         $content = $content.Replace('{{PBI_PROJECT_PATH}}', "Power BI projects are located at: ``$normalizedPath``")
         $content = $content.Replace('{{ALLOWED_PATHS}}', "- ``$normalizedPath/**``")
     } else {
-        $content = $content.Replace('{{PBI_PROJECT_PATH}}', "_No Power BI project path configured. Run bootstrap with -PBIProjectPath to set one._")
+        $content = $content.Replace('{{PBI_PROJECT_PATH}}', "_No Power BI project path configured._")
         $content = $content.Replace('{{ALLOWED_PATHS}}', "_No specific paths configured._")
     }
 
     if (Test-Path $claudeMdPath) {
-        # Check if it's already a Power BI analyst CLAUDE.md
         $existing = Get-Content $claudeMdPath -Raw
         if ($existing -match "Power BI Analyst Plugin") {
-            Write-Info "CLAUDE.md already configured for Power BI analyst"
+            Write-Info "CLAUDE.md already references Power BI Analyst Plugin"
             return
         }
-
         # Append to existing CLAUDE.md
-        Write-Info "Appending Power BI analyst instructions to existing CLAUDE.md"
+        Write-Info "Appending Power BI plugin reference to existing CLAUDE.md"
         $content = $existing + "`n`n" + $content
     } else {
-        Write-Info "Creating CLAUDE.md with Power BI analyst instructions"
+        Write-Info "Creating CLAUDE.md with Power BI plugin reference"
     }
 
     Set-Content -Path $claudeMdPath -Value $content -Encoding UTF8
-    Write-Success "CLAUDE.md configured with:"
-    Write-Info "  - Power BI analyst skill commands"
-    Write-Info "  - Data anonymization check requirements"
-    Write-Info "  - MCP safety guidelines"
+    Write-Success "CLAUDE.md configured with Power BI plugin reference"
 }
 
 # ============================================================
