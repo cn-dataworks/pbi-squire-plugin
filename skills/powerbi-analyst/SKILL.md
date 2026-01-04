@@ -49,6 +49,26 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 
 Before executing any workflow, perform these checks in order:
 
+### Step 0: Read Skill Configuration
+
+Check for `.claude/powerbi-analyst.json` in the project directory:
+
+```json
+{
+  "projectPath": "C:/Projects/SalesReport",
+  "dataSensitiveMode": true
+}
+```
+
+**`projectPath`:**
+- If set → Use this as the default project location (skip project selection prompt)
+- If null → Ask user for project path
+- Can be a folder (will search for .pbip) or specific .pbip file
+
+**`dataSensitiveMode`:**
+- If `true` → Enforce anonymization check before any MCP data queries (Step 2 is required)
+- If `false` → Proceed without anonymization checks (Step 2 can be skipped)
+
 ### Step 1: Project Selection (Multi-Project Handling)
 
 When the user provides a folder path (not a specific .pbip file):

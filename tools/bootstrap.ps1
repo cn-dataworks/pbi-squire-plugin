@@ -301,6 +301,72 @@ function Get-PBIProjectPath {
     return $path.Trim()
 }
 
+function Get-DataSensitiveMode {
+    # Check if config already exists
+    $configPath = Join-Path $script:LocalClaudeDir "powerbi-analyst.json"
+
+    if (Test-Path $configPath) {
+        try {
+            $config = Get-Content $configPath -Raw | ConvertFrom-Json
+            if ($null -ne $config.dataSensitiveMode) {
+                $mode = if ($config.dataSensitiveMode) { "enabled" } else { "disabled" }
+                Write-Success "Data-sensitive mode: $mode (from existing config)"
+                return $null  # Don't prompt, use existing
+            }
+        } catch {
+            Write-Warn "Could not parse existing config: $_"
+        }
+    }
+
+    # Prompt user
+    if (-not $Silent) {
+        Write-Host ""
+        Write-Host "  ============================================================" -ForegroundColor Cyan
+        Write-Host "  DATA SENSITIVITY CONFIGURATION" -ForegroundColor Cyan
+        Write-Host "  ============================================================" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "  Does this project contain sensitive data (PII, financial," -ForegroundColor White
+        Write-Host "  healthcare, or confidential business data)?" -ForegroundColor White
+        Write-Host ""
+        Write-Host "  If YES: The skill will require data anonymization before" -ForegroundColor Gray
+        Write-Host "          any MCP queries that could expose actual values." -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "  If NO:  The skill will proceed without anonymization checks." -ForegroundColor Gray
+        Write-Host ""
+    }
+
+    $response = Read-Host "  Enable data-sensitive mode? (y/N)"
+    return ($response -match "^[Yy]")
+}
+
+function Initialize-SkillConfig {
+    param(
+        [string]$ProjectPath,
+        [bool]$DataSensitiveMode
+    )
+
+    $configPath = Join-Path $script:LocalClaudeDir "powerbi-analyst.json"
+
+    if (Test-Path $configPath) {
+        Write-Info "powerbi-analyst.json already exists"
+        return
+    }
+
+    $config = @{
+        projectPath = if ($ProjectPath) { $ProjectPath.Replace('\', '/') } else { $null }
+        dataSensitiveMode = $DataSensitiveMode
+    }
+
+    $config | ConvertTo-Json | Set-Content $configPath -Encoding UTF8
+
+    $mode = if ($DataSensitiveMode) { "enabled" } else { "disabled" }
+    Write-Success "Created powerbi-analyst.json"
+    if ($ProjectPath) {
+        Write-Info "  Project path: $ProjectPath"
+    }
+    Write-Info "  Data-sensitive mode: $mode"
+}
+
 function Initialize-SettingsFile {
     param([string]$PBIPath)
 
@@ -483,6 +549,12 @@ try {
         $pbiPath = $PBIProjectPath
         if (-not $pbiPath -and -not $Silent -and -not $CheckOnly) {
             $pbiPath = Get-PBIProjectPath
+        }
+
+        # Get data sensitivity preference
+        $dataSensitive = Get-DataSensitiveMode
+        if ($null -ne $dataSensitive) {
+            Initialize-SkillConfig -ProjectPath $pbiPath -DataSensitiveMode $dataSensitive
         }
 
         Initialize-SettingsFile -PBIPath $pbiPath
