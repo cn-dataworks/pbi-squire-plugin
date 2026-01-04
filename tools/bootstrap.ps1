@@ -386,6 +386,29 @@ function Initialize-ClaudeMd {
             Write-Info "CLAUDE.md already references Power BI Analyst Plugin"
             return
         }
+
+        # CLAUDE.md exists but doesn't have the plugin reference - prompt user
+        if (-not $Silent) {
+            Write-Host ""
+            Write-Host "  ============================================================" -ForegroundColor Yellow
+            Write-Host "  CLAUDE.md UPDATE RECOMMENDED" -ForegroundColor Yellow
+            Write-Host "  ============================================================" -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "  Your project has a CLAUDE.md file, but it doesn't reference" -ForegroundColor White
+            Write-Host "  the Power BI Analyst Plugin. Claude won't automatically use" -ForegroundColor White
+            Write-Host "  the skill without this reference." -ForegroundColor White
+            Write-Host ""
+            Write-Host "  Would you like to append the plugin reference to CLAUDE.md?" -ForegroundColor Cyan
+            Write-Host ""
+            $response = Read-Host "  Add plugin reference? (Y/n)"
+
+            if ($response -match "^[Nn]") {
+                Write-Warn "Skipping CLAUDE.md update. To add manually, see:"
+                Write-Warn "  $templatePath"
+                return
+            }
+        }
+
         # Append to existing CLAUDE.md
         Write-Info "Appending Power BI plugin reference to existing CLAUDE.md"
         $content = $existing + "`n`n" + $content

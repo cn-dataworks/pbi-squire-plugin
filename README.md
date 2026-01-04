@@ -36,6 +36,11 @@ cd "C:\path\to\your\powerbi-project"
 & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
 ```
 
+This creates:
+- `CLAUDE.md` - Project instructions so Claude knows to use the Power BI skill
+- `.claude/settings.json` - Auto-approve permissions for common tools
+- `.claude/tools/` - Python utilities for the skill
+
 See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 
 ### MCP (Recommended for Writing)

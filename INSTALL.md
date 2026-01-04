@@ -196,6 +196,7 @@ bash "$HOME/.claude/plugins/custom/powerbi-analyst/tools/bootstrap.sh"
 
 ```
 YourProject/
+├── CLAUDE.md                ← Project instructions for Claude
 ├── .claude/
 │   ├── state.json           ← Session state (tasks, locks)
 │   ├── tasks/               ← Task findings files
@@ -210,6 +211,51 @@ YourProject/
 │   └── settings.json        ← Auto-approve permissions
 └── YourProject.pbip
 ```
+
+### CLAUDE.md (Project Instructions)
+
+Bootstrap creates or updates a `CLAUDE.md` file in your project root. This file tells Claude Code to use the Power BI Analyst skill when working with Power BI files.
+
+**What gets added:**
+
+```markdown
+# CLAUDE.md
+
+This project uses the **Power BI Analyst Plugin**.
+
+## When to Use
+
+Invoke the `powerbi-analyst` skill when working with:
+- Power BI files (*.pbip, *.pbix)
+- TMDL files (semantic model definitions)
+- PBIR files (report visuals)
+- DAX measures and M code
+
+## Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/evaluate-pbi-project-file` | Analyze and diagnose issues |
+| `/create-pbi-artifact` | Create measures, columns, tables |
+| `/implement-deploy-test-pbi-project-file` | Deploy and test changes |
+| `/setup-data-anonymization` | Set up data masking for sensitive data |
+
+## Power BI Project Path
+
+Power BI projects are located at: `C:/Projects/YourProject`
+
+## File Permissions
+
+Allowed paths for Read/Edit/Write:
+- `C:/Projects/YourProject/**`
+```
+
+**Behavior:**
+- If `CLAUDE.md` doesn't exist → creates it with the plugin reference
+- If `CLAUDE.md` exists but doesn't reference the plugin → appends the plugin section
+- If `CLAUDE.md` already references the plugin → leaves it unchanged
+
+**Why this matters:** Claude reads `CLAUDE.md` at the start of every session to understand project-specific instructions. Without this reference, Claude won't know to invoke the Power BI skill automatically.
 
 ### Auto-Approve Permissions
 
