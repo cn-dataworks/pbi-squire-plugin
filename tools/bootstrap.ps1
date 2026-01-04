@@ -236,7 +236,48 @@ function Copy-DocsFiles {
     }
 }
 
+function Get-ExistingPBIPath {
+    # Check if settings.json already has a PBI path configured
+    $settingsPath = Join-Path $script:LocalClaudeDir "settings.json"
+
+    if (-not (Test-Path $settingsPath)) {
+        return $null
+    }
+
+    try {
+        $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+
+        # Look for Read/Edit/Write permissions that aren't the standard tool paths
+        $allowList = $settings.permissions.allow
+        if (-not $allowList) {
+            return $null
+        }
+
+        foreach ($permission in $allowList) {
+            # Match patterns like "Read(C:/Projects/MyPBI/**)" or "Read(/path/to/pbi/**)"
+            if ($permission -match '^Read\(([^)]+/\*\*)\)$') {
+                $path = $matches[1] -replace '/\*\*$', ''
+                # Skip if it's the .claude tools path
+                if ($path -notmatch '\.claude') {
+                    return $path
+                }
+            }
+        }
+    } catch {
+        Write-Warn "Could not parse existing settings.json: $_"
+    }
+
+    return $null
+}
+
 function Get-PBIProjectPath {
+    # First, check if a path is already configured in settings.json
+    $existingPath = Get-ExistingPBIPath
+    if ($existingPath) {
+        Write-Success "Found existing Power BI path in settings.json: $existingPath"
+        return $null  # Return null to indicate no new path needed
+    }
+
     # Prompt user for Power BI project path if not provided
     if (-not $Silent) {
         Write-Host ""
