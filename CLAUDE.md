@@ -49,46 +49,183 @@ powerbi-analyst-plugin/
 - Python utilities in `tools/core/` provide reusable components
 - Skills contain their own agents, workflows, and resources
 
-## Branch Strategy (Public/Private Split)
+## Git Workflow (Cascading/Waterfall Pattern)
 
-This project uses a **branch-based** approach to manage public and private versions:
+This project uses a **cascading branch strategy** to manage public (Core) and private (Pro) versions.
 
-| Branch | Contents | Repository |
-|--------|----------|------------|
-| `main` | Core + Anonymization + Merge | Public (github.com/cn-dataworks/powerbi-analyst-plugin) |
-| `pro` | Everything + Playwright + Template Harvesting | Private |
+### The Golden Rule: "Flow Downstream"
 
-### Development Workflow
-
-```bash
-# Work on public features
-git checkout main
-# ... make changes ...
-git commit -m "Add feature"
-git push origin main
-
-# Work on Pro features
-git checkout pro
-# ... make changes ...
-git commit -m "Add Pro feature"
-git push origin pro
-
-# Sync public fixes into Pro
-git checkout pro
-git merge main
-git push origin pro
 ```
+main (Core) ──────► pro (Pro)
+   ↑                    │
+   │                    │
+Changes flow         Changes NEVER
+INTO main            flow back to main
+```
+
+- **Changes to Core** flow into **Pro**
+- **Changes to Pro** NEVER flow back to **Core**
+- **Pro is a superset** - contains everything in Core, plus extras
+
+### Permanent Branches
+
+| Branch | Purpose | Contents |
+|--------|---------|----------|
+| `main` | Stable Core (Public/Free) | Core + Anonymization + Merge |
+| `pro` | Stable Pro (Private/Paid) | Everything + Playwright + Template Harvesting |
 
 ### File Organization
 
-| Location | Public (main) | Private (pro) |
-|----------|---------------|---------------|
+| Location | `main` branch | `pro` branch |
+|----------|---------------|--------------|
 | `tools/core/` | All files | All files |
-| `tools/advanced/` | Empty | Pro scripts |
-| `skills/powerbi-analyst/workflows/harvest_templates.md` | Excluded | Included |
-| `skills/powerbi-analyst/agents/powerbi-playwright-tester.md` | Excluded | Included |
+| `tools/advanced/` | Empty (gitignored) | Pro scripts |
+| `workflows/harvest-templates.md` | Excluded (gitignored) | Included |
+| `agents/powerbi-playwright-tester.md` | Excluded (gitignored) | Included |
 
-### Bootstrap Behavior
+---
+
+## Development Scenarios
+
+### Scenario A: Feature for Everyone (Core + Pro)
+
+Adding a feature that both versions need (e.g., new validator):
+
+```bash
+# 1. Branch off Core
+git checkout main
+git checkout -b feature/new-validator
+
+# 2. Do the work, commit
+git add .
+git commit -m "Add new validator"
+
+# 3. Merge into Core
+git checkout main
+git merge feature/new-validator
+git push origin main
+
+# 4. CASCADE to Pro (critical!)
+git checkout pro
+git merge main
+git push origin pro
+
+# 5. Cleanup
+git branch -d feature/new-validator
+```
+
+### Scenario B: Pro-Only Feature
+
+Adding a feature only for Pro (e.g., Playwright testing):
+
+```bash
+# 1. Branch off PRO (not main!)
+git checkout pro
+git checkout -b feature/playwright-tests
+
+# 2. Do the work, commit
+git add .
+git commit -m "Add Playwright testing"
+
+# 3. Merge into Pro ONLY
+git checkout pro
+git merge feature/playwright-tests
+git push origin pro
+
+# 4. STOP - Do NOT merge to main
+git branch -d feature/playwright-tests
+```
+
+### Scenario C: Hotfix (Critical Bug in Core)
+
+Fixing a bug that affects both versions:
+
+```bash
+# 1. Branch off main
+git checkout main
+git checkout -b hotfix/critical-bug
+
+# 2. Fix and commit
+git add .
+git commit -m "Fix critical bug"
+
+# 3. Merge to main
+git checkout main
+git merge hotfix/critical-bug
+git push origin main
+
+# 4. IMMEDIATELY cascade to Pro
+git checkout pro
+git merge main
+git push origin pro
+
+# 5. Cleanup
+git branch -d hotfix/critical-bug
+```
+
+---
+
+## Visual History Flow
+
+```
+(Time flows right ->)
+
+main (Core):  A --- B --- C (Bugfix) ---------------> E (New Core Feat)
+                     \         \                       \
+                      \         \ (merge to pro)        \ (merge to pro)
+                       \         \                       \
+pro (Pro):              X ------- M1 -------------------- M2 --- P (Pro Feat)
+```
+
+- **A, B:** Old core commits
+- **X:** Initial pro branch creation
+- **C:** Bug fixed in Core
+- **M1:** Merged main into pro (got the bugfix)
+- **E:** New Core feature
+- **M2:** Merged main into pro (got new feature)
+- **P:** Pro-only feature (stays in pro, never goes to main)
+
+---
+
+## Rules of the Road
+
+1. **Always fix shared bugs in `main`** - If you fix a shared bug in `pro`, it becomes "trapped" and Core users never get it
+
+2. **Merge `main` into `pro` frequently** - Don't let them drift apart or you'll get merge conflicts
+
+3. **Pro is a superset** - Pro contains everything in Core, plus extras. Core never contains Pro stuff
+
+4. **Never merge `pro` into `main`** - This would leak Pro features into the free version
+
+5. **Use feature branches** - Never commit directly to `main` or `pro`
+
+---
+
+## Quick Reference
+
+```bash
+# Check current branch
+git branch
+
+# Switch to Core development
+git checkout main
+
+# Switch to Pro development
+git checkout pro
+
+# Sync Core changes into Pro (do this often!)
+git checkout pro
+git merge main
+git push origin pro
+
+# See what's different between branches
+git log main..pro --oneline    # Commits in pro not in main
+git log pro..main --oneline    # Commits in main not in pro (should be empty!)
+```
+
+---
+
+## Bootstrap Behavior
 
 The `bootstrap.ps1` script automatically detects which version is installed:
 - Always copies from `tools/core/`
