@@ -54,6 +54,8 @@ if (-not (Test-Path "$script:PluginPath\.claude-plugin")) {
 }
 
 $script:PluginToolsPath = Join-Path $script:PluginPath "tools"
+$script:CoreToolsPath = Join-Path $script:PluginToolsPath "core"
+$script:AdvancedToolsPath = Join-Path $script:PluginToolsPath "advanced"
 $script:PluginResourcesPath = Join-Path $script:PluginPath "skills\powerbi-analyst\resources"
 $script:VersionFile = "version.txt"
 
@@ -62,8 +64,8 @@ $script:LocalClaudeDir = ".claude"
 $script:LocalToolsDir = ".claude\tools\powerbi-analyst"
 $script:LocalHelpersDir = ".claude\helpers\powerbi-analyst"
 
-# Files to copy
-$script:ToolFiles = @(
+# Core files to copy (PUBLIC - always installed)
+$script:CoreToolFiles = @(
     "token_analyzer.py",
     "analytics_merger.py",
     "tmdl_format_validator.py",
@@ -74,7 +76,17 @@ $script:ToolFiles = @(
     "pbi_merger_schemas.json",
     "extract_visual_layout.py",
     "agent_logger.py",
+    "sensitive_column_detector.py",
+    "anonymization_generator.py",
+    "m_partition_editor.py",
+    "m_pattern_analyzer.py",
+    "query_folding_validator.py",
     "version.txt"
+)
+
+# Advanced files to copy (PRIVATE - only in Pro version)
+$script:AdvancedToolFiles = @(
+    # Playwright testing, template harvesting scripts go here
 )
 
 $script:HelperFiles = @(
@@ -113,7 +125,7 @@ function Write-Warn {
 # ============================================================
 
 function Get-PluginVersion {
-    $versionPath = Join-Path $script:PluginToolsPath $script:VersionFile
+    $versionPath = Join-Path $script:CoreToolsPath $script:VersionFile
     if (Test-Path $versionPath) {
         return (Get-Content $versionPath -Raw).Trim()
     }
@@ -198,22 +210,40 @@ function Copy-ToolFiles {
     $copied = 0
     $skipped = 0
 
-    foreach ($file in $script:ToolFiles) {
-        $sourcePath = Join-Path $script:PluginToolsPath $file
+    # Copy core files (always present)
+    foreach ($file in $script:CoreToolFiles) {
+        $sourcePath = Join-Path $script:CoreToolsPath $file
         $destPath = Join-Path $script:LocalToolsDir $file
 
         if (Test-Path $sourcePath) {
             Copy-Item -Path $sourcePath -Destination $destPath -Force
             $copied++
         } else {
-            Write-Warn "Tool file not found: $file"
+            Write-Warn "Core tool not found: $file"
             $skipped++
         }
     }
 
-    Write-Info "Copied $copied tool files"
+    Write-Info "Copied $copied core tools"
     if ($skipped -gt 0) {
-        Write-Warn "Skipped $skipped missing files"
+        Write-Warn "Skipped $skipped missing core files"
+    }
+
+    # Copy advanced files if present (Pro version only)
+    if ((Test-Path $script:AdvancedToolsPath) -and $script:AdvancedToolFiles.Count -gt 0) {
+        $advCopied = 0
+        foreach ($file in $script:AdvancedToolFiles) {
+            $sourcePath = Join-Path $script:AdvancedToolsPath $file
+            $destPath = Join-Path $script:LocalToolsDir $file
+
+            if (Test-Path $sourcePath) {
+                Copy-Item -Path $sourcePath -Destination $destPath -Force
+                $advCopied++
+            }
+        }
+        if ($advCopied -gt 0) {
+            Write-Success "Copied $advCopied Pro features"
+        }
     }
 }
 

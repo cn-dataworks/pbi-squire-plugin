@@ -37,7 +37,6 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 - "Apply the changes" → IMPLEMENT workflow
 - "What does this dashboard do?" → ANALYZE workflow
 - "Merge these two projects" → MERGE workflow
-- "Extract templates from this report" → HARVEST_TEMPLATES workflow
 
 **File Patterns:**
 - `*.pbip`, `*.pbix`, `*.tmdl`, `*.bim`
@@ -222,66 +221,6 @@ These operations don't expose data and can proceed without anonymization:
 6. Apply merge with user approval
 
 **Output:** Merged project + merge report
-
----
-
-### HARVEST_TEMPLATES (Extract Visual Templates)
-
-**Use when:** User wants to extract reusable visual templates from existing dashboards.
-
-**Commands:** `/harvest-templates`, `/review-templates`, `/promote-templates`
-
-**Public Template Repository:** https://github.com/cn-dataworks/pbir-visuals
-
-**Capability Tiers (Runtime Detection):**
-
-| Command | Requirements | If Missing |
-|---------|--------------|------------|
-| `/harvest-templates` | PBIR .Report folder | Guide to convert PBIX → PBIP |
-| `/review-templates` | Harvested templates | Prompt to harvest first |
-| `/promote-templates` | GitHub CLI (`gh`) + authenticated | Manual PR instructions |
-
-Each command checks requirements at runtime and provides helpful error messages with next steps.
-
-**Process:**
-1. **Harvest** (`/harvest-templates`) - *Always available with PBIR project*
-   - Preflight: Verify .Report folder exists
-   - Scan .Report folder for all visuals
-   - Classify visuals by type and binding pattern
-   - Deduplicate (keep unique structures only)
-   - Sanitize (replace specifics with `{{PLACEHOLDER}}` syntax)
-   - Save to local staging: `.templates/harvested/`
-
-2. **Review** (`/review-templates`) - *Requires harvested templates*
-   - Preflight: Verify harvested templates exist
-   - Fetch existing templates from public repository
-   - Compare harvested against public library
-   - Flag as: NEW, DUPLICATE, VARIANT, IMPROVED
-   - Mark templates for promotion
-
-3. **Promote** (`/promote-templates`) - *Requires GitHub CLI*
-   - Preflight: Check `gh --version` and `gh auth status`
-   - If gh not installed → show install instructions + manual PR alternative
-   - If not authenticated → prompt `gh auth login`
-   - Fork public repo (if not already forked)
-   - Create feature branch, copy templates, create PR
-
-**Naming Convention:**
-```
-[visual-type]-[binding-pattern].json
-
-Examples:
-- bar-chart-category-y.json
-- line-chart-multi-measure.json
-- card-single-measure.json
-- slicer-dropdown.json
-```
-
-**Storage:**
-- Local staging: `[project]/.templates/harvested/`
-- Public library: `github.com/cn-dataworks/pbir-visuals/visual-templates/` (via PR)
-
-**Output:** Template files + harvest manifest + PR URL (on promotion)
 
 ---
 
@@ -542,5 +481,4 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 3. **Need a whole page?** → "Build a regional performance dashboard page"
 4. **Ready to apply?** → "Implement the changes from findings.md"
 5. **Want to understand?** → "Analyze this dashboard and explain what it does"
-6. **Build template library?** → "Harvest visual templates from this report"
-7. **Update the plugin?** → "Update the Power BI Analyst plugin to the latest version"
+6. **Update the plugin?** → "Update the Power BI Analyst plugin to the latest version"

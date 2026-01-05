@@ -53,3 +53,9 @@ nul
 
 # User-generated scratchpads
 agent_scratchpads/
+
+# Private/Pro features (not in public release)
+# These are only included in the 'pro' branch
+tools/advanced/
+skills/powerbi-analyst/workflows/harvest-templates.md
+skills/powerbi-analyst/agents/powerbi-playwright-tester.md
