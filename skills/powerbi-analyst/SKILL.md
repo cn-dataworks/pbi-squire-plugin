@@ -403,9 +403,23 @@ cd "C:\path\to\your\project"
 
 **Plugin location:** `$HOME\.claude\plugins\custom\powerbi-analyst\`
 
-### Manual Tool Edits
+### What Gets Overwritten on Update
 
-If you edit local tools (`.claude/tools/*`), the version comparison will show "newer". Use `-Force` to overwrite with plugin versions if needed.
+| File | Behavior | Safe to Customize? |
+|------|----------|-------------------|
+| `CLAUDE.md` | Prompts before appending | ✅ Yes |
+| `.claude/settings.json` | Skips if exists | ✅ Yes |
+| `.claude/powerbi-analyst.json` | Skips if exists | ✅ Yes |
+| `.claude/tasks/*` | Not touched | ✅ Yes |
+| `.claude/tools/*.py` | Overwritten | ❌ No (plugin-managed) |
+| `.claude/helpers/*` | Overwritten | ❌ No (plugin-managed) |
+
+**Important:** Files in `.claude/tools/` and `.claude/helpers/` are plugin-managed and will be overwritten on updates. Do not customize these files - your changes will be lost.
+
+To customize behavior, edit:
+- `.claude/settings.json` - Permissions and Claude Code settings
+- `.claude/powerbi-analyst.json` - Skill configuration
+- `CLAUDE.md` - Project-specific instructions
 
 ---
 
