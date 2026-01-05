@@ -31,3 +31,22 @@ When working on this plugin codebase, consult `CONTRIBUTING.md` for:
 - **Hotfixes** - Critical bug fix workflow
 
 **Key rule:** Changes flow `main` → `pro`, never the reverse.
+
+### Before ANY Commit
+
+**STOP and verify:**
+
+1. **Is this a Core feature or Pro feature?**
+   - Core = benefits all users → branch from `main`
+   - Pro = paid/advanced only → branch from `pro`
+
+2. **Am I on the correct branch?**
+   ```bash
+   git branch  # Check current branch
+   ```
+
+3. **Will this need to cascade?**
+   - Core changes → YES, cascade `main` → `pro` after merge
+   - Pro changes → NO, stays in `pro` only
+
+See `CONTRIBUTING.md` for detailed scenarios and commands.
