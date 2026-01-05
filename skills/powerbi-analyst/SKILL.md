@@ -37,6 +37,7 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 - "Apply the changes" → IMPLEMENT workflow
 - "What does this dashboard do?" → ANALYZE workflow
 - "Merge these two projects" → MERGE workflow
+- "Extract templates from this report" → HARVEST_TEMPLATES workflow (Pro)
 
 **File Patterns:**
 - `*.pbip`, `*.pbix`, `*.tmdl`, `*.bim`
@@ -221,6 +222,16 @@ These operations don't expose data and can proceed without anonymization:
 6. Apply merge with user approval
 
 **Output:** Merged project + merge report
+
+---
+
+### HARVEST_TEMPLATES (Extract Visual Templates) - Pro Feature
+
+**Use when:** User wants to extract reusable visual templates from existing dashboards.
+
+**Commands:** `/harvest-templates`, `/review-templates`, `/promote-templates`
+
+See `workflows/harvest-templates.md` for full documentation.
 
 ---
 
@@ -481,4 +492,5 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 3. **Need a whole page?** → "Build a regional performance dashboard page"
 4. **Ready to apply?** → "Implement the changes from findings.md"
 5. **Want to understand?** → "Analyze this dashboard and explain what it does"
-6. **Update the plugin?** → "Update the Power BI Analyst plugin to the latest version"
+6. **Build template library?** → "Harvest visual templates from this report" (Pro)
+7. **Update the plugin?** → "Update the Power BI Analyst plugin to the latest version"
