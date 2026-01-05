@@ -59,8 +59,8 @@ $script:VersionFile = "version.txt"
 
 # Local paths (in user's project)
 $script:LocalClaudeDir = ".claude"
-$script:LocalToolsDir = ".claude\tools"
-$script:LocalHelpersDir = ".claude\helpers"
+$script:LocalToolsDir = ".claude\tools\powerbi-analyst"
+$script:LocalHelpersDir = ".claude\helpers\powerbi-analyst"
 
 # Files to copy
 $script:ToolFiles = @(
@@ -163,6 +163,19 @@ function Initialize-LocalDirectories {
         Write-Info "Created $script:LocalClaudeDir directory"
     }
 
+    # Create parent tools/helpers directories first
+    $toolsParent = ".claude\tools"
+    $helpersParent = ".claude\helpers"
+
+    if (-not (Test-Path $toolsParent)) {
+        New-Item -ItemType Directory -Path $toolsParent -Force | Out-Null
+    }
+
+    if (-not (Test-Path $helpersParent)) {
+        New-Item -ItemType Directory -Path $helpersParent -Force | Out-Null
+    }
+
+    # Create plugin-specific subdirectories
     if (-not (Test-Path $script:LocalToolsDir)) {
         New-Item -ItemType Directory -Path $script:LocalToolsDir -Force | Out-Null
         Write-Info "Created $script:LocalToolsDir directory"

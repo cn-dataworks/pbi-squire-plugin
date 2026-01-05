@@ -196,19 +196,22 @@ bash "$HOME/.claude/plugins/custom/powerbi-analyst/tools/bootstrap.sh"
 
 ```
 YourProject/
-├── CLAUDE.md                ← Project instructions for Claude
+├── CLAUDE.md                        ← Project instructions for Claude
 ├── .claude/
-│   ├── state.json           ← Session state (tasks, locks)
-│   ├── tasks/               ← Task findings files
-│   ├── tools/               ← Python utilities
-│   │   ├── token_analyzer.py
-│   │   ├── tmdl_format_validator.py
-│   │   ├── analytics_merger.py
-│   │   ├── version.txt      ← Version tracking
-│   │   └── ...
-│   ├── helpers/             ← Reference files
-│   │   └── pbi-url-filter-encoder.md
-│   └── settings.json        ← Auto-approve permissions
+│   ├── powerbi-analyst.json         ← Skill configuration
+│   ├── settings.json                ← Auto-approve permissions
+│   ├── tasks/                       ← Task findings files
+│   ├── tools/
+│   │   ├── powerbi-analyst/         ← Plugin tools (isolated)
+│   │   │   ├── token_analyzer.py
+│   │   │   ├── tmdl_format_validator.py
+│   │   │   ├── version.txt
+│   │   │   └── ...
+│   │   └── (your scripts safe here)
+│   └── helpers/
+│       ├── powerbi-analyst/         ← Plugin helpers (isolated)
+│       │   └── pbi-url-filter-encoder.md
+│       └── (your files safe here)
 └── YourProject.pbip
 ```
 

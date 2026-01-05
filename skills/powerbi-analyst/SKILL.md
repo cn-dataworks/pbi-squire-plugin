@@ -355,17 +355,22 @@ bash "$HOME/.claude/plugins/custom/powerbi-analyst/tools/bootstrap.sh"
 **What gets created:**
 ```
 YourProject/
+├── CLAUDE.md                        ← Project instructions
 ├── .claude/
-│   ├── state.json           ← Session state
-│   ├── tasks/               ← Task findings files
-│   ├── tools/               ← Python utilities (copied from plugin)
-│   │   ├── token_analyzer.py
-│   │   ├── tmdl_format_validator.py
-│   │   ├── analytics_merger.py
-│   │   ├── version.txt      ← Tracks tool version
-│   │   └── ...
-│   └── helpers/             ← Helper files (copied from plugin)
-│       └── pbi-url-filter-encoder.md
+│   ├── powerbi-analyst.json         ← Skill configuration
+│   ├── settings.json                ← Permissions
+│   ├── tasks/                       ← Task findings files
+│   ├── tools/
+│   │   ├── powerbi-analyst/         ← Plugin tools (isolated)
+│   │   │   ├── token_analyzer.py
+│   │   │   ├── tmdl_format_validator.py
+│   │   │   ├── version.txt
+│   │   │   └── ...
+│   │   └── (your scripts here)      ← Safe from overwrites
+│   └── helpers/
+│       ├── powerbi-analyst/         ← Plugin helpers (isolated)
+│       │   └── pbi-url-filter-encoder.md
+│       └── (your files here)        ← Safe from overwrites
 └── YourProject.pbip
 ```
 
@@ -411,10 +416,12 @@ cd "C:\path\to\your\project"
 | `.claude/settings.json` | Skips if exists | ✅ Yes |
 | `.claude/powerbi-analyst.json` | Skips if exists | ✅ Yes |
 | `.claude/tasks/*` | Not touched | ✅ Yes |
-| `.claude/tools/*.py` | Overwritten | ❌ No (plugin-managed) |
-| `.claude/helpers/*` | Overwritten | ❌ No (plugin-managed) |
+| `.claude/tools/powerbi-analyst/*` | Overwritten | ❌ No (plugin-managed) |
+| `.claude/helpers/powerbi-analyst/*` | Overwritten | ❌ No (plugin-managed) |
+| `.claude/tools/*.py` (root) | Not touched | ✅ Yes (your scripts) |
+| `.claude/helpers/*` (root) | Not touched | ✅ Yes (your files) |
 
-**Important:** Files in `.claude/tools/` and `.claude/helpers/` are plugin-managed and will be overwritten on updates. Do not customize these files - your changes will be lost.
+**Important:** Only the `powerbi-analyst/` subfolders are plugin-managed. Your own scripts in `.claude/tools/` or `.claude/helpers/` are safe.
 
 To customize behavior, edit:
 - `.claude/settings.json` - Permissions and Claude Code settings
