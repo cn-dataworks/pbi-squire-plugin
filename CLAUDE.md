@@ -22,4 +22,12 @@ Claude Code plugin for Power BI project analysis, modification, and deployment.
 
 ## Development
 
-For development work on this plugin, see `CONTRIBUTING.md`.
+When working on this plugin codebase, consult `CONTRIBUTING.md` for:
+
+- **Git operations** - Which branch to use (`main` vs `pro`)
+- **Committing changes** - Feature branches, commit workflow
+- **Merging/pushing** - Cascading changes from `main` to `pro`
+- **Adding features** - Core (both versions) vs Pro-only features
+- **Hotfixes** - Critical bug fix workflow
+
+**Key rule:** Changes flow `main` → `pro`, never the reverse.
