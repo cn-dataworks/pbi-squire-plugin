@@ -55,5 +55,8 @@ nul
 agent_scratchpads/
 
 # Private/Pro features
-# NOTE: On 'pro' branch, these are included
+# NOTE: On 'pro' branch, these are INCLUDED (not gitignored)
 # On 'main' branch, these would be excluded
+
+# Internal development documentation (not for users)
+CONTRIBUTING.md

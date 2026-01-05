@@ -17,8 +17,8 @@ powerbi-analyst-plugin/
 │   ├── powerbi-dashboard-analyzer/  # Dashboard analysis
 │   └── powerbi-data-prep/   # M code/Power Query
 ├── tools/
-│   ├── core/               # PUBLIC - Core Python utilities (always installed)
-│   ├── advanced/           # PRIVATE - Pro features (only in pro branch)
+│   ├── core/               # Core Python utilities
+│   ├── advanced/           # Pro features
 │   ├── templates/          # Config templates for bootstrap
 │   └── bootstrap.ps1       # Project setup script
 ├── .mcp.json               # MCP server config (Playwright)
@@ -48,48 +48,4 @@ powerbi-analyst-plugin/
 - Supports both TMDL and model.bim formats
 - Python utilities in `tools/core/` provide reusable components
 - Skills contain their own agents, workflows, and resources
-
-## Branch Strategy (Public/Private Split)
-
-This project uses a **branch-based** approach to manage public and private versions:
-
-| Branch | Contents | Repository |
-|--------|----------|------------|
-| `main` | Core + Anonymization + Merge | Public (github.com/cn-dataworks/powerbi-analyst-plugin) |
-| `pro` | Everything + Playwright + Template Harvesting | Private |
-
-### Development Workflow
-
-```bash
-# Work on public features
-git checkout main
-# ... make changes ...
-git commit -m "Add feature"
-git push origin main
-
-# Work on Pro features
-git checkout pro
-# ... make changes ...
-git commit -m "Add Pro feature"
-git push origin pro
-
-# Sync public fixes into Pro
-git checkout pro
-git merge main
-git push origin pro
-```
-
-### File Organization
-
-| Location | Public (main) | Private (pro) |
-|----------|---------------|---------------|
-| `tools/core/` | All files | All files |
-| `tools/advanced/` | Empty | Pro scripts |
-| `skills/powerbi-analyst/workflows/harvest_templates.md` | Excluded | Included |
-| `skills/powerbi-analyst/agents/powerbi-playwright-tester.md` | Excluded | Included |
-
-### Bootstrap Behavior
-
-The `bootstrap.ps1` script automatically detects which version is installed:
-- Always copies from `tools/core/`
-- Copies from `tools/advanced/` only if files exist (Pro version)
+- See `CONTRIBUTING.md` for Git workflow and branch strategy
