@@ -59,3 +59,6 @@ agent_scratchpads/
 tools/advanced/
 skills/powerbi-analyst/workflows/harvest-templates.md
 skills/powerbi-analyst/agents/powerbi-playwright-tester.md
+
+# Internal development documentation (not for users)
+CONTRIBUTING.md
