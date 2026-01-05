@@ -379,17 +379,29 @@ The bootstrap script tracks versions to manage updates:
 | `bootstrap.ps1 -CheckOnly` | Check if update available (exit code 1 = update needed) |
 | `bootstrap.ps1 -Force` | Force reinstall even if current |
 
-### Updating Tools
+### Updating the Plugin
 
-When the plugin is updated, re-run bootstrap to get new tool versions:
+To update this skill to the latest version:
 
+**Step 1: Pull latest plugin code**
 ```powershell
-# Check if update needed
-& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1" -CheckOnly
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+git pull
+```
 
-# Update tools
+**Step 2: Update project tools (run from your project directory)**
+```powershell
+cd "C:\path\to\your\project"
 & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
 ```
+
+**Quick check if update is available:**
+```powershell
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1" -CheckOnly
+# Exit code 1 = update available, 0 = current
+```
+
+**Plugin location:** `$HOME\.claude\plugins\custom\powerbi-analyst\`
 
 ### Manual Tool Edits
 
@@ -510,3 +522,4 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 4. **Ready to apply?** → "Implement the changes from findings.md"
 5. **Want to understand?** → "Analyze this dashboard and explain what it does"
 6. **Build template library?** → "Harvest visual templates from this report"
+7. **Update the plugin?** → "Update the Power BI Analyst plugin to the latest version"
