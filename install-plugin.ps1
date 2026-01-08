@@ -269,13 +269,35 @@ if (!(Test-Path $TargetDir)) {
 # Step 3: Register with Claude Code
 Write-Step "Registering plugin with Claude Code..."
 
-# Use claude -c to run the install command
-$installResult = claude -c "/plugin install `"$TargetDir`"" 2>&1
+# A. Add as Local Marketplace (This enables updates)
+Write-Info "Adding local marketplace..."
+$mkCommand = "/plugin marketplace add `"$TargetDir`""
+$mkResult = claude -c $mkCommand 2>&1
+
+# Check result (ignore "already exists" errors)
+if ($LASTEXITCODE -ne 0) {
+    if ($mkResult -match "already exists" -or $mkResult -match "Duplicate") {
+        Write-Info "Marketplace already registered."
+    } else {
+        Write-Warn "Marketplace registration warning: $mkResult"
+    }
+} else {
+    Write-Success "Local marketplace added."
+}
+
+# B. Install Plugin (by ID, not path, so it links to the marketplace)
+Write-Info "Installing plugin..."
+$installCommand = "/plugin install powerbi-analyst"
+$installResult = claude -c $installCommand 2>&1
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Success "Plugin registered successfully"
+    Write-Success "Plugin installed successfully."
+} elseif ($installResult -match "already installed") {
+    Write-Info "Plugin is already installed. Attempting update..."
+    claude -c "/plugin update powerbi-analyst" | Out-Null
+    Write-Success "Plugin updated."
 } else {
-    Write-Warn "Plugin registration returned non-zero exit code"
+    Write-Warn "Plugin installation returned non-zero exit code"
     Write-Host "   Output: $installResult" -ForegroundColor Gray
 }
 

@@ -7,29 +7,22 @@ Claude Code plugin for Power BI project analysis, modification, and deployment.
 ### Step 1: Clone the Repository
 
 ```powershell
+# Clone to the standard Claude plugins directory
 git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
 ```
 
-### Step 2: Register with Claude Code
+### Step 2: Install & Register
 
-Run from your home directory:
+Run the installer script. This registers the local folder as a marketplace so updates work automatically.
 
 ```powershell
-cd $HOME
-claude
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+.\install-plugin.ps1
 ```
-
-Inside Claude Code:
-```
-/plugin marketplace add ./.claude/plugins/custom/powerbi-analyst
-/plugin install powerbi-analyst
-```
-
-Choose **"Install for you"** when prompted.
 
 ### Step 3: Bootstrap (per project)
 
-In each Power BI project, run:
+In each Power BI project, run the bootstrap tool to configure project-specific settings:
 
 ```powershell
 cd "C:\path\to\your\powerbi-project"
@@ -37,9 +30,9 @@ cd "C:\path\to\your\powerbi-project"
 ```
 
 This creates:
-- `CLAUDE.md` - Project instructions so Claude knows to use the Power BI skill
-- `.claude/settings.json` - Auto-approve permissions for common tools
-- `.claude/tools/` - Python utilities for the skill
+- `CLAUDE.md` - Project instructions
+- `.claude/settings.json` - Permissions
+- `.claude/tools/` - Local tool copies
 
 See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 
@@ -168,13 +161,29 @@ You can contribute new templates from your own reports:
 
 ## Updating
 
-```powershell
-# Re-run the installer to pull latest changes
-.\install-plugin.ps1
+Because this uses a Hybrid Local Marketplace, updating is a two-step process:
 
-# Or manually:
+1. **Pull Code**: Get the latest files from GitHub
+2. **Update Plugin**: Tell Claude to reload the plugin from the local files
+
+**One-Line Update (Recommended):**
+
+```powershell
+# Navigate and update
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+git pull; if ($?) { claude -c "/plugin update powerbi-analyst" }
+```
+
+**Or Manual Steps:**
+
+```powershell
+# 1. Update files
 cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 git pull
+
+# 2. Update Claude registration
+claude
+> /plugin update powerbi-analyst
 ```
 
 ## Requirements

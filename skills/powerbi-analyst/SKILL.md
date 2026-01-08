@@ -37,7 +37,6 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 - "Apply the changes" → IMPLEMENT workflow
 - "What does this dashboard do?" → ANALYZE workflow
 - "Merge these two projects" → MERGE workflow
-- "Extract templates from this report" → HARVEST_TEMPLATES workflow (Pro)
 
 **File Patterns:**
 - `*.pbip`, `*.pbix`, `*.tmdl`, `*.bim`
@@ -222,45 +221,6 @@ These operations don't expose data and can proceed without anonymization:
 6. Apply merge with user approval
 
 **Output:** Merged project + merge report
-
----
-
-### HARVEST_TEMPLATES (Extract Visual Templates) - Pro Feature
-
-**Use when:** User wants to extract reusable visual templates from existing dashboards.
-
-**Commands:** `/harvest-templates`, `/review-templates`, `/promote-templates`
-
-See `workflows/harvest-templates.md` for full documentation.
-
----
-
-### REVIEW_UX (Dashboard UX Analysis) - Pro Feature
-
-**Use when:** User wants expert UX review of a published dashboard to identify improvements.
-
-**Prerequisites:** Playwright MCP available, user confirms DataMode = "Anonymized" with fresh refresh
-
-**Commands:** `/review-ux-pbi-dashboard`
-
-**Process:**
-1. Check Playwright MCP availability
-2. Warn user to verify data is anonymized
-3. Navigate to published dashboard (or auto-publish local project)
-4. Capture screenshots of all pages
-5. Analyze for UX issues (chart types, layout, accessibility, labeling)
-6. Analyze visual interactions (cross-filtering, drill-through coordination)
-7. Generate implementation-ready recommendations
-
-**Output:** `findings.md` with screenshot evidence and implementation plan sections:
-- Section 1.4: UX Review (visual analysis)
-- Section 1.5: Interaction Review (coordination analysis)
-- Section 2.B: Visual Changes (VISUAL_CHANGE, SETTINGS_CHANGE)
-- Section 2.C: Interaction Changes (INTERACTION_CHANGE)
-
-**Next step:** "implement the changes" to apply UX improvements
-
-See `workflows/review-ux-pbi-dashboard.md` for full documentation.
 
 ---
 
@@ -521,5 +481,18 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 3. **Need a whole page?** → "Build a regional performance dashboard page"
 4. **Ready to apply?** → "Implement the changes from findings.md"
 5. **Want to understand?** → "Analyze this dashboard and explain what it does"
-6. **Build template library?** → "Harvest visual templates from this report" (Pro)
-7. **Update the plugin?** → "Update the Power BI Analyst plugin to the latest version"
+6. **Update the plugin?** → "Update the Power BI Analyst plugin to the latest version"
+
+---
+
+## Pro Features
+
+> **Note:** The following features require the Pro version of this plugin.
+> If `pro-features.md` exists in this skill folder, those additional capabilities are available.
+
+**Pro capabilities include:**
+- **Template Harvesting** - Extract reusable visual templates from existing dashboards
+- **UX Dashboard Review** - Expert analysis of published dashboards using Playwright
+- **Advanced Testing** - Browser-based visual validation and interaction testing
+
+See `pro-features.md` for full Pro documentation (Pro version only).
