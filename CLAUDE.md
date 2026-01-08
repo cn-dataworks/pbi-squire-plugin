@@ -39,6 +39,7 @@ When working on this plugin codebase, consult `CONTRIBUTING.md` for:
 1. **Is this a Core feature or Pro feature?**
    - Core = benefits all users → branch from `main`
    - Pro = paid/advanced only → branch from `pro`
+   - See `CONTRIBUTING.md` → "Pro-Only Features" and "Core Features" sections for complete lists
 
 2. **Am I on the correct branch?**
    ```bash
