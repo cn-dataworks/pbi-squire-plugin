@@ -482,3 +482,17 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 4. **Ready to apply?** → "Implement the changes from findings.md"
 5. **Want to understand?** → "Analyze this dashboard and explain what it does"
 6. **Update the plugin?** → "Update the Power BI Analyst plugin to the latest version"
+
+---
+
+## Pro Features
+
+> **Note:** The following features require the Pro version of this plugin.
+> If `pro-features.md` exists in this skill folder, those additional capabilities are available.
+
+**Pro capabilities include:**
+- **Template Harvesting** - Extract reusable visual templates from existing dashboards
+- **UX Dashboard Review** - Expert analysis of published dashboards using Playwright
+- **Advanced Testing** - Browser-based visual validation and interaction testing
+
+See `pro-features.md` for full Pro documentation (Pro version only).

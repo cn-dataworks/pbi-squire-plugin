@@ -12,37 +12,27 @@ This plugin provides Power BI development assistance including DAX/M code genera
 git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
 ```
 
-### Step 2: Register as Marketplace
+### Step 2: Install & Register
 
-Claude Code requires registering local plugins as a marketplace first. You must run this from your home directory:
+Run the installation script. This automatically:
+1. Registers the local folder as a Claude Marketplace
+2. Installs the `powerbi-analyst` plugin
+3. Detects and configures the MCP server (if present)
 
 ```powershell
-cd $HOME
-claude
-```
-
-Inside Claude Code, run these commands:
-
-```
-/plugin marketplace add ./.claude/plugins/custom/powerbi-analyst
-/plugin install powerbi-analyst
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+.\install-plugin.ps1
 ```
 
 Choose **"Install for you"** when prompted (installs globally for all projects).
 
-### Step 3: Restart and Verify
+### Step 3: Verify
 
-Exit Claude Code and restart:
-
-```
-/exit
-```
+Open Claude Code and verify the installation:
 
 ```powershell
 claude
 ```
-
-Then verify:
 
 ```
 /plugin list
@@ -469,15 +459,9 @@ Each team member runs the same install steps:
 # Step 1: Clone
 git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
 
-# Step 2: Register (from home directory)
-cd $HOME
-claude
-```
-
-Inside Claude Code:
-```
-/plugin marketplace add ./.claude/plugins/custom/powerbi-analyst
-/plugin install powerbi-analyst
+# Step 2: Install & Register
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+.\install-plugin.ps1
 ```
 
 ### Option 2: Project-Level Configuration
@@ -500,16 +484,36 @@ Each team member still needs to clone the repo first.
 
 ## Updating the Plugin
 
-### Pull Latest Changes
+Because this uses a Hybrid Local Marketplace, updating is a two-step process:
+
+### Step 1: Pull Latest Changes
 
 ```powershell
 cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 git pull
 ```
 
+### Step 2: Update Claude Registration
+
+```powershell
+claude -c "/plugin update powerbi-analyst"
+```
+
+Or inside Claude Code:
+```
+/plugin update powerbi-analyst
+```
+
+### One-Line Update (Recommended)
+
+```powershell
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+git pull; if ($?) { claude -c "/plugin update powerbi-analyst" }
+```
+
 ### Update Project Tools
 
-After pulling, re-run bootstrap in your projects to get updated tools:
+After updating, re-run bootstrap in your projects to get updated tools:
 
 ```powershell
 cd "C:\path\to\your\powerbi-project"
@@ -596,16 +600,16 @@ git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.cla
 
 ### Plugin not showing in /plugin list
 
-Make sure you registered the marketplace and installed the plugin:
+Make sure you ran the installer script:
 
 ```powershell
-cd $HOME
-claude
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+.\install-plugin.ps1
 ```
 
-Inside Claude Code:
+Or manually register inside Claude Code:
 ```
-/plugin marketplace add ./.claude/plugins/custom/powerbi-analyst
+/plugin marketplace add ~/.claude/plugins/custom/powerbi-analyst
 /plugin install powerbi-analyst
 ```
 
