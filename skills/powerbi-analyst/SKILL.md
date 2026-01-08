@@ -235,6 +235,35 @@ See `workflows/harvest-templates.md` for full documentation.
 
 ---
 
+### REVIEW_UX (Dashboard UX Analysis) - Pro Feature
+
+**Use when:** User wants expert UX review of a published dashboard to identify improvements.
+
+**Prerequisites:** Playwright MCP available, user confirms DataMode = "Anonymized" with fresh refresh
+
+**Commands:** `/review-ux-pbi-dashboard`
+
+**Process:**
+1. Check Playwright MCP availability
+2. Warn user to verify data is anonymized
+3. Navigate to published dashboard (or auto-publish local project)
+4. Capture screenshots of all pages
+5. Analyze for UX issues (chart types, layout, accessibility, labeling)
+6. Analyze visual interactions (cross-filtering, drill-through coordination)
+7. Generate implementation-ready recommendations
+
+**Output:** `findings.md` with screenshot evidence and implementation plan sections:
+- Section 1.4: UX Review (visual analysis)
+- Section 1.5: Interaction Review (coordination analysis)
+- Section 2.B: Visual Changes (VISUAL_CHANGE, SETTINGS_CHANGE)
+- Section 2.C: Interaction Changes (INTERACTION_CHANGE)
+
+**Next step:** "implement the changes" to apply UX improvements
+
+See `workflows/review-ux-pbi-dashboard.md` for full documentation.
+
+---
+
 ## Specialist Agents
 
 The orchestrator delegates to specialized agents based on artifact type:
