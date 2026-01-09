@@ -86,9 +86,13 @@ See [Project Bootstrap](#project-bootstrap-first-run) section below for details.
 
 **Option B: Manual Install**
 
-See: https://github.com/microsoft/powerbi-modeling-mcp
-
-Then re-run the installer to detect it.
+1. Go to: https://github.com/microsoft/powerbi-modeling-mcp
+2. Follow the installation instructions in the README
+3. Ensure the `powerbi-modeling-mcp.exe` is in your PATH or one of these locations:
+   - VS Code extensions folder
+   - `%ProgramFiles%\PowerBI Modeling MCP\`
+   - `%LOCALAPPDATA%\Programs\PowerBI Modeling MCP\`
+4. Re-run the plugin installer to detect it
 
 ### Verifying MCP Detection
 
