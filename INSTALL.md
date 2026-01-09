@@ -6,27 +6,33 @@ This plugin provides Power BI development assistance including DAX/M code genera
 
 ## Quick Install
 
-### Step 1: Clone the Repository
+### Option A: Direct Install (Recommended)
 
-```powershell
-git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+Run these commands inside Claude Code:
+
+```
+/plugin marketplace add https://github.com/cn-dataworks/powerbi-analyst-plugin
+/plugin install powerbi-analyst
 ```
 
-### Step 2: Install & Register
+That's it! The plugin is now available in all your projects.
 
-Run the installation script. This automatically:
-1. Registers the local folder as a Claude Marketplace
-2. Installs the `powerbi-analyst` plugin
-3. Detects and configures the MCP server (if present)
+### Option B: Git Clone (For Contributors)
+
+If you plan to contribute, need offline access, or want more control:
 
 ```powershell
+# 1. Clone the repository
+git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+
+# 2. Run installer (registers as local marketplace + detects MCP)
 cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 .\install-plugin.ps1
 ```
 
 Choose **"Install for you"** when prompted (installs globally for all projects).
 
-### Step 3: Verify
+### Verify
 
 Open Claude Code and verify the installation:
 
@@ -451,20 +457,26 @@ Claude Code runs Git in a non-interactive shell, which means credential helpers 
 
 For teams, you have two options:
 
-### Option 1: Standard Install (Recommended)
+### Option 1: Direct Install (Recommended)
 
-Each team member runs the same install steps:
+Each team member runs inside Claude Code:
+
+```
+/plugin marketplace add https://github.com/cn-dataworks/powerbi-analyst-plugin
+/plugin install powerbi-analyst
+```
+
+### Option 2: Git Clone (For Contributors)
+
+If team members need to contribute or need offline access:
 
 ```powershell
-# Step 1: Clone
 git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
-
-# Step 2: Install & Register
 cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 .\install-plugin.ps1
 ```
 
-### Option 2: Project-Level Configuration
+### Option 3: Project-Level Configuration
 
 For project-specific installation, add to your project's `.claude/settings.json`:
 
@@ -484,27 +496,14 @@ Each team member still needs to clone the repo first.
 
 ## Updating the Plugin
 
-Because this uses a Hybrid Local Marketplace, updating is a two-step process:
+### If You Used Option A (Direct Install)
 
-### Step 1: Pull Latest Changes
-
-```powershell
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
-git pull
-```
-
-### Step 2: Update Claude Registration
-
-```powershell
-claude -c "/plugin update powerbi-analyst"
-```
-
-Or inside Claude Code:
+Inside Claude Code:
 ```
 /plugin update powerbi-analyst
 ```
 
-### One-Line Update (Recommended)
+### If You Used Option B (Git Clone)
 
 ```powershell
 cd "$HOME\.claude\plugins\custom\powerbi-analyst"
@@ -581,7 +580,6 @@ Specialized agents for DAX, M Code, PBIR editing, validation, and more.
 - **Python 3.10+** - For utility scripts
 - **Power BI Desktop** - For live DAX validation and testing
 - **Power BI Modeling MCP** - For advanced semantic model operations
-- **GitHub CLI (`gh`)** - For template promotion workflow
 
 ---
 
