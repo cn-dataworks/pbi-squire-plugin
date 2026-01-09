@@ -196,9 +196,19 @@ function Show-CapabilitySummary {
         Write-Host "       [--] Live DAX validation (requires MCP)" -ForegroundColor Yellow
         Write-Host "       [--] Real-time error checking (requires MCP)" -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "   To enable full features:" -ForegroundColor White
-        Write-Host "       1. Install MCP: https://github.com/microsoft/powerbi-modeling-mcp" -ForegroundColor Gray
-        Write-Host "       2. Re-run this installer: .\install-plugin.ps1" -ForegroundColor Gray
+        Write-Host "   To enable full features, install Power BI Modeling MCP:" -ForegroundColor White
+        Write-Host ""
+        Write-Host "   Option A: VS Code Extension (Recommended)" -ForegroundColor Cyan
+        Write-Host "       1. Open VS Code" -ForegroundColor Gray
+        Write-Host "       2. Go to Extensions (Ctrl+Shift+X)" -ForegroundColor Gray
+        Write-Host "       3. Search for 'Power BI Modeling MCP'" -ForegroundColor Gray
+        Write-Host "       4. Install the extension by Analysis Services" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "   Option B: Manual Install" -ForegroundColor Cyan
+        Write-Host "       See: https://github.com/microsoft/powerbi-modeling-mcp" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "   After installing, re-run this installer:" -ForegroundColor White
+        Write-Host "       .\install-plugin.ps1" -ForegroundColor Gray
     }
 }
 
