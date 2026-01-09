@@ -4,23 +4,31 @@ Claude Code plugin for Power BI project analysis, modification, and deployment.
 
 ## Quick Install
 
-### Step 1: Clone the Repository
+### Option A: Direct Install (Recommended)
 
-```powershell
-# Clone to the standard Claude plugins directory
-git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+Run these commands inside Claude Code:
+
+```
+/plugin marketplace add https://github.com/cn-dataworks/powerbi-analyst-plugin
+/plugin install powerbi-analyst
 ```
 
-### Step 2: Install & Register
+That's it! The plugin is now available in all your projects.
 
-Run the installer script. This registers the local folder as a marketplace so updates work automatically.
+### Option B: Git Clone (For Contributors)
+
+If you plan to contribute or need offline access:
 
 ```powershell
+# 1. Clone the repository
+git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+
+# 2. Run installer
 cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 .\install-plugin.ps1
 ```
 
-### Step 3: Bootstrap (per project)
+### Bootstrap (per project)
 
 In each Power BI project, run the bootstrap tool to configure project-specific settings:
 
@@ -149,41 +157,19 @@ The skill includes 17 PBIR visual templates for generating new visuals. Template
 
 Templates are used automatically when you create visuals via `/create-pbi-artifact`. The skill selects the appropriate template based on your request.
 
-### Contributing Templates
-
-You can contribute new templates from your own reports:
-
-```
-/harvest-templates     Extract templates from your report
-/review-templates      Compare against existing library
-/promote-templates     Submit PR to public repository
-```
-
 ## Updating
 
-Because this uses a Hybrid Local Marketplace, updating is a two-step process:
+**If you used Option A (Direct Install):**
 
-1. **Pull Code**: Get the latest files from GitHub
-2. **Update Plugin**: Tell Claude to reload the plugin from the local files
-
-**One-Line Update (Recommended):**
-
-```powershell
-# Navigate and update
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
-git pull; if ($?) { claude -c "/plugin update powerbi-analyst" }
+```
+/plugin update powerbi-analyst
 ```
 
-**Or Manual Steps:**
+**If you used Option B (Git Clone):**
 
 ```powershell
-# 1. Update files
 cd "$HOME\.claude\plugins\custom\powerbi-analyst"
-git pull
-
-# 2. Update Claude registration
-claude
-> /plugin update powerbi-analyst
+git pull; if ($?) { claude -c "/plugin update powerbi-analyst" }
 ```
 
 ## Requirements
@@ -192,7 +178,6 @@ claude
 - Python 3.10+
 - Power BI Desktop (for testing)
 - Optional: Power BI Service access (for deployment)
-- Optional: GitHub CLI (`gh`) for template promotion
 
 ## Structure
 
