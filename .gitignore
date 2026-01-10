@@ -64,6 +64,8 @@ skills/powerbi-analyst/workflows/review-ux-pbi-dashboard.md
 skills/powerbi-analyst/agents/powerbi-playwright-tester.md
 skills/powerbi-analyst/agents/powerbi-ux-reviewer.md
 skills/powerbi-analyst/references/ux-review-guidelines.md
+skills/powerbi-analyst/workflows/qa-loop-pbi-dashboard.md
+skills/powerbi-analyst/agents/powerbi-qa-inspector.md
 
 # Internal development documentation (not for users)
 CONTRIBUTING.md
