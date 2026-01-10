@@ -49,6 +49,31 @@ from datetime import datetime
 
 
 @dataclass
+class PathLengthInfo:
+    """Information about path length analysis"""
+    base_path_length: int
+    project_name_length: int
+    total_estimated_max: int  # Estimated max path including nested structure
+    recommended_max_project_name: int
+    warning_level: str  # "ok", "caution", "warning", "critical"
+    warning_message: Optional[str]
+
+    # Constants for path budget calculation
+    RESERVED_STRUCTURE = 120  # Characters reserved for deepest nested paths
+    MAX_PATH = 260  # Windows MAX_PATH limit
+
+    def to_dict(self) -> Dict:
+        return {
+            "base_path_length": self.base_path_length,
+            "project_name_length": self.project_name_length,
+            "total_estimated_max": self.total_estimated_max,
+            "recommended_max_project_name": self.recommended_max_project_name,
+            "warning_level": self.warning_level,
+            "warning_message": self.warning_message
+        }
+
+
+@dataclass
 class ValidationResult:
     """Structured validation result"""
     status: str  # "validated", "action_required", "error"
@@ -70,6 +95,9 @@ class ValidationResult:
     tmdl_files_found: List[str]
     report_files_found: List[str]
 
+    # Path length analysis
+    path_length_info: Optional[Dict] = None
+
     def to_dict(self) -> Dict:
         return asdict(self)
 
@@ -87,10 +115,94 @@ class PbiProjectValidator:
     3. PBIX File - Compiled binary requiring extraction
     """
 
+    # Path length constants
+    RESERVED_STRUCTURE = 120  # Characters reserved for deepest nested PBIP paths
+    MAX_PATH = 260  # Windows MAX_PATH limit
+
     def __init__(self, project_path: str, visual_changes_expected: bool = False):
         self.project_path = Path(project_path).resolve()
         self.visual_changes_expected = visual_changes_expected
         self.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def _analyze_path_length(self, project_name: Optional[str] = None) -> PathLengthInfo:
+        """
+        Analyze path length and provide recommendations for PBIP projects.
+
+        Windows has a 260-character MAX_PATH limit. PBIP projects have deeply nested
+        structures like:
+          {base}/{project}/{project}.Report/definition/pages/{page}/visuals/{guid}/visual.json
+
+        This method calculates the remaining "budget" for project names and provides
+        warnings when paths are too long.
+        """
+        # Get base path (parent of project folder)
+        if self.project_path.is_file():
+            base_path = self.project_path.parent
+            detected_name = self.project_path.stem
+        else:
+            base_path = self.project_path.parent
+            detected_name = self.project_path.name
+
+        project_name = project_name or detected_name
+        base_path_length = len(str(base_path))
+        project_name_length = len(project_name)
+
+        # Calculate total estimated max path
+        # Formula: base_path + "/" + project_name + "/" + project_name + reserved_structure
+        # The project_name appears twice: once for folder, once for .Report subfolder prefix
+        total_estimated_max = base_path_length + 1 + project_name_length + 1 + project_name_length + self.RESERVED_STRUCTURE
+
+        # Calculate recommended max project name
+        available_budget = self.MAX_PATH - base_path_length - 1 - self.RESERVED_STRUCTURE
+        # Project name appears twice in path, so divide by 2
+        recommended_max = max(0, (available_budget - 1) // 2)
+
+        # Determine warning level
+        if total_estimated_max > 250:
+            warning_level = "critical"
+            warning_message = (
+                f"PATH LENGTH CRITICAL: Your path will likely cause failures with PBIP format.\n"
+                f"  Current path: {self.project_path}\n"
+                f"  Length: {len(str(self.project_path))} characters\n"
+                f"  Estimated max with nested files: {total_estimated_max} characters\n"
+                f"  Remaining budget for nested files: {self.MAX_PATH - len(str(self.project_path))} characters\n"
+                f"  Minimum needed: ~{self.RESERVED_STRUCTURE} characters\n\n"
+                f"REQUIRED ACTION:\n"
+                f"  1. Move to a shorter path (e.g., C:\\PBI\\)\n"
+                f"  2. Or use PBIX format instead of PBIP"
+            )
+        elif total_estimated_max > 230:
+            warning_level = "warning"
+            warning_message = (
+                f"PATH LENGTH WARNING: Your path may cause issues with PBIP projects.\n"
+                f"  Base path: {base_path}\n"
+                f"  Base path length: {base_path_length} characters\n"
+                f"  Current project name: {project_name} ({project_name_length} chars)\n"
+                f"  Recommended max project name: {recommended_max} characters\n\n"
+                f"STRONGLY RECOMMENDED:\n"
+                f"  1. Use a shorter base path: C:\\PBI\\, D:\\Projects\\, C:\\Dev\\\n"
+                f"  2. Keep project names under {recommended_max} characters"
+            )
+        elif total_estimated_max > 200:
+            warning_level = "caution"
+            warning_message = (
+                f"PATH LENGTH ADVISORY: Your project path may approach Windows limits.\n"
+                f"  Base path length: {base_path_length} characters\n"
+                f"  Recommended max project name: {recommended_max} characters\n\n"
+                f"Recommendation: Use shorter project names (15-25 characters) or a shorter base path."
+            )
+        else:
+            warning_level = "ok"
+            warning_message = None
+
+        return PathLengthInfo(
+            base_path_length=base_path_length,
+            project_name_length=project_name_length,
+            total_estimated_max=total_estimated_max,
+            recommended_max_project_name=recommended_max,
+            warning_level=warning_level,
+            warning_message=warning_message
+        )
 
     def validate(self) -> ValidationResult:
         """
@@ -236,6 +348,9 @@ class PbiProjectValidator:
                 if len(page_folders) > 3:
                     report_files_found.append(f"... and {len(page_folders) - 3} more pages")
 
+        # Analyze path length
+        path_length_info = self._analyze_path_length()
+
         # Success!
         return ValidationResult(
             status="validated",
@@ -251,7 +366,8 @@ class PbiProjectValidator:
             visual_changes_expected=self.visual_changes_expected,
             validation_timestamp=self.timestamp,
             tmdl_files_found=tmdl_files_found,
-            report_files_found=report_files_found
+            report_files_found=report_files_found,
+            path_length_info=path_length_info.to_dict()
         )
 
     def _validate_pbitools(self) -> ValidationResult:
@@ -316,6 +432,9 @@ class PbiProjectValidator:
 
     def _handle_pbix(self) -> ValidationResult:
         """Handle PBIX file - requires extraction"""
+        # Analyze path length to provide recommendations for PBIP conversion
+        path_length_info = self._analyze_path_length()
+
         return ValidationResult(
             status="action_required",
             format="pbix",
@@ -330,7 +449,8 @@ class PbiProjectValidator:
             visual_changes_expected=self.visual_changes_expected,
             validation_timestamp=self.timestamp,
             tmdl_files_found=[],
-            report_files_found=[]
+            report_files_found=[],
+            path_length_info=path_length_info.to_dict()
         )
 
     def _handle_invalid_format(self) -> ValidationResult:
@@ -406,6 +526,10 @@ class PbiProjectValidator:
                 for f in result.report_files_found:
                     print(f"  - {f}")
 
+            # Show path length warnings for validated PBIP projects
+            if result.path_length_info and result.path_length_info.get("warning_level") != "ok":
+                self._print_path_length_warning(result.path_length_info)
+
         elif result.status == "action_required":
             print(f"\n[ACTION REQUIRED] {result.action_type}")
             print(f"\nFormat Detected: {result.format}")
@@ -413,9 +537,13 @@ class PbiProjectValidator:
             if result.action_type == "pbix_extraction":
                 print("\nThe PBIX file needs to be extracted to a folder format for analysis.")
                 print("\nOptions:")
-                print("  [Y] Extract automatically with pbi-tools")
-                print("  [N] Show manual extraction instructions")
-                print("  [I] Help install pbi-tools first")
+                print("  [Y] Convert to PBIP format (recommended)")
+                print("  [N] Show manual conversion instructions")
+                print("  [I] Continue with PBIX (limited analysis)")
+
+                # Show path length recommendations for PBIP conversion
+                if result.path_length_info:
+                    self._print_pbix_path_recommendations(result.path_length_info)
 
         elif result.status == "error":
             print(f"\n[ERROR] {result.action_type}")
@@ -424,6 +552,62 @@ class PbiProjectValidator:
                 print(f"\nSuggested Fix:\n{result.suggested_fix}")
 
         print("\n" + "=" * 70)
+
+    def _print_path_length_warning(self, path_info: Dict):
+        """Print path length warning for existing PBIP projects"""
+        warning_level = path_info.get("warning_level", "ok")
+        warning_message = path_info.get("warning_message")
+
+        if warning_level == "critical":
+            print("\n" + "!" * 70)
+            print("PATH LENGTH CRITICAL")
+            print("!" * 70)
+        elif warning_level == "warning":
+            print("\n" + "-" * 70)
+            print("PATH LENGTH WARNING")
+            print("-" * 70)
+        elif warning_level == "caution":
+            print("\n" + "-" * 70)
+            print("PATH LENGTH ADVISORY")
+            print("-" * 70)
+
+        if warning_message:
+            print(f"\n{warning_message}")
+
+    def _print_pbix_path_recommendations(self, path_info: Dict):
+        """Print path length recommendations when converting PBIX to PBIP"""
+        warning_level = path_info.get("warning_level", "ok")
+        base_path_length = path_info.get("base_path_length", 0)
+        recommended_max = path_info.get("recommended_max_project_name", 30)
+
+        print("\n" + "-" * 70)
+        print("PATH LENGTH RECOMMENDATIONS FOR PBIP CONVERSION")
+        print("-" * 70)
+
+        print(f"\nCurrent location path length: {base_path_length} characters")
+        print(f"Recommended max project name: {recommended_max} characters")
+
+        if warning_level == "critical":
+            print("\n*** CRITICAL: This location is too deep for PBIP format! ***")
+            print("\nBefore converting to PBIP, you MUST:")
+            print("  1. Move the PBIX file to a shorter path (e.g., C:\\PBI\\)")
+            print("  2. Or use a very short project name (< 10 characters)")
+            print("\nOtherwise, you will encounter:")
+            print("  - Save failures in Power BI Desktop")
+            print("  - Files that cannot be opened or deleted")
+            print("  - Git operations that fail silently")
+        elif warning_level == "warning":
+            print("\n** WARNING: This location may cause path issues **")
+            print("\nRecommendations:")
+            print("  1. Consider a shorter base path: C:\\PBI\\, D:\\Projects\\")
+            print(f"  2. Keep project name under {recommended_max} characters")
+            print("  3. Examples of good short names: SalesQ4, HRMetrics, FinReport")
+        elif warning_level == "caution":
+            print("\nNote: Keep project name concise to avoid path length issues.")
+            print(f"  Suggested max: {recommended_max} characters")
+        else:
+            print("\nPath length is within safe limits.")
+            print(f"  Suggested max project name: {recommended_max} characters")
 
 
 def main():

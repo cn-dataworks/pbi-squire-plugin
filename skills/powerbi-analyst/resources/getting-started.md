@@ -20,9 +20,10 @@ The Power BI Analyst skill helps you work with Power BI projects by:
 
 ### Requirements
 
-1. **Power BI Project in PBIP format**
+1. **Power BI Project in PBIP format** (strongly recommended)
    - Your project should have `.SemanticModel/` and `.Report/` folders
    - Not a `.pbix` file (single binary file)
+   - See [Understanding Project Formats](#understanding-project-formats) below
 
 2. **For best results: Power BI Desktop running**
    - Enables live validation and data sampling
@@ -40,6 +41,106 @@ MyProject/
 │       └── relationships/
 └── MyProject.Report/
 ```
+
+---
+
+## Understanding Project Formats
+
+### Why PBIP Format Matters
+
+Power BI projects come in different formats, and the format determines what this skill can analyze:
+
+| Format | DAX Measures | M Code / Power Query | Table Schemas | Visual Editing |
+|--------|:------------:|:--------------------:|:-------------:|:--------------:|
+| **.pbix** (binary) | After extraction | Not readable | Not readable | Not available |
+| **.pbip** (Project) | Full access | Full access | Full access | Full access |
+
+**Key Insight**: The `.pbix` format is a compressed binary file. Even after extraction, the M code (Power Query) remains embedded in a binary blob and cannot be read or analyzed. Only the PBIP format provides human-readable TMDL files with full M code visibility.
+
+### What You Lose with PBIX
+
+If you point this skill at a `.pbix` file instead of a `.pbip` folder:
+
+- **Data lineage is not traceable** - Can't see how data flows from source to table
+- **M code is hidden** - Can't review or modify Power Query transformations
+- **ETL logic is opaque** - Can't diagnose issues in data transformation steps
+- **Visual editing unavailable** - PBIR format only exists in PBIP projects
+
+### Converting PBIX to PBIP
+
+If you have a `.pbix` file, convert it to unlock full analysis:
+
+1. **Open Power BI Desktop**
+2. **File > Open** - Select your .pbix file
+3. **File > Save As > Power BI Project** (.pbip)
+4. Choose a location and name
+5. A folder will be created with a `.pbip` file inside
+6. Use that folder path with this skill
+
+```
+BEFORE:                         AFTER:
+SalesReport.pbix       -->      SalesReport/
+                                ├── SalesReport.pbip
+                                ├── SalesReport.SemanticModel/
+                                │   └── definition/
+                                │       ├── tables/
+                                │       │   └── Sales.tmdl  <-- M code visible!
+                                │       └── model.tmdl
+                                └── SalesReport.Report/
+                                    └── definition/
+                                        └── pages/
+```
+
+### Path Length Considerations for PBIP
+
+**Important:** PBIP projects have deeply nested folder structures that can exceed Windows' 260-character path limit.
+
+**The problem:**
+```
+C:\Users\YourName\Documents\PowerBI\Projects\MyProject\
+  └── MyProject.Report\definition\pages\PageName\visuals\{GUID}\visual.json
+       ↑ This path can easily exceed 260 characters!
+```
+
+**Recommendations:**
+
+| Your Base Path Length | Max Project Name |
+|----------------------|------------------|
+| Short (< 50 chars): `C:\PBI\` | 40 characters |
+| Medium (50-100 chars): `C:\Users\You\Projects\` | 30 characters |
+| Long (100-130 chars): `C:\Users\You\Documents\PowerBI\` | 20 characters |
+| Very Long (> 130 chars) | **Use a shorter path** |
+
+**Best practices:**
+- Use short base paths: `C:\PBI\`, `D:\Projects\`, `C:\Dev\`
+- Keep project names concise: `SalesQ4` not `Q4_2024_Sales_Analysis_Dashboard_Final`
+- Avoid deep folder hierarchies in your working directory
+
+**If you encounter path errors:**
+1. Move the project to a shorter path (e.g., `C:\PBI\`)
+2. Rename the project to something shorter
+3. Or use PBIX format if path constraints cannot be avoided
+
+See `resources/project-format-detection.md` for detailed path length calculations.
+
+### Live Connection Reports
+
+Some reports connect to a remote dataset instead of containing their own data model. If the skill detects a Live Connection:
+
+- **Report visuals**: Can be analyzed
+- **DAX measures**: Are in the remote dataset, not this file
+- **M code**: Is in the remote dataset, not this file
+
+To fully analyze a Live Connection report, you need to download the source dataset from Power BI Service and convert it to PBIP format.
+
+### Format Detection
+
+This skill automatically detects your project format and will:
+- **Warn you** if using .pbix format with limited analysis capability
+- **Recommend conversion** when M code analysis is requested
+- **Guide you** through the conversion process if needed
+
+See `resources/project-format-detection.md` for full format detection logic.
 
 ---
 

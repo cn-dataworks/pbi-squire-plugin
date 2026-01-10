@@ -48,6 +48,57 @@ You should see `powerbi-analyst` under **cn-dataworks-plugins**.
 
 ---
 
+## What's Next After Installation?
+
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  IMPORTANT: Global Install vs Project Setup                               ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+You've just completed the GLOBAL installation. The plugin is now available
+in Claude Code, but it needs to be bootstrapped for EACH PROJECT you want
+to use it with.
+
+Why? The plugin requires:
+  - Python tools copied to your project
+  - A CLAUDE.md file referencing the plugin
+  - Skill configuration in .claude/powerbi-analyst.json
+
+Without bootstrap, the plugin may not activate properly.
+
+NEXT STEP: Run bootstrap in your Power BI project folder
+─────────────────────────────────────────────────────────
+
+  cd "C:\path\to\your\powerbi-project"
+  & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+
+This only takes a few seconds and enables full plugin functionality.
+```
+
+### Quick Start Checklist
+
+After global installation:
+
+- [ ] **Navigate to your Power BI project folder**
+- [ ] **Run bootstrap** (see command above)
+- [ ] **Verify your project is in PBIP format** (not .pbix)
+  - If you have a .pbix file, convert it first:
+    1. Open in Power BI Desktop
+    2. File → Save As → Power BI Project (.pbip)
+- [ ] **Open Claude Code** in your project folder
+- [ ] **Try a command**: `/evaluate-pbi-project-file`
+
+### Common First-Time Issues
+
+| Issue | Solution |
+|-------|----------|
+| "Skill not activating" | Run bootstrap in your project folder |
+| "Python tools not found" | Run bootstrap in your project folder |
+| "Limited analysis mode" | Convert your .pbix to .pbip format |
+| "CLAUDE.md not referencing plugin" | Run bootstrap to create/update it |
+
+---
+
 ## First Project Setup (Bootstrap)
 
 After installing the plugin, run bootstrap in each Power BI project to copy the tools:
@@ -538,10 +589,44 @@ cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 
 Test that the plugin is working:
 
-1. Open Claude Code in a folder with a Power BI project
-2. Run: `/plugin list` - you should see `powerbi-analyst`
-3. Ask: "What Power BI workflows can you help me with?"
-4. Or try: `/evaluate-pbi-project-file`
+1. **Navigate to a Power BI project folder** (containing .pbip file)
+2. **Run bootstrap first** (if not already done):
+   ```powershell
+   & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+   ```
+3. **Open Claude Code** in that folder:
+   ```powershell
+   claude
+   ```
+4. **Verify plugin is listed**: `/plugin list` - you should see `powerbi-analyst`
+5. **Test the skill**: Ask "What Power BI workflows can you help me with?"
+6. **Or try a command**: `/evaluate-pbi-project-file`
+
+### Expected Behavior
+
+When working correctly, you should see:
+- Plugin listed under `cn-dataworks-plugins` in `/plugin list`
+- Clear prompts when invoking workflows
+- Format detection warnings if using .pbix instead of .pbip
+- Bootstrap warning if project hasn't been set up
+
+### If Skills Don't Activate
+
+The most common cause is **missing bootstrap**. The plugin is installed globally, but each project needs local setup:
+
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  CHECK: Did you run bootstrap in THIS project folder?                     ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+Look for these files:
+  ✓ .claude/powerbi-analyst.json
+  ✓ .claude/tools/powerbi-analyst/
+  ✓ CLAUDE.md (with plugin reference)
+
+If any are missing, run:
+  & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+```
 
 ---
 
@@ -617,7 +702,19 @@ Or manually register inside Claude Code:
 
 ### Skills not activating
 
-Check that your project has a `.pbip` file or `.SemanticModel/` folder. The skill activates based on these triggers.
+**Most likely cause: Bootstrap not run**
+
+The plugin is installed globally, but each project needs bootstrap to work properly:
+
+```powershell
+cd "C:\path\to\your\project"
+& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+```
+
+**Also check:**
+- Project has a `.pbip` file or `.SemanticModel/` folder (triggers skill activation)
+- `CLAUDE.md` exists and references the Power BI Analyst plugin
+- `.claude/powerbi-analyst.json` exists in your project
 
 ### MCP not detected
 
