@@ -164,17 +164,41 @@ After agent returns, read the Prerequisites section from findings.md and parse t
 - Check `Action Type` field:
 
   **If Action Type = pbix_extraction:**
-  Display prompt to user:
+  Display prominent warning to user:
   ```
-  ℹ️  PBIX File Detected
+  ╔═══════════════════════════════════════════════════════════════════════════╗
+  ║  ⚠️  PBIX FILE DETECTED - LIMITED ANALYSIS MODE                           ║
+  ╠═══════════════════════════════════════════════════════════════════════════╣
+  ║                                                                           ║
+  ║  You've pointed to a .pbix file. This binary format significantly limits  ║
+  ║  what can be analyzed:                                                    ║
+  ║                                                                           ║
+  ║    PBIX (your format)              PBIP (recommended)                     ║
+  ║    ─────────────────────           ─────────────────────                  ║
+  ║    [--] M code/Power Query         [OK] M code/Power Query                ║
+  ║    [--] Data lineage               [OK] Data lineage                      ║
+  ║    [--] Table schemas              [OK] Table schemas                     ║
+  ║    [--] Visual editing (PBIR)      [OK] Visual editing (PBIR)             ║
+  ║    [OK] DAX measures (after extraction)                                   ║
+  ║                                                                           ║
+  ║  STRONGLY RECOMMENDED: Convert to PBIP format for full analysis.         ║
+  ║                                                                           ║
+  ╚═══════════════════════════════════════════════════════════════════════════╝
 
-  You've provided a .pbix file that needs to be extracted to a folder structure.
+  CONVERSION OPTION (Recommended):
+  ────────────────────────────────
+  1. Open this file in Power BI Desktop
+  2. File → Save As → Power BI Project (.pbip)
+  3. Re-run this command with the .pbip folder path
 
-  Do you have pbi-tools CLI installed?
+  EXTRACTION OPTION (DAX-only analysis):
+  ──────────────────────────────────────
+  If you must proceed with limited analysis:
 
-  [Y] Yes - Extract automatically with pbi-tools
-  [N] No - Show me manual extraction instructions
+  [Y] Extract with pbi-tools (DAX measures only)
+  [N] Show me manual extraction instructions
   [I] Help me install pbi-tools first
+  [C] I'll convert to PBIP and come back (recommended)
 
   Choose an option:
   ```
@@ -202,21 +226,55 @@ After agent returns, read the Prerequisites section from findings.md and parse t
      - Display: `❌ pbi-tools not found in system PATH`
      - Re-display prompt with only [N] and [I] options
 
-  **User selects [N]:**
-  Display manual extraction instructions:
+  **User selects [C]:**
+  Display conversion confirmation:
   ```
-  📋 Manual PBIX Conversion Instructions
+  ✅ Great choice! Converting to PBIP unlocks full analysis capabilities.
 
-  To analyze this .pbix file, convert it to Power BI Project format:
+  Quick Steps:
+  ────────────
+  1. Open Power BI Desktop
+  2. File → Open → Select: <pbix-file-path>
+  3. File → Save As → Power BI Project (.pbip)
+  4. Choose a folder location
+
+  After conversion, re-run:
+  ────────────────────────
+  /evaluate-pbi-project-file \
+    --project "<new-pbip-folder>" \
+    --description "<description>"
+  ```
+
+  Update Prerequisites section with:
+  ```markdown
+  **Status**: action_required
+  **Action Type**: user_converting_to_pbip
+  **User Action**: User is converting to PBIP format (recommended path)
+  ```
+
+  Exit workflow gracefully (exit code 0)
+
+  **User selects [N]:**
+  Display manual extraction instructions (pbi-tools extraction path):
+  ```
+  📋 PBIX Extraction Instructions (DAX-only analysis)
+
+  Note: This extracts DAX measures but M code will remain unreadable.
+  For full analysis, consider converting to PBIP instead.
 
   ═══════════════════════════════════════════════════════════
-  Using Power BI Desktop (Recommended)
+  Using Power BI Desktop (for PBIP conversion - RECOMMENDED)
   ═══════════════════════════════════════════════════════════
   1. Open Power BI Desktop
   2. File → Open → Select: <pbix-file-path>
   3. File → Save As → Power BI Project
   4. Choose a location and name for the project
   5. A folder will be created with a .pbip file inside
+
+  ═══════════════════════════════════════════════════════════
+  Using pbi-tools (for DAX-only extraction)
+  ═══════════════════════════════════════════════════════════
+  pbi-tools extract "<pbix-file-path>"
 
   ═══════════════════════════════════════════════════════════
   After Conversion - Re-run this command:
@@ -331,6 +389,92 @@ After agent returns, read the Prerequisites section from findings.md and parse t
 Once status=validated, Phase 1 is complete. The `validated_project_path` from Prerequisites should be used for all subsequent agent invocations.
 
 Note: If the project `format` is `pbi-tools` or `pbix-extracted-pbitools`, remember that `requires_compilation: true` - this will be important in the implementation phase.
+
+**Step 2.5: Storage Mode Detection & Format Recommendation**
+
+After validating the project structure, detect the storage mode to determine analysis capabilities. See `resources/project-format-detection.md` for full detection logic.
+
+**Detection Steps:**
+
+1. **For PBIP projects:**
+   - Read 2-3 table TMDL files from `.SemanticModel/definition/tables/`
+   - Look for `partition 'name' = m` blocks with `mode: import` or `mode: directQuery`
+   - No partition blocks = Live Connection or calculated table
+
+2. **For extracted PBIX (pbi-tools format):**
+   - Check DataModel file size
+   - > 1 MB = Import Mode (M code in binary, recommend PBIP conversion)
+   - < 100 KB = Likely Live Connection
+
+3. **Classify and set capabilities:**
+   ```yaml
+   storage_mode: import | direct_query | live_connection
+   m_code_accessible: true | false
+   recommendation: none | convert_to_pbip | get_source_dataset
+   ```
+
+**If Import Mode PBIX or pbi-tools format detected (limited M code access):**
+
+Display recommendation in findings file and to user:
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  NOTE: Limited Analysis Mode                                              ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+Project format: <format>
+Storage mode: Import Mode
+
+Current capabilities:
+  [OK] DAX measures - Full access
+  [--] M code / Power Query - NOT READABLE (embedded in binary)
+  [--] Data lineage tracing - NOT AVAILABLE
+
+This means:
+- I can analyze and fix DAX measure logic
+- I CANNOT see or analyze Power Query transformations
+- I CANNOT trace data lineage from source to table
+
+If your issue involves M code, ETL, or data transformations:
+  → Convert to PBIP format for full visibility
+  → See: resources/project-format-detection.md
+```
+
+Add to findings file Prerequisites section:
+```markdown
+**Analysis Mode**: Limited (DAX-only)
+**M Code Accessible**: No
+**Recommendation**: Convert to PBIP for full analysis
+```
+
+**If Live Connection detected:**
+
+Display and add to findings:
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  LIVE CONNECTION REPORT DETECTED                                          ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+This report connects to a remote dataset. The data model is not in this file.
+
+Current capabilities:
+  [OK] Report visuals - Can analyze layout and configuration
+  [--] DAX measures - Remote (not in this file)
+  [--] M code - Remote (not in this file)
+  [--] Data model - Remote (not in this file)
+
+To analyze the data model:
+  1. Go to Power BI Service
+  2. Find and download the source dataset
+  3. Convert to PBIP format
+  4. Re-run with the dataset's .pbip folder
+
+Would you like to:
+  [A] Continue with visual-only analysis
+  [B] Exit and get the source dataset
+```
+
+**If user selects [B]:** Exit gracefully with instructions
+**If user selects [A]:** Continue to Phase 2 with limited scope
 
 ---
 

@@ -48,6 +48,53 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 
 Before executing any workflow, perform these checks in order:
 
+### Step -1: Bootstrap Status Check (CRITICAL)
+
+**Purpose**: Ensure the project has been bootstrapped for this plugin.
+
+**Check for bootstrap indicators in the current project directory:**
+
+1. Look for `.claude/powerbi-analyst.json`
+2. Look for `.claude/tools/powerbi-analyst/` folder
+3. Look for `CLAUDE.md` with plugin reference
+
+**If ANY of these are missing:**
+
+```
++-------------------------------------------------------------------------+
+|  BOOTSTRAP REQUIRED                                                      |
++-------------------------------------------------------------------------+
+
+This project has not been set up for the Power BI Analyst plugin.
+
+The plugin is installed GLOBALLY but needs to be bootstrapped for EACH
+project to work properly. This copies necessary tools and configuration.
+
+To set up this project, run:
+
+  Windows:
+  & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+
+  macOS/Linux:
+  bash "$HOME/.claude/plugins/custom/powerbi-analyst/tools/bootstrap.sh"
+
+This creates:
+  - .claude/powerbi-analyst.json  (skill configuration)
+  - .claude/tools/powerbi-analyst/ (plugin tools)
+  - CLAUDE.md (project instructions)
+
+After bootstrap, re-run your command.
++-------------------------------------------------------------------------+
+```
+
+**Exit workflow** - do not proceed until bootstrap is complete.
+
+**Why This Matters**: Without bootstrap:
+- Python tools won't be found
+- CLAUDE.md won't reference the plugin properly
+- Skill configuration won't exist
+- The skill may appear to work but will fail mysteriously
+
 ### Step 0: Read Skill Configuration
 
 Check for `.claude/powerbi-analyst.json` in the project directory:
