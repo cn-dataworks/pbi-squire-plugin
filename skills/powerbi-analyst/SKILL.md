@@ -547,7 +547,12 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 - **Design Critique** - AI-powered review of dashboards against design standards
 - **Template Harvesting** - Extract reusable visual templates from existing dashboards
 - **UX Dashboard Review** - Expert analysis of published dashboards using Playwright
-- **QA Loop** - Automated validate → deploy → inspect → fix cycle
+- **QA Loop** - Automated deploy → inspect → fix cycle for runtime error detection
+
+**QA Loop prerequisites:**
+The QA Loop (`/qa-loop-pbi-dashboard`) focuses on **runtime and deployment errors** (grey boxes, crashes, broken visuals), not syntax validation. Code must already be validated before running the QA loop, either:
+- By the user manually
+- Through the `/implement-deploy-test-pbi-project-file` workflow (which validates TMDL/PBIR syntax)
 
 **Design Standards workflow:**
 1. Bootstrap creates `.claude/powerbi-design-standards.md` in your project
