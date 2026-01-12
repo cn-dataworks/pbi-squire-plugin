@@ -44,6 +44,17 @@ Guide users to the correct command based on their stated intent.
 - Symptoms: "compare", "merge", "sync", "combine", "differences"
 - Applies to: Merging dev/prod, adopting selective changes
 
+**User asks about design consistency** → Design Standards Setup (Pro)
+- Symptoms: "consistent design", "design standards", "brand guidelines", "design templates", "visual consistency", "style guide"
+- Pro Feature: Requires Pro version with bootstrap
+- Process: Check for `.claude/powerbi-design-standards.md`, guide customization
+- Next Step: Use `/qa-loop-pbi-dashboard --design-critique` to validate
+
+**User wants to validate against design standards** → `/qa-loop-pbi-dashboard --design-critique` (Pro)
+- Symptoms: "check design", "review consistency", "validate design", "design critique"
+- Prerequisites: Design standards file exists, Playwright MCP available
+- Applies to: Post-deployment design validation
+
 **Process:**
 1. Analyze user's statement for intent keywords
 2. Match to workflow decision tree (see `references/workflow-decision-tree.md`)

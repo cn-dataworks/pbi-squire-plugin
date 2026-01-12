@@ -89,6 +89,11 @@ $script:AdvancedToolFiles = @(
     # Playwright testing, template harvesting scripts go here
 )
 
+# Pro template files (copied to .claude/ root for user customization)
+$script:ProTemplateFiles = @(
+    "powerbi-design-standards.md"
+)
+
 $script:HelperFiles = @(
     "pbi-url-filter-encoder.md"
 )
@@ -276,6 +281,35 @@ function Copy-DocsFiles {
         }
         Copy-Item -Path "$docsSource\*" -Destination $docsDir -Force -Recurse
         Write-Info "Copied documentation files"
+    }
+}
+
+function Copy-ProTemplateFiles {
+    # Copy Pro template files to .claude/ root for user customization
+    # These are only copied if the advanced tools path exists (Pro version)
+
+    if (-not (Test-Path $script:AdvancedToolsPath)) {
+        return  # Not a Pro installation
+    }
+
+    $copied = 0
+
+    foreach ($file in $script:ProTemplateFiles) {
+        $sourcePath = Join-Path $script:TemplatesPath $file
+        $destPath = Join-Path $script:LocalClaudeDir $file
+
+        # Only copy if destination doesn't exist (preserve user customizations)
+        if ((Test-Path $sourcePath) -and (-not (Test-Path $destPath))) {
+            Copy-Item -Path $sourcePath -Destination $destPath -Force
+            $copied++
+            Write-Success "Created customizable $file"
+        } elseif (Test-Path $destPath) {
+            Write-Info "$file already exists (preserving your customizations)"
+        }
+    }
+
+    if ($copied -gt 0) {
+        Write-Info "Pro templates ready for customization in $script:LocalClaudeDir"
     }
 }
 
@@ -587,6 +621,7 @@ try {
         Copy-ToolFiles
         Copy-HelperFiles
         Copy-DocsFiles
+        Copy-ProTemplateFiles
 
         # Get PBI project path (from parameter or prompt)
         $pbiPath = $PBIProjectPath

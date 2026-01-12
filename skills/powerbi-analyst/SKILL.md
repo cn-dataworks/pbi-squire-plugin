@@ -37,6 +37,9 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 - "Apply the changes" → IMPLEMENT workflow
 - "What does this dashboard do?" → ANALYZE workflow
 - "Merge these two projects" → MERGE workflow
+- "Set up design standards" → SETUP_DESIGN_STANDARDS (Pro)
+- "Review dashboard for consistency" → QA_LOOP with design critique (Pro)
+- "Check against design guidelines" → QA_LOOP with design critique (Pro)
 
 **File Patterns:**
 - `*.pbip`, `*.pbix`, `*.tmdl`, `*.bim`
@@ -529,6 +532,8 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 4. **Ready to apply?** → "Implement the changes from findings.md"
 5. **Want to understand?** → "Analyze this dashboard and explain what it does"
 6. **Update the plugin?** → "Update the Power BI Analyst plugin to the latest version"
+7. **Set up design standards?** → "How do I ensure consistent design templates?" (Pro)
+8. **Check design consistency?** → "Review my dashboard against design guidelines" (Pro)
 
 ---
 
@@ -538,8 +543,16 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 > If `pro-features.md` exists in this skill folder, those additional capabilities are available.
 
 **Pro capabilities include:**
+- **Design Standards** - Customizable design guidelines for consistent dashboard styling
+- **Design Critique** - AI-powered review of dashboards against design standards
 - **Template Harvesting** - Extract reusable visual templates from existing dashboards
 - **UX Dashboard Review** - Expert analysis of published dashboards using Playwright
-- **Advanced Testing** - Browser-based visual validation and interaction testing
+- **QA Loop** - Automated validate → deploy → inspect → fix cycle
+
+**Design Standards workflow:**
+1. Bootstrap creates `.claude/powerbi-design-standards.md` in your project
+2. Customize with your organization's brand colors, typography, and rules
+3. Run `/qa-loop-pbi-dashboard --design-critique` to validate against standards
+4. Agent scores design (1-5) and provides specific fix recommendations
 
 See `pro-features.md` for full Pro documentation (Pro version only).
