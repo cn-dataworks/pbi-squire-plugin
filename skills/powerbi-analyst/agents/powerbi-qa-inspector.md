@@ -278,13 +278,12 @@ Return this when:
 
 ## Integration with QA Loop
 
-This agent is typically invoked as Phase 4 of the `/qa-loop-pbi-dashboard` workflow:
+This agent is typically invoked as Phase 3 of the `/qa-loop-pbi-dashboard` workflow:
 
-1. Phase 1: Pre-commit validation (validate_pbip_syntax.py)
-2. Phase 2: User commits and pushes
-3. Phase 3: Monitor GitHub Actions (monitor_deployment_status.py)
-4. **Phase 4: Inspect live report DOM (this agent)**
-5. Phase 5: Report results and iterate
+1. Phase 1: User commits and pushes (Deploy via Git Commit)
+2. Phase 2: Monitor GitHub Actions (monitor_deployment_status.py)
+3. **Phase 3: Inspect live report DOM (this agent)**
+4. Phase 4: Report results and iterate
 
 The agent's output determines whether the QA loop continues to iteration or completes successfully.
 

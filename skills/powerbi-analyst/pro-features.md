@@ -183,14 +183,14 @@ See `workflows/review-ux-pbi-dashboard.md` for full documentation.
 **Commands:** `/qa-loop-pbi-dashboard`
 
 **Process:**
-1. Pre-commit validation (JSON/TMDL syntax via `validate_pbip_syntax.py`)
-2. User commits and pushes changes to GitHub
-3. Monitor GitHub Actions deployment (`monitor_deployment_status.py`)
-4. Inspect live report DOM for errors (`powerbi-qa-inspector` agent)
-5. Report findings and offer retry or completion
+1. User commits and pushes changes to GitHub
+2. Monitor GitHub Actions deployment (`monitor_deployment_status.py`)
+3. Inspect live report DOM for errors (`powerbi-qa-inspector` agent)
+4. Report findings and offer retry or completion
+
+**Note:** This workflow assumes code has already been validated through `/implement-deploy-test-pbi-project-file`. It focuses on runtime/deployment errors.
 
 **Output:** `findings.md` with Section 5: QA Loop Results including:
-- Pre-commit validation summary
 - Deployment status and duration
 - DOM inspection results with screenshots
 - Issue list with recommendations
@@ -270,5 +270,4 @@ Additional examples for Pro users:
 - `tools/templates/powerbi-design-standards.md` - Customizable template for projects
 
 ### Tools
-- `tools/advanced/validate_pbip_syntax.py` - Pre-commit validation tool
 - `tools/advanced/monitor_deployment_status.py` - GitHub Actions monitor

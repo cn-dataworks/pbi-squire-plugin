@@ -1,6 +1,6 @@
 ---
 name: qa-loop-pbi-dashboard
-description: Automated QA loop for Power BI dashboard deployment with pre-commit validation, GitHub Actions monitoring, and live report inspection for error detection
+description: Automated QA loop for Power BI dashboard deployment with GitHub Actions monitoring and live report inspection for error detection
 pattern: ^/qa-loop-pbi-dashboard\s+(.+)$
 ---
 
@@ -8,7 +8,9 @@ pattern: ^/qa-loop-pbi-dashboard\s+(.+)$
 
 **This is a Pro-only feature.**
 
-This slash command orchestrates an automated quality assurance loop for Power BI dashboards that follows a "Validate → Deploy → Inspect → Fix" cycle. It ensures that code changes are validated before commit, deployment is monitored, and the live report is inspected for errors.
+This slash command orchestrates an automated quality assurance loop for Power BI dashboards that follows a "Deploy → Inspect → Fix" cycle. It monitors deployment via GitHub Actions and inspects the live report for runtime errors (grey boxes, crashes, broken visuals).
+
+**Note:** This workflow assumes code has already been validated through the `/implement-deploy-test-pbi-project-file` workflow. It focuses on detecting **runtime/deployment errors**, not syntax errors.
 
 ## Usage
 
@@ -51,6 +53,7 @@ Before running this workflow, ensure:
 3. **GitHub CLI**: `gh` must be installed and authenticated (`gh auth login`)
 4. **Playwright MCP**: Playwright MCP server must be available for DOM inspection
 5. **Power BI Session**: User must be logged into Power BI Service in their browser (for Playwright to reuse session)
+6. **Code Already Validated**: Run `/implement-deploy-test-pbi-project-file` first to validate TMDL/PBIR syntax
 
 ## Workflow
 
@@ -90,73 +93,18 @@ Before running this workflow, ensure:
 
 ---
 
-### Phase 1: Pre-Commit Validation
-
-**Purpose:** Catch syntax errors before commit to avoid failed deployments
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 PHASE 1: Pre-Commit Validation
-   └─ Running validate_pbip_syntax.py...
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-1. **Run Syntax Validator**
-   ```
-      └─ 🔧 [BASH] python tools/advanced/validate_pbip_syntax.py "<project_path>" --json
-   ```
-
-2. **Validate JSON Files**
-   - Check all `.json` files in `.Report/` folder
-   - Detect invalid JSON syntax
-   - Check for malformed visual configs
-
-3. **Validate TMDL Files**
-   - Check all `.tmdl` files in `.SemanticModel/definition/`
-   - Detect indentation errors
-   - Check for duplicate properties
-
-4. **Report Results**
-   ```
-      └─ 📊 Validation Results:
-      └─    JSON Files: [N] validated ✅
-      └─    TMDL Files: [N] validated ✅
-      └─    Errors: [N] / Warnings: [N]
-   ```
-
-**Exit Conditions:**
-- **PASS (no errors)**: Continue to Phase 2
-- **PASS (warnings only)**: Continue with warnings logged
-- **FAIL (errors found)**: Display errors and offer to abort or view details
-  - Do NOT proceed to deployment with errors
-  - Provide specific fix recommendations for each error
-
----
-
-### Phase 2: Deploy via Git Commit
+### Phase 1: Deploy via Git Commit
 
 **Purpose:** User triggers deployment by committing changes
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 PHASE 2: Deploy via Git Commit
-   └─ Pre-commit validation: ✅ PASSED
+📋 PHASE 1: Deploy via Git Commit
    └─ Ready to deploy
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-1. **Display Pre-Commit Summary**
-   ```
-   Pre-Commit Validation Summary:
-   ─────────────────────────────
-   ✅ JSON validation: [N] files passed
-   ✅ TMDL validation: [N] files passed
-   ⚠️ Warnings: [N] (non-blocking)
-
-   Ready to commit and push your changes.
-   ```
-
-2. **Prompt User to Deploy**
+1. **Prompt User to Deploy**
    ```
    Please commit and push your changes:
 
@@ -167,11 +115,11 @@ Before running this workflow, ensure:
    After push completes, reply with "deployed" to continue monitoring.
    ```
 
-3. **Wait for User Confirmation**
+2. **Wait for User Confirmation**
    - User responds with "deployed" or similar
    - Capture the latest commit SHA for monitoring
 
-4. **Get Commit SHA**
+3. **Get Commit SHA**
    ```
       └─ 🔧 [BASH] git rev-parse HEAD
       └─    Commit SHA: [sha]
@@ -179,13 +127,13 @@ Before running this workflow, ensure:
 
 ---
 
-### Phase 3: Monitor GitHub Actions
+### Phase 2: Monitor GitHub Actions
 
 **Purpose:** Poll deployment workflow until completion
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 PHASE 3: Monitor GitHub Actions
+📋 PHASE 2: Monitor GitHub Actions
    └─ Monitoring deployment...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -242,7 +190,7 @@ Before running this workflow, ensure:
 
 ---
 
-### Phase 4: Inspect Live Report DOM
+### Phase 3: Inspect Live Report DOM
 
 **Purpose:** Detect visual errors in the deployed report
 
@@ -250,7 +198,7 @@ Before running this workflow, ensure:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 PHASE 4: Inspect Live Report DOM
+📋 PHASE 3: Inspect Live Report DOM
    └─ Launching powerbi-qa-inspector agent...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -300,7 +248,7 @@ Before running this workflow, ensure:
 
 ---
 
-### Phase 5: Report Results / Iterate
+### Phase 4: Report Results / Iterate
 
 **Purpose:** Consolidate findings and decide on next action
 
@@ -314,7 +262,6 @@ Before running this workflow, ensure:
    ```
    QA Loop Summary:
    ─────────────────
-   Pre-Commit:     ✅ PASSED
    Deployment:     ✅ SUCCESS (45s)
    DOM Inspection: ❌ 2 ISSUES FOUND
 
@@ -345,7 +292,6 @@ Before running this workflow, ensure:
    ```
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ✅ QA LOOP COMPLETE
-      └─ All validations passed
       └─ Report deployed and verified
       └─ No visual errors detected
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -354,7 +300,7 @@ Before running this workflow, ensure:
 4. **Handle User Choice**
 
 **Retry:**
-- Return to Phase 1 (Pre-Commit Validation)
+- Return to Phase 1 (Deploy via Git Commit)
 - Increment iteration counter
 - Check if max retries exceeded
 
@@ -379,19 +325,14 @@ If a scratchpad folder exists (from previous `/evaluate-pbi-project-file` run), 
 **Iteration**: 1 of 3
 **Overall Status**: ✅ PASSED / ❌ ISSUES FOUND
 
-### 5.1 Pre-Commit Validation
-- JSON Files: 47 validated ✅
-- TMDL Files: 12 validated ✅
-- Warnings: 2 (non-blocking)
-
-### 5.2 Deployment Status
+### 5.1 Deployment Status
 - Repository: myorg/sales-report
 - Workflow: deploy.yml
 - Commit: abc123def
 - Duration: 45s
 - Status: ✅ SUCCESS
 
-### 5.3 DOM Inspection
+### 5.2 DOM Inspection
 **Report URL**: https://app.powerbi.com/reports/xyz
 **Screenshot**: [qa-results/inspection-001.png](./qa-results/inspection-001.png)
 
@@ -401,7 +342,7 @@ If a scratchpad folder exists (from previous `/evaluate-pbi-project-file` run), 
 | 1 | Sales Chart | Error Container | "Unable to load" message |
 | 2 | Revenue Card | Grey Box | Visual failed to render |
 
-### 5.4 Recommendations
+### 5.3 Recommendations
 1. Check measure references in "Sales Chart"
 2. Verify column bindings for "Revenue Card"
 3. Re-deploy after fixing issues
@@ -410,11 +351,6 @@ If a scratchpad folder exists (from previous `/evaluate-pbi-project-file` run), 
 ---
 
 ## Error Handling
-
-### Pre-Commit Validation Errors
-- Display specific error locations and messages
-- Provide fix recommendations where possible
-- DO NOT proceed to deployment
 
 ### Deployment Failures
 - Display GitHub Actions error logs
@@ -446,17 +382,12 @@ If a scratchpad folder exists (from previous `/evaluate-pbi-project-file` run), 
 
 For every design iteration, you must execute:
 
-1. **Pre-Commit Validation**
-   - Run `validate_pbip_syntax.py` on modified files
-   - **IF FAIL**: Do not push. Fix the syntax error immediately.
-   - **IF PASS**: Proceed to deployment.
-
-2. **Deployment & Wait**
+1. **Deployment & Wait**
    - Prompt user to commit changes
    - Run `monitor_deployment_status.py`
    - Wait for `SUCCEEDED` signal
 
-3. **Visual Inspection**
+2. **Visual Inspection**
    - Run `powerbi-qa-inspector` agent on the report URL
    - **Scenario A (FATAL_CRASH)**: Report failed to load. Revert last change.
    - **Scenario B (VISUAL_ERROR)**: Specific visuals broken. Fix data bindings.
@@ -468,7 +399,6 @@ For every design iteration, you must execute:
 
 This workflow integrates with:
 
-- **validate_pbip_syntax.py**: Pre-commit validation tool
 - **monitor_deployment_status.py**: GitHub Actions monitoring tool
 - **powerbi-qa-inspector**: DOM inspection agent (with optional design critique)
 - **pbi_project_validator.py**: Project structure validation
@@ -479,6 +409,5 @@ This workflow integrates with:
 
 - `agents/powerbi-qa-inspector.md` - DOM inspection agent documentation
 - `references/powerbi-design-standards.md` - Dashboard design standards & AI critique rubric
-- `tools/advanced/validate_pbip_syntax.py` - Pre-commit validator
 - `tools/advanced/monitor_deployment_status.py` - Deployment monitor
-- `workflows/implement-deploy-test-pbi-project-file.md` - Related implementation workflow
+- `workflows/implement-deploy-test-pbi-project-file.md` - Related implementation workflow (run this first for validation)
