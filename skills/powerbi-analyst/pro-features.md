@@ -180,6 +180,8 @@ See `workflows/review-ux-pbi-dashboard.md` for full documentation.
 - Playwright MCP available
 - GitHub CLI authenticated (`gh auth login`)
 
+**New to CI/CD?** See `resources/qa-loop-prerequisites.md` for complete step-by-step setup from a desktop .pbix file.
+
 **Commands:** `/qa-loop-pbi-dashboard`
 
 **Process:**
@@ -253,6 +255,12 @@ Additional examples for Pro users:
 ---
 
 ## Pro References
+
+### Setup Guides (QA Loop)
+- `resources/qa-loop-prerequisites.md` - Complete prerequisites checklist and setup walkthrough
+- `resources/github-setup-for-powerbi.md` - Git and GitHub setup for Power BI projects
+- `resources/fabric-deployment-setup.md` - Deployment pipeline configuration (Fabric Git, GitHub Actions)
+- `resources/playwright-mcp-setup.md` - Playwright MCP installation for DOM inspection
 
 ### Workflows
 - `workflows/harvest-templates.md` - Template extraction workflow

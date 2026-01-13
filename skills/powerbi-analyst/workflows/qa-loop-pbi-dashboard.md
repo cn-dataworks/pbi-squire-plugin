@@ -55,6 +55,18 @@ Before running this workflow, ensure:
 5. **Power BI Session**: User must be logged into Power BI Service in their browser (for Playwright to reuse session)
 6. **Code Already Validated**: Run `/implement-deploy-test-pbi-project-file` first to validate TMDL/PBIR syntax
 
+**New to CI/CD?** If you're starting with just a dashboard on your desktop (.pbix file), see `resources/qa-loop-prerequisites.md` for complete step-by-step setup instructions.
+
+### Setup Guides
+
+| Prerequisite | Setup Guide | Time |
+|--------------|-------------|------|
+| Convert to PBIP | `resources/getting-started.md` | 5 min |
+| Git & GitHub | `resources/github-setup-for-powerbi.md` | 10 min |
+| Deployment Pipeline | `resources/fabric-deployment-setup.md` | 30-60 min |
+| Playwright MCP | `resources/playwright-mcp-setup.md` | 10 min |
+| GitHub CLI | Install via `winget install GitHub.cli`, then `gh auth login` | 5 min |
+
 ## Workflow
 
 ```
@@ -407,6 +419,14 @@ This workflow integrates with:
 
 ## See Also
 
+### Setup Guides (Start Here if New)
+- `resources/qa-loop-prerequisites.md` - Complete prerequisites checklist and setup walkthrough
+- `resources/github-setup-for-powerbi.md` - Git and GitHub setup for Power BI projects
+- `resources/fabric-deployment-setup.md` - Deployment pipeline configuration
+- `resources/playwright-mcp-setup.md` - Playwright MCP installation
+- `resources/getting-started.md` - PBIP format conversion
+
+### Technical References
 - `agents/powerbi-qa-inspector.md` - DOM inspection agent documentation
 - `references/powerbi-design-standards.md` - Dashboard design standards & AI critique rubric
 - `tools/advanced/monitor_deployment_status.py` - Deployment monitor
