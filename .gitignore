@@ -66,6 +66,10 @@ skills/powerbi-analyst/agents/powerbi-ux-reviewer.md
 skills/powerbi-analyst/references/ux-review-guidelines.md
 skills/powerbi-analyst/workflows/qa-loop-pbi-dashboard.md
 skills/powerbi-analyst/agents/powerbi-qa-inspector.md
+skills/powerbi-analyst/resources/qa-loop-prerequisites.md
+skills/powerbi-analyst/resources/github-setup-for-powerbi.md
+skills/powerbi-analyst/resources/fabric-deployment-setup.md
+skills/powerbi-analyst/resources/playwright-mcp-setup.md
 
 # Internal development documentation (not for users)
 CONTRIBUTING.md
