@@ -50,6 +50,20 @@ When working on this plugin codebase, consult `CONTRIBUTING.md` for:
    - Core changes → YES, cascade `main` → `pro` after merge
    - Pro changes → NO, stays in `pro` only
 
+4. **What type of version bump is needed?**
+
+   | Change Type | Bump | Example | When to Use |
+   |-------------|------|---------|-------------|
+   | **MAJOR** | `X.0.0` | `1.2.0` → `2.0.0` | Breaking changes, removed features, major restructure |
+   | **MINOR** | `0.X.0` | `1.2.0` → `1.3.0` | New features, new workflows, new commands |
+   | **PATCH** | `0.0.X` | `1.2.0` → `1.2.1` | Bug fixes, typos, small tweaks, documentation |
+
+   **Before pushing, run:**
+   ```powershell
+   .\tools\sync-version.ps1 -Version "X.Y.Z"
+   git add tools/core/version.txt .claude-plugin/plugin.json
+   ```
+
 See `CONTRIBUTING.md` for detailed scenarios and commands.
 
 ---

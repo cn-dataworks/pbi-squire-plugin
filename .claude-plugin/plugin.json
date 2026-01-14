@@ -1,6 +1,6 @@
 {
   "name": "powerbi-analyst",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "tier": "pro",
   "description": "Power BI project analysis, modification, and deployment workflows with specialized agents for DAX, M, TMDL, and PBIR editing",
   "author": {
