@@ -66,6 +66,53 @@ When working on this plugin codebase, consult `CONTRIBUTING.md` for:
 
 See `CONTRIBUTING.md` for detailed scenarios and commands.
 
+### Release Workflow
+
+After pushing a version bump, create a GitHub release with release notes:
+
+```powershell
+# 1. Bump version and commit
+.\tools\sync-version.ps1 -Version "1.4.0"
+git add tools/core/version.txt .claude-plugin/plugin.json
+git commit -m "Bump version to 1.4.0"
+
+# 2. Push and tag
+git push origin main
+git tag -a v1.4.0 -m "Release 1.4.0"
+git push origin v1.4.0
+
+# 3. Create GitHub release
+gh release create v1.4.0 --title "v1.4.0" --notes "release notes here"
+
+# 4. Cascade to pro and repeat for pro-origin
+```
+
+### Release Notes Template
+
+```markdown
+## What's New in X.Y.Z
+
+### Features
+- Added [feature] - [one-line description]
+
+### Fixes
+- Fixed [issue] - [what was wrong]
+
+### Breaking Changes
+- [Only if applicable - removal, API changes, etc.]
+
+## Files Changed
+- [List key files that changed]
+```
+
+**When to create releases:**
+
+| Scenario | Create Release? |
+|----------|-----------------|
+| Version bump (MAJOR/MINOR/PATCH) | **Yes** |
+| Internal refactor (no user impact) | Optional |
+| Work-in-progress commits | No |
+
 ---
 
 ## Documentation Update Matrix
