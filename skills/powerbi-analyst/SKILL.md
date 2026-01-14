@@ -29,6 +29,7 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 - Power BI, PBIX, PBIP, DAX, M code, Power Query
 - Semantic model, measure, calculated column, TMDL
 - Create dashboard, fix measure, add visual, deploy report
+- Plugin version, update, check for updates, what version
 
 **Trigger Actions:**
 - "Fix this measure" → EVALUATE workflow
@@ -40,6 +41,9 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 - "Set up design standards" → SETUP_DESIGN_STANDARDS (Pro)
 - "Review dashboard for consistency" → QA_LOOP with design critique (Pro)
 - "Check against design guidelines" → QA_LOOP with design critique (Pro)
+- "Check for updates" → VERSION_CHECK workflow
+- "What version am I running?" → VERSION_CHECK workflow
+- "Is Power BI Analyst up to date?" → VERSION_CHECK workflow
 
 **File Patterns:**
 - `*.pbip`, `*.pbix`, `*.tmdl`, `*.bim`
@@ -271,6 +275,60 @@ These operations don't expose data and can proceed without anonymization:
 6. Apply merge with user approval
 
 **Output:** Merged project + merge report
+
+---
+
+### VERSION_CHECK (Plugin Status)
+
+**Use when:** User asks about plugin version, updates, tier (Pro/Free), or installation status.
+
+**Trigger phrases:**
+- "Check for updates"
+- "What version am I running?"
+- "Is Power BI Analyst up to date?"
+- "Am I on Pro or Free?"
+- "Update the plugin"
+
+**Process:**
+
+1. **Read Plugin Metadata**
+   - Load `.claude-plugin/plugin.json` from plugin installation directory
+   - Extract: `version`, `tier`, `repository`, `releases`
+
+2. **Read Project Version (if bootstrapped)**
+   - Check `.claude/tools/powerbi-analyst/version.txt` in current project
+   - Compare with plugin version
+
+3. **Report Status**
+   ```
+   ┌──────────────────────────────────────────────────┐
+   │ Power BI Analyst Status                          │
+   ├──────────────────────────────────────────────────┤
+   │ Plugin (global):                                 │
+   │   Version:  1.2.0                                │
+   │   Tier:     Pro                                  │
+   │   Location: ~/.claude/plugins/custom/powerbi-*  │
+   ├──────────────────────────────────────────────────┤
+   │ Project (local):                                 │
+   │   Version:  1.1.0  ← Update available            │
+   │   Location: .claude/tools/powerbi-analyst/       │
+   ├──────────────────────────────────────────────────┤
+   │ Update Instructions:                             │
+   │   Plugin:  cd ~/.claude/plugins/custom/power*    │
+   │            git pull                              │
+   │   Project: Run bootstrap.ps1 from project dir   │
+   └──────────────────────────────────────────────────┘
+   ```
+
+4. **If Update Requested**
+   - Provide step-by-step update commands
+   - Warn about any breaking changes (if known)
+
+**Output:** Version status report with update instructions if needed
+
+**Plugin metadata location:** `$HOME/.claude/plugins/custom/powerbi-analyst/.claude-plugin/plugin.json`
+
+**See also:** `references/update-info.md` for detailed update procedures
 
 ---
 
@@ -521,6 +579,7 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 - `getting-started.md` - Onboarding guide with data masking workflow
 - `glossary.md` - Technical terms explained
 - `troubleshooting-faq.md` - Common issues and solutions
+- `update-info.md` - Version management, update procedures, tier detection
 
 ---
 
@@ -531,9 +590,10 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 3. **Need a whole page?** → "Build a regional performance dashboard page"
 4. **Ready to apply?** → "Implement the changes from findings.md"
 5. **Want to understand?** → "Analyze this dashboard and explain what it does"
-6. **Update the plugin?** → "Update the Power BI Analyst plugin to the latest version"
-7. **Set up design standards?** → "How do I ensure consistent design templates?" (Pro)
-8. **Check design consistency?** → "Review my dashboard against design guidelines" (Pro)
+6. **Check version/updates?** → "What version of Power BI Analyst am I running?"
+7. **Update the plugin?** → "Check for Power BI Analyst updates"
+8. **Set up design standards?** → "How do I ensure consistent design templates?" (Pro)
+9. **Check design consistency?** → "Review my dashboard against design guidelines" (Pro)
 
 ---
 
