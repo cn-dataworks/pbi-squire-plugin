@@ -290,7 +290,8 @@ These operations don't expose data and can proceed without anonymization:
 
 1. **Read Plugin Metadata**
    - Load `.claude-plugin/plugin.json` from plugin installation directory
-   - Extract: `version`, `tier`, `repository`, `releases`
+   - Extract: `version`, `repository`
+   - Detect edition: Check if `skills/powerbi-analyst/pro-features.md` exists (Pro) or not (Core)
 
 2. **Read Project Version (if bootstrapped)**
    - Check `.claude/tools/powerbi-analyst/version.txt` in current project
@@ -302,12 +303,11 @@ These operations don't expose data and can proceed without anonymization:
    │ Power BI Analyst Status                          │
    ├──────────────────────────────────────────────────┤
    │ Plugin (global):                                 │
-   │   Version:  1.2.0                                │
-   │   Tier:     Pro                                  │
+   │   Version:  1.3.0 (Pro edition)                  │
    │   Location: ~/.claude/plugins/custom/powerbi-*  │
    ├──────────────────────────────────────────────────┤
    │ Project (local):                                 │
-   │   Version:  1.1.0  ← Update available            │
+   │   Version:  1.2.0  ← Update available            │
    │   Location: .claude/tools/powerbi-analyst/       │
    ├──────────────────────────────────────────────────┤
    │ Update Instructions:                             │
@@ -576,7 +576,7 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 - `getting-started.md` - Onboarding guide with data masking workflow
 - `glossary.md` - Technical terms explained
 - `troubleshooting-faq.md` - Common issues and solutions
-- `update-info.md` - Version management, update procedures, tier detection
+- `update-info.md` - Version management, update procedures, edition detection
 
 ---
 
