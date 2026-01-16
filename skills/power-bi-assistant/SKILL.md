@@ -1,6 +1,6 @@
 ---
 name: power-bi-assistant
-description: This skill should be used when users need guidance navigating Power BI workflows and commands. Use when users ask for help with Power BI, need to choose the right workflow, want to understand command parameters, need step-by-step guidance for evaluate/create/implement/merge workflows, or ask about plugin version/updates/tier. Helps users prepare command inputs, understand multi-step sequences, check for updates, and follow best practices.
+description: This skill should be used when users need guidance navigating Power BI workflows and commands. Use when users ask for help with Power BI, need to choose the right workflow, want to understand command parameters, need step-by-step guidance for evaluate/create/implement/merge workflows, or ask about plugin version/updates/edition. Helps users prepare command inputs, understand multi-step sequences, check for updates, and follow best practices.
 ---
 
 # Power BI Assistant
@@ -19,7 +19,7 @@ Invoke this skill when users:
 - Ask about multi-step workflow sequences
 - Request best practices for Power BI development
 - Express uncertainty about next steps ("What should I do now?")
-- Ask about plugin version, updates, or tier ("What version?", "Check for updates", "Am I on Pro?")
+- Ask about plugin version, updates, or edition ("What version?", "Check for updates", "Am I on Pro?")
 
 ## Core Capabilities
 
@@ -57,9 +57,9 @@ Guide users to the correct command based on their stated intent.
 - Applies to: Post-deployment design validation
 
 **User asks about plugin version/updates** → VERSION_CHECK workflow
-- Symptoms: "version", "update", "latest", "check for updates", "am I on Pro", "what tier"
+- Symptoms: "version", "update", "latest", "check for updates", "am I on Pro", "what edition"
 - Applies to: Plugin itself, not Power BI projects
-- Reports: Plugin version, tier (Pro/Free), project version, update instructions
+- Reports: Plugin version, edition (Pro/Core), project version, update instructions
 
 **Process:**
 1. Analyze user's statement for intent keywords

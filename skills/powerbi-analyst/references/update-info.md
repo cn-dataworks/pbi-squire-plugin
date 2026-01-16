@@ -8,23 +8,28 @@ This reference documents version management, update procedures, and tier detecti
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| Plugin metadata | `~/.claude/plugins/custom/powerbi-analyst/.claude-plugin/plugin.json` | Version, tier, repository URL |
+| Plugin manifest | `~/.claude/plugins/custom/powerbi-analyst/.claude-plugin/plugin.json` | Version, repository URL (Claude Code schema) |
+| Plugin metadata | `~/.claude/plugins/custom/powerbi-analyst/.claude-plugin/plugin-meta.json` | Tier, releases URL (custom fields) |
 | Plugin version | `~/.claude/plugins/custom/powerbi-analyst/tools/core/version.txt` | Numeric version only |
 | Project version | `.claude/tools/powerbi-analyst/version.txt` | Version installed in project |
+
+> **Note:** Claude Code's plugin.json only supports specific fields (name, version, description, author, repository). Custom fields like `tier` and `releases` are stored in `plugin-meta.json` to avoid validation errors.
 
 ---
 
 ## Tier Detection
 
-The plugin has two tiers: **Free** and **Pro**.
+The plugin has two tiers: **Core** (Free) and **Pro**.
 
-**How tier is determined:**
-1. Read `tier` field from `.claude-plugin/plugin.json`
-2. Value is either `"free"` or `"pro"`
+**How tier is determined (file-based detection):**
+1. Check if `skills/powerbi-analyst/pro-features.md` exists in the plugin folder
+2. If exists → **Pro**; if missing → **Core**
+
+> This file is excluded via `.gitignore` on the `main` branch, so Core installs won't have it.
 
 **What differs by tier:**
 
-| Feature | Free | Pro |
+| Feature | Core | Pro |
 |---------|------|-----|
 | Core workflows (EVALUATE, CREATE, IMPLEMENT, MERGE) | Yes | Yes |
 | DAX/M-Code specialists | Yes | Yes |
@@ -32,10 +37,6 @@ The plugin has two tiers: **Free** and **Pro**.
 | QA Loop (deploy/inspect/fix) | No | Yes |
 | UX Dashboard Review | No | Yes |
 | Template Harvesting | No | Yes |
-
-**File-based detection (alternative):**
-- If `skills/powerbi-analyst/pro-features.md` exists in the plugin folder → Pro
-- This file is excluded via `.gitignore` on the `main` branch
 
 ---
 
@@ -58,10 +59,14 @@ The plugin has two tiers: **Free** and **Pro**.
 ### Quick Check (PowerShell)
 
 ```powershell
-# Read plugin metadata
+# Read plugin version
 $pluginJson = Get-Content "$HOME\.claude\plugins\custom\powerbi-analyst\.claude-plugin\plugin.json" | ConvertFrom-Json
 Write-Host "Plugin Version: $($pluginJson.version)"
-Write-Host "Tier: $($pluginJson.tier)"
+
+# Detect tier (file-based)
+$proFeaturesPath = "$HOME\.claude\plugins\custom\powerbi-analyst\skills\powerbi-analyst\pro-features.md"
+$tier = if (Test-Path $proFeaturesPath) { "Pro" } else { "Core" }
+Write-Host "Edition: $tier"
 
 # Read project version (if bootstrapped)
 $projectVersion = Get-Content ".claude\tools\powerbi-analyst\version.txt" -ErrorAction SilentlyContinue
@@ -75,8 +80,15 @@ if ($projectVersion) {
 ### Quick Check (Bash)
 
 ```bash
-# Read plugin metadata
-cat ~/.claude/plugins/custom/powerbi-analyst/.claude-plugin/plugin.json | jq '.version, .tier'
+# Read plugin version
+cat ~/.claude/plugins/custom/powerbi-analyst/.claude-plugin/plugin.json | jq '.version'
+
+# Detect tier (file-based)
+if [ -f ~/.claude/plugins/custom/powerbi-analyst/skills/powerbi-analyst/pro-features.md ]; then
+    echo "Edition: Pro"
+else
+    echo "Edition: Core"
+fi
 
 # Read project version
 cat .claude/tools/powerbi-analyst/version.txt 2>/dev/null || echo "Not bootstrapped"
@@ -184,11 +196,20 @@ Force re-bootstrap:
 & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1" -Force
 ```
 
-### "Can't detect tier"
+### "Can't detect edition"
 
-Check that `plugin.json` has the `tier` field:
+Edition is detected by checking if the Pro features file exists:
 ```powershell
-Get-Content "$HOME\.claude\plugins\custom\powerbi-analyst\.claude-plugin\plugin.json"
+Test-Path "$HOME\.claude\plugins\custom\powerbi-analyst\skills\powerbi-analyst\pro-features.md"
 ```
 
-If missing, pull latest plugin updates.
+- Returns `True` → Pro edition
+- Returns `False` → Core edition
+
+If you expect Pro but see Core, ensure you're on the `pro` branch:
+```powershell
+cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+git branch
+git checkout pro
+git pull
+```

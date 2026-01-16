@@ -572,7 +572,11 @@ try {
     $localVersion = Get-LocalVersion
     $status = Compare-Versions -PluginVersion $pluginVersion -LocalVersion $localVersion
 
-    Write-Info "Plugin version: $pluginVersion"
+    # Detect edition (Pro vs Core)
+    $proFeaturesPath = Join-Path $script:PluginPath "skills\powerbi-analyst\pro-features.md"
+    $edition = if (Test-Path $proFeaturesPath) { "Pro" } else { "Core" }
+
+    Write-Info "Plugin version: $pluginVersion ($edition edition)"
     Write-Info "Local version:  $(if ($localVersion) { $localVersion } else { '(not installed)' })"
     Write-Info "Status: $status"
 

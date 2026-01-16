@@ -1,8 +1,10 @@
 {
   "mcpServers": {
     "playwright-extension": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "@playwright/mcp@latest",
         "--extension"
       ]

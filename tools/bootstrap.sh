@@ -262,7 +262,14 @@ main() {
     local_version=$(get_local_version)
     status=$(compare_versions "$plugin_version" "$local_version")
 
-    write_info "Plugin version: $plugin_version"
+    # Detect edition (Pro vs Core)
+    local pro_features_path="$PLUGIN_PATH/skills/powerbi-analyst/pro-features.md"
+    local edition="Core"
+    if [[ -f "$pro_features_path" ]]; then
+        edition="Pro"
+    fi
+
+    write_info "Plugin version: $plugin_version ($edition edition)"
     write_info "Local version:  ${local_version:-(not installed)}"
     write_info "Status: $status"
 
