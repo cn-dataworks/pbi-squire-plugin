@@ -227,23 +227,64 @@ After agent returns, read the Prerequisites section from findings.md and parse t
      - Re-display prompt with only [N] and [I] options
 
   **User selects [C]:**
-  Display conversion confirmation:
+
+  First, read the configured projects folder from `.claude/powerbi-analyst.json` → `projectPath`.
+  Extract project name from the .pbix filename (without extension).
+
+  Display folder creation offer:
   ```
   ✅ Great choice! Converting to PBIP unlocks full analysis capabilities.
 
-  Quick Steps:
-  ────────────
-  1. Open Power BI Desktop
-  2. File → Open → Select: <pbix-file-path>
-  3. File → Save As → Power BI Project (.pbip)
-  4. Choose a folder location
+  ⚠️  IMPORTANT: Each PBIP project needs its own folder!
+  ─────────────────────────────────────────────────────
+  When you save a PBIP, Power BI creates MULTIPLE files at the save location:
+    - <project-name>.pbip
+    - <project-name>.SemanticModel/
+    - <project-name>.Report/
 
-  After conversion, re-run:
-  ────────────────────────
-  /evaluate-pbi-project-file \
-    --project "<new-pbip-folder>" \
-    --description "<description>"
+  Without a container folder, these mix with other projects.
+
+  Would you like me to create the project folder?
+
+    [Y] Yes, create: <configured-projects-folder>/<project-name>/
+    [N] No, I'll create it myself
   ```
+
+  **If user selects [Y]:**
+
+  1. Create the folder:
+     ```bash
+     mkdir -p "<configured-projects-folder>/<project-name>"
+     ```
+
+  2. Display Save As instructions:
+     ```
+     ✅ Folder created: <configured-projects-folder>/<project-name>/
+
+     Now complete the conversion:
+     ────────────────────────────
+     1. Open Power BI Desktop
+     2. File → Open → Select: <pbix-file-path>
+     3. File → Save As → Power BI Project (.pbip)
+     4. Navigate to: <configured-projects-folder>/<project-name>/
+     5. Click Save
+
+     After conversion, re-run:
+     ────────────────────────────
+     /evaluate-pbi-project-file \
+       --project "<configured-projects-folder>/<project-name>" \
+       --description "<description>"
+     ```
+
+  **If user selects [N]:**
+  - Remind them to create a containing folder first, then Save As inside it
+  - Show the recommended path structure
+  - Wait for them to provide the new path
+
+  **Variable Substitutions:**
+  - `<configured-projects-folder>`: From `.claude/powerbi-analyst.json` → `projectPath`
+    - If null: Use "a short path like C:\PBI\ or D:\Projects\"
+  - `<project-name>`: Extract from the .pbix filename (without extension)
 
   Update Prerequisites section with:
   ```markdown

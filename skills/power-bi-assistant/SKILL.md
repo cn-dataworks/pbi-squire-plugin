@@ -29,6 +29,16 @@ Guide users to the correct command based on their stated intent.
 
 **Decision Framework:**
 
+**User references a .pbix file** → PBIX CONVERSION REQUIRED (handle first!)
+- Symptoms: Path ends with `.pbix`, user mentions "my pbix file", "desktop file"
+- **STOP** - Do not proceed to any workflow
+- **Action**: Explain that each PBIP needs its own container folder (multiple files created)
+- **Offer to create the folder** for them: `<projects-folder>/<project-name>/`
+- Read `.claude/powerbi-analyst.json` → `projectPath` for the recommended save location
+- If user accepts, create the folder with `mkdir`, then show Save As instructions
+- Wait for user to convert and confirm completion
+- See `powerbi-analyst/SKILL.md` → Step 0.5 for the full message format
+
 **User has a problem with existing code** → `/evaluate-pbi-project-file`
 - Symptoms: "broken", "incorrect", "wrong", "fix", "debug", "issue"
 - Applies to: Calculation problems, visual issues, hybrid changes

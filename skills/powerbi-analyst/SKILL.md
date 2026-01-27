@@ -122,6 +122,113 @@ Check for `.claude/powerbi-analyst.json` in the project directory:
 - If `true` → Enforce anonymization check before any MCP data queries (Step 2 is required)
 - If `false` → Proceed without anonymization checks (Step 2 can be skipped)
 
+### Step 0.5: PBIX File Detection (CRITICAL - First Response)
+
+**Purpose**: Immediately detect when user references a `.pbix` file and recommend conversion BEFORE any analysis begins.
+
+**Check the user's provided path:**
+
+1. If the path ends with `.pbix` (case-insensitive), this is a binary PBIX file
+2. **STOP** - Do not proceed with any workflow
+
+**Extract project name:** Remove `.pbix` extension from filename (e.g., `SalesReport.pbix` → `SalesReport`)
+
+**Display this message IMMEDIATELY as the first response:**
+
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  📦 PBIX FILE DETECTED - CONVERSION REQUIRED                              ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  You've pointed to a .pbix file:                                          ║
+║  <user-provided-path>                                                     ║
+║                                                                           ║
+║  PBIX is a compressed binary format that significantly limits analysis.   ║
+║  To get full visibility into your DAX, M code, and visuals, you need     ║
+║  to convert to the Power BI Project (.pbip) format.                       ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│  ⚠️  IMPORTANT: Each PBIP project needs its own folder!                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  When you save a PBIP project, Power BI creates MULTIPLE files:         │
+│                                                                         │
+│    <project-name>/                    ← Container folder (you create)   │
+│    ├── <project-name>.pbip            ← Project file                    │
+│    ├── <project-name>.SemanticModel/  ← Data model folder               │
+│    └── <project-name>.Report/         ← Report folder                   │
+│                                                                         │
+│  Without a container folder, these files mix with other projects!       │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Would you like me to create the project folder for you?
+
+  [Y] Yes, create: <configured-projects-folder>/<project-name>/
+      Then I'll guide you through the Save As steps.
+
+  [N] No, I'll handle it myself
+      (Make sure to create a folder first, then Save As PBIP inside it)
+
+  [E] Explain extraction options (DAX-only, limited analysis)
+```
+
+**Variable Substitutions:**
+- `<user-provided-path>`: The exact path the user provided
+- `<configured-projects-folder>`: Read from `.claude/powerbi-analyst.json` → `projectPath`
+  - If `projectPath` is null: Use "a short path like C:\PBI or D:\Projects"
+- `<project-name>`: Extract from the .pbix filename (without extension)
+
+**If user selects [Y] (Create folder for me):**
+
+1. Create the folder using Bash:
+   ```bash
+   mkdir -p "<configured-projects-folder>/<project-name>"
+   ```
+
+2. Display success message with Save As instructions:
+   ```
+   ✅ Folder created: <configured-projects-folder>/<project-name>/
+
+   Now complete the conversion in Power BI Desktop:
+   ─────────────────────────────────────────────────
+   1. Open Power BI Desktop
+   2. File → Open → Select: <user-provided-pbix-path>
+   3. File → Save As → Power BI Project (.pbip)
+   4. Navigate to: <configured-projects-folder>/<project-name>/
+   5. Click Save (use the default filename)
+
+   When you're done, let me know and I'll analyze the project at:
+   <configured-projects-folder>/<project-name>
+   ```
+
+3. Wait for user confirmation, then continue to Step 1 with the new path
+
+**If user selects [N] (I'll handle it myself):**
+- Remind them to create a containing folder first
+- Display the recommended path structure
+- Wait for them to provide the new PBIP folder path
+- When they return with a path, continue to Step 1
+
+**If user selects [E] (Explain extraction options):**
+- Explain pbi-tools extraction option (DAX-only)
+- Emphasize this is limited analysis without M code visibility
+- Still recommend PBIP conversion for full analysis
+
+**Why Each Project Needs Its Own Folder:**
+- PBIP "Save As" creates 3+ items at the save location (not inside a single file)
+- Without a container folder, multiple projects' files intermix
+- This makes it impossible to identify which files belong to which project
+- A clean folder structure enables working with multiple projects over time
+
+**Why This Step is First:**
+- Users often have .pbix files on their Desktop or Downloads folder
+- The first response should guide them to the proper workflow
+- Offering to create the folder removes friction from the conversion process
+- This prevents wasted time analyzing a format with limited capabilities
+
 ### Step 1: Project Selection (Multi-Project Handling)
 
 When the user provides a folder path (not a specific .pbip file):
