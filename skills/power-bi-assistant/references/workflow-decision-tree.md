@@ -2,6 +2,55 @@
 
 This document helps map user intents to the appropriate Power BI workflow command.
 
+## Pre-Check: Is this a PBIX file?
+
+### 0. User references a .pbix file → CONVERSION REQUIRED
+
+**Detection:** User provides a path ending in `.pbix` or mentions "my pbix file", "desktop file"
+
+**STOP** - Do not proceed to any workflow until conversion is complete.
+
+**What to do:**
+1. Read `.claude/powerbi-analyst.json` → `projectPath` for the configured projects folder
+2. Extract project name from the .pbix filename (without extension)
+3. Explain that each PBIP needs its own container folder
+4. **Offer to create the folder** for them
+5. Guide user through Power BI Desktop Save As steps
+
+**Message to display:**
+```
+📦 PBIX FILE DETECTED
+
+You've pointed to a .pbix file. This binary format limits what can be analyzed.
+
+⚠️  IMPORTANT: Each PBIP project needs its own folder!
+
+When you save a PBIP, Power BI creates MULTIPLE files:
+  - <project-name>.pbip
+  - <project-name>.SemanticModel/
+  - <project-name>.Report/
+
+Without a container folder, these mix with other projects!
+
+Would you like me to create the project folder?
+
+  [Y] Yes, create: <projects-folder>/<project-name>/
+  [N] No, I'll handle it myself
+```
+
+**If user selects [Y]:**
+1. Create folder: `mkdir -p "<projects-folder>/<project-name>"`
+2. Show Save As instructions pointing to that folder
+3. Wait for user to complete conversion
+
+**Why this is first:**
+- PBIX files have severely limited analysis capability
+- Converting unlocks M code, data lineage, and visual editing
+- Users often have files on Desktop that need to be moved to the proper location
+- Each PBIP creates multiple files that need to be contained
+
+---
+
 ## Primary Decision: What do you need to do?
 
 ### 1. "I have a problem/issue/bug with existing code"
@@ -153,6 +202,19 @@ This document helps map user intents to the appropriate Power BI workflow comman
 ---
 
 ## Common Scenarios
+
+### Scenario: "User points to a .pbix file on their Desktop"
+```
+1. User: "Analyze C:\Users\Me\Desktop\SalesReport.pbix"
+2. STOP - Display conversion message explaining folder structure
+3. Offer: "Would you like me to create the folder C:\PBI\SalesReport\ for you?"
+4. User: "Yes"
+5. Create folder: mkdir -p "C:\PBI\SalesReport"
+6. Show Save As instructions: Open pbix, File → Save As → PBIP, navigate to C:\PBI\SalesReport\
+7. User completes conversion in Power BI Desktop
+8. User: "Done"
+9. Now proceed with requested workflow using C:\PBI\SalesReport as the project path
+```
 
 ### Scenario: "Fix a broken measure"
 ```

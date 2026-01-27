@@ -68,14 +68,47 @@ If you point this skill at a `.pbix` file instead of a `.pbip` folder:
 
 ### Converting PBIX to PBIP
 
-If you have a `.pbix` file, convert it to unlock full analysis:
+If you have a `.pbix` file, convert it to unlock full analysis.
 
-1. **Open Power BI Desktop**
-2. **File > Open** - Select your .pbix file
-3. **File > Save As > Power BI Project** (.pbip)
-4. Choose a location and name
-5. A folder will be created with a `.pbip` file inside
-6. Use that folder path with this skill
+**IMPORTANT: Create a folder for each project first!**
+
+When you save a PBIP, Power BI creates MULTIPLE items at the save location:
+```
+SalesReport/                      ← You create this folder FIRST
+├── SalesReport.pbip              ← Project file (created by Save As)
+├── SalesReport.SemanticModel/    ← Data model (created by Save As)
+└── SalesReport.Report/           ← Report (created by Save As)
+```
+
+Without a container folder, these files mix with other projects!
+
+**Conversion Steps:**
+
+1. **Create a project folder** in your Power BI projects location:
+   ```
+   <your-projects-folder>/<project-name>/
+   ```
+   - Check `.claude/powerbi-analyst.json` → `projectPath` for your configured location
+   - If not configured, use a short path like `C:\PBI\`
+   - Example: `C:\PBI\SalesReport\`
+
+2. **Open Power BI Desktop**
+
+3. **File > Open** - Select your .pbix file
+
+4. **File > Save As > Power BI Project** (.pbip)
+
+5. **Navigate to the folder you created** and click Save
+
+6. **Use that folder path** with this skill
+
+**Why this structure?**
+- Each project's files stay contained and organized
+- You can add more projects to your main folder over time
+- Permissions are already set up for Claude to read/edit files there
+- Avoids Windows path length issues (PBIP creates deep folder structures)
+
+**Tip:** When you point the skill at a .pbix file, it will offer to create the folder for you!
 
 ```
 BEFORE:                         AFTER:
