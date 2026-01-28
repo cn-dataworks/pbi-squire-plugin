@@ -60,9 +60,9 @@ in Claude Code, but it needs to be bootstrapped for EACH PROJECT you want
 to use it with.
 
 Why? The plugin requires:
-  - Python tools copied to your project
   - A CLAUDE.md file referencing the plugin
   - Skill configuration in .claude/powerbi-analyst.json
+  - [Pro only] Python tools copied to your project
 
 Without bootstrap, the plugin may not activate properly.
 
@@ -73,6 +73,9 @@ NEXT STEP: Run bootstrap in your Power BI project folder
   & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
 
 This only takes a few seconds and enables full plugin functionality.
+
+NOTE: Core edition does NOT require Python. The bootstrap creates
+configuration files only. Pro edition additionally copies Python tools.
 ```
 
 ### Quick Start Checklist
@@ -93,9 +96,10 @@ After global installation:
 | Issue | Solution |
 |-------|----------|
 | "Skill not activating" | Run bootstrap in your project folder |
-| "Python tools not found" | Run bootstrap in your project folder |
+| "Python tools not found" | Pro only - Core doesn't require Python. If Pro, run bootstrap |
 | "Limited analysis mode" | Convert your .pbix to .pbip format |
 | "CLAUDE.md not referencing plugin" | Run bootstrap to create/update it |
+| "MCP not detected" | Install Power BI Modeling MCP for live validation |
 
 ---
 
@@ -227,7 +231,10 @@ cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 
 ## Project Bootstrap (First Run)
 
-When you first use the plugin in a Power BI project, it needs to copy Python tools and helper files to your project directory. This is called "bootstrapping."
+When you first use the plugin in a Power BI project, bootstrap creates the configuration files needed for the skill to activate. This is called "bootstrapping."
+
+**Core edition:** Creates configuration files only (no Python)
+**Pro edition:** Creates configuration files + copies Python analysis tools
 
 ### Automatic Bootstrap
 
@@ -245,6 +252,7 @@ bash "$HOME/.claude/plugins/custom/powerbi-analyst/tools/bootstrap.sh"
 
 ### What Gets Created
 
+**Core Edition:**
 ```
 YourProject/
 ├── CLAUDE.md                        ← Project instructions for Claude
@@ -253,17 +261,26 @@ YourProject/
 │   ├── settings.json                ← Auto-approve permissions
 │   ├── tasks/                       ← Task findings files
 │   ├── tools/
-│   │   ├── powerbi-analyst/         ← Plugin tools (isolated)
-│   │   │   ├── token_analyzer.py
-│   │   │   ├── tmdl_format_validator.py
-│   │   │   ├── version.txt
-│   │   │   └── ...
-│   │   └── (your scripts safe here)
+│   │   └── powerbi-analyst/
+│   │       └── version.txt          ← Version tracking only
 │   └── helpers/
-│       ├── powerbi-analyst/         ← Plugin helpers (isolated)
-│       │   └── pbi-url-filter-encoder.md
-│       └── (your files safe here)
+│       └── powerbi-analyst/
+│           └── pbi-url-filter-encoder.md
 └── YourProject.pbip
+```
+
+**Pro Edition (additional):**
+```
+YourProject/
+├── .claude/
+│   ├── tools/
+│   │   └── powerbi-analyst/         ← Plugin tools (Pro only)
+│   │       ├── token_analyzer.py
+│   │       ├── tmdl_format_validator.py
+│   │       ├── version.txt
+│   │       └── ... (13 Python scripts)
+│   └── powerbi-design-standards.md  ← Design standards template (Pro only)
+└── ...
 ```
 
 ### CLAUDE.md (Project Instructions)
@@ -660,15 +677,31 @@ Specialized agents for DAX, M Code, PBIR editing, validation, and more.
 
 ## Requirements
 
-### Required
+### Core Edition (Default) - Simple Install
 - **Claude Code** (latest version)
-- **Git** (for cloning)
 - **Power BI Project** in PBIP format (`.pbip` file with `.SemanticModel/` and `.Report/` folders)
+- **Power BI Desktop** - For testing and (with MCP) live validation
+- **Recommended: Power BI Modeling MCP** - For DAX validation before writing
 
-### Optional (Enhanced Features)
-- **Python 3.10+** - For utility scripts
-- **Power BI Desktop** - For live DAX validation and testing
-- **Power BI Modeling MCP** - For advanced semantic model operations
+> **Note:** Core edition does NOT require Python. It uses MCP + Claude-native validation.
+
+### Pro Edition (Additional Requirements)
+- **Python 3.10+** - Required for advanced analysis tools
+- **Git** (for cloning the Pro repository)
+- **Power BI Service access** - For deployment features
+
+### Determining Your Edition
+
+| Feature | Core (Free) | Pro |
+|---------|-------------|-----|
+| Plugin install | `/plugin install` | Git clone |
+| Python required | No | Yes (3.10+) |
+| MCP validation | Yes | Yes + Python tools |
+| TMDL editing | Yes | Yes |
+| PBIR editing | Yes | Yes |
+| Advanced analytics | - | Yes |
+| Design standards | - | Yes |
+| QA Loop | - | Yes |
 
 ---
 

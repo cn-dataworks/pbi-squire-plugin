@@ -1,9 +1,28 @@
 ---
 name: powerbi-dashboard-analyzer
-description: Analyze existing Power BI dashboards and provide business-friendly summaries of pages, visuals, metrics, filters, and interactions. Use when users ask to understand what a Power BI dashboard does, explain how metrics work, describe page contents, or translate technical DAX/TMDL into business language. Triggers include requests like "Tell me what this dashboard is doing", "Help me understand this page", "Explain how this metric is created", or "What does this graph show". Creates a comprehensive markdown analysis report in the agent_scratchpads folder.
+description: "[DEPRECATED] This skill has been merged into powerbi-analyst. Use powerbi-analyst instead with the ANALYZE workflow."
 ---
 
 # Power BI Dashboard Analyzer
+
+> **⚠️ DEPRECATED:** This skill has been consolidated into `powerbi-analyst`.
+>
+> The `powerbi-analyst` skill now includes the **ANALYZE workflow** which provides:
+> - Business-friendly dashboard documentation
+> - Metrics glossary with plain-language explanations
+> - Page-by-page analysis
+> - Filter and interaction guide
+>
+> **Trigger the ANALYZE workflow by saying:**
+> - "Explain what this dashboard does"
+> - "Document this report for the business team"
+> - "What does this page show?"
+>
+> **Please use `powerbi-analyst` instead.**
+
+---
+
+## Legacy Documentation (for reference)
 
 Analyzes existing Power BI dashboards to provide clear, business-friendly summaries of what each page does, how metrics are defined, and how users interact with the dashboard.
 

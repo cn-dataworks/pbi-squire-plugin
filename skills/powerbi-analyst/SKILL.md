@@ -7,19 +7,44 @@ description: Analyze, create, and modify Power BI projects with intelligent assi
 
 ## Overview
 
-Expert Power BI development assistant that orchestrates specialized DAX and M-Code agents for complex calculations. Handles both semantic model changes (measures, tables, columns) and report-side changes (PBIR visuals, layouts).
+Complete Power BI development assistant that orchestrates specialized agents for DAX calculations, M code transformations, and report design. Handles semantic model changes (measures, tables, columns), data transformations (Power Query/M code), and report-side changes (PBIR visuals, layouts).
 
 **Key Capabilities:**
 - Diagnose and fix calculation issues in existing dashboards
 - Create new measures, calculated columns, tables, and visuals
+- Transform data with Power Query / M code
+- Document existing dashboards in business-friendly language
 - Deploy changes with validation gates
 - Merge and compare Power BI projects
-- Document existing dashboards in business-friendly language
 
 **Architecture:**
 - Uses Power BI Modeling MCP for live model editing when available
 - Falls back to file-based TMDL manipulation automatically
 - Orchestrates specialist agents via Task Blackboard pattern
+- Routes unclear requests through clarification flow
+
+---
+
+## Quick Start
+
+Tell me what you need help with. I'll route to the appropriate workflow:
+
+| You say... | I'll do... |
+|------------|-----------|
+| "Fix this measure" / "Something is broken" | **EVALUATE** - diagnose and plan fixes |
+| "Create a YoY growth measure" | **CREATE_ARTIFACT** - design new DAX artifacts |
+| "Filter this table in Power Query" | **DATA_PREP** - M code transformations |
+| "Explain what this dashboard does" | **ANALYZE** - document in business language |
+| "Apply the changes" | **IMPLEMENT** - execute the planned changes |
+| "Compare these two projects" | **MERGE** - diff and merge projects |
+| "Help me with Power BI" | I'll ask clarifying questions first |
+
+**Not sure what you need?** Just describe your situation - I'll ask clarifying questions to understand your goal before starting any workflow.
+
+**Common clarification questions I might ask:**
+- "Are you trying to **fix** something, **create** something new, or **understand** something?"
+- "Is this about **DAX calculations** or **Power Query / M code**?"
+- "What's the path to your Power BI project?"
 
 ---
 
@@ -27,20 +52,27 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 
 **Trigger Keywords:**
 - Power BI, PBIX, PBIP, DAX, M code, Power Query
-- Semantic model, measure, calculated column, TMDL
+- Semantic model, measure, calculated column, TMDL, PBIR
 - Create dashboard, fix measure, add visual, deploy report
+- ETL, transformation, query folding, partition, data source
 - Plugin version, update, check for updates, what version
 
 **Trigger Actions:**
 - "Fix this measure" → EVALUATE workflow
 - "Create a YoY growth measure" → CREATE_ARTIFACT workflow
 - "Add a new dashboard page" → CREATE_PAGE workflow
+- "Filter this table in Power Query" → DATA_PREP workflow
+- "Edit the M code for..." → DATA_PREP workflow
+- "Merge these two tables" → DATA_PREP workflow
 - "Apply the changes" → IMPLEMENT workflow
 - "What does this dashboard do?" → ANALYZE workflow
+- "Explain this metric" → ANALYZE workflow
+- "Document this dashboard" → ANALYZE workflow
 - "Merge these two projects" → MERGE workflow
 - "Check for updates" → VERSION_CHECK workflow
 - "What version am I running?" → VERSION_CHECK workflow
 - "Is Power BI Analyst up to date?" → VERSION_CHECK workflow
+- "Help me with Power BI" → Ask clarifying questions first
 
 **File Patterns:**
 - `*.pbip`, `*.pbix`, `*.tmdl`, `*.bim`
@@ -52,6 +84,50 @@ Expert Power BI development assistant that orchestrates specialized DAX and M-Co
 
 Before executing any workflow, perform these checks in order:
 
+### Step -2: MCP Availability Check (IMPORTANT)
+
+**Purpose**: Detect whether Power BI Modeling MCP is available for live validation.
+
+**How to check:**
+1. Look for MCP server configuration in the project or global Claude settings
+2. Attempt a simple MCP call if configuration suggests MCP is available
+
+**MCP Status affects workflow behavior:**
+
+| MCP Status | Reading/Analysis | Writing/Editing | Validation |
+|------------|------------------|-----------------|------------|
+| Available | ✅ Full features | ✅ Full features | ✅ Live DAX validation |
+| Not Available | ✅ Full features | ⚠️ Works (no validation) | ⚠️ Structural only |
+
+**If MCP is NOT available and workflow involves writing:**
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  ⚠️ MCP NOT DETECTED - Limited Validation Mode                           │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Power BI Modeling MCP is not configured for this session.               │
+│                                                                          │
+│  What this means:                                                        │
+│  • Reading and analyzing TMDL/PBIR files: ✅ Works normally              │
+│  • Creating/editing DAX code: ⚠️ Works but WITHOUT live validation       │
+│  • Syntax errors will only be caught when you open in Power BI Desktop   │
+│                                                                          │
+│  To enable live validation:                                              │
+│  1. Install Power BI Modeling MCP (VS Code extension)                    │
+│  2. Open Power BI Desktop with your model                                │
+│  3. Restart Claude Code                                                  │
+│                                                                          │
+│  Options:                                                                │
+│  [P] Proceed without validation (I'll verify in Power BI Desktop)        │
+│  [C] Cancel and set up MCP first                                         │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+**For read-only workflows (ANALYZE, VERSION_CHECK):** Proceed without warning since MCP is not needed.
+
+**For write workflows (EVALUATE, CREATE_ARTIFACT, IMPLEMENT):** Show the warning above and let user decide.
+
 ### Step -1: Bootstrap Status Check (CRITICAL)
 
 **Purpose**: Ensure the project has been bootstrapped for this plugin.
@@ -59,7 +135,7 @@ Before executing any workflow, perform these checks in order:
 **Check for bootstrap indicators in the current project directory:**
 
 1. Look for `.claude/powerbi-analyst.json`
-2. Look for `.claude/tools/powerbi-analyst/` folder
+2. Look for `.claude/tools/powerbi-analyst/version.txt`
 3. Look for `CLAUDE.md` with plugin reference
 
 **If ANY of these are missing:**
@@ -72,7 +148,7 @@ Before executing any workflow, perform these checks in order:
 This project has not been set up for the Power BI Analyst plugin.
 
 The plugin is installed GLOBALLY but needs to be bootstrapped for EACH
-project to work properly. This copies necessary tools and configuration.
+project to work properly. This creates necessary configuration files.
 
 To set up this project, run:
 
@@ -84,8 +160,9 @@ To set up this project, run:
 
 This creates:
   - .claude/powerbi-analyst.json  (skill configuration)
-  - .claude/tools/powerbi-analyst/ (plugin tools)
+  - .claude/tools/powerbi-analyst/version.txt (version tracking)
   - CLAUDE.md (project instructions)
+  - [Pro only] Python analysis tools
 
 After bootstrap, re-run your command.
 +-------------------------------------------------------------------------+
@@ -94,10 +171,9 @@ After bootstrap, re-run your command.
 **Exit workflow** - do not proceed until bootstrap is complete.
 
 **Why This Matters**: Without bootstrap:
-- Python tools won't be found
 - CLAUDE.md won't reference the plugin properly
 - Skill configuration won't exist
-- The skill may appear to work but will fail mysteriously
+- The skill may appear to work but won't activate correctly
 
 ### Step 0: Read Skill Configuration
 
@@ -328,6 +404,54 @@ These operations don't expose data and can proceed without anonymization:
 
 ---
 
+### DATA_PREP (M Code / Power Query)
+
+**Use when:** User wants to modify data transformations, Power Query logic, table filtering, column operations, or any ETL changes.
+
+**Trigger phrases:**
+- "Filter this table to only include..."
+- "Add a column that calculates..."
+- "Merge these two tables"
+- "Change the data source"
+- "Optimize this Power Query"
+- "Edit the M code for..."
+
+**Process:**
+1. **Analyze patterns** - Discover naming conventions, existing transformation styles in the project
+2. **Design transformation** - Present simplest approach first; show alternatives with pros/cons if relevant
+3. **Check query folding** - Validate performance impact; warn if proposed changes break folding
+4. **Apply M code changes** - Safe TMDL partition editing with backups
+5. **Validate syntax** - TMDL format validation
+
+**Key considerations:**
+- Always check query folding impact before applying (see `references/query_folding_guide.md`)
+- Follow existing project naming patterns
+- Present alternatives when complexity trade-offs exist:
+  ```
+  Option 1 (Recommended): Filter in M code
+    ✓ Simple and straightforward
+    ✓ Maintains query folding
+    ✗ Loads all data then filters
+
+  Option 2: Filter at source (SQL WHERE)
+    ✓ Better performance for large datasets
+    ✗ More complex to maintain
+  ```
+
+**Query folding rules (quick reference):**
+- Preserves folding: SelectRows, SelectColumns, RenameColumns, Sort, Group, indexed joins
+- Breaks folding: Custom columns with M functions, text operations, pivot/unpivot
+
+**Output:** Updated TMDL partition files + validation results
+
+**References:**
+- `references/query_folding_guide.md` - Complete folding rules
+- `references/common_transformations.md` - M code pattern library
+- `references/m_best_practices.md` - Style guide
+- `references/tmdl_partition_structure.md` - TMDL formatting
+
+---
+
 ### IMPLEMENT (Apply Changes)
 
 **Use when:** User has reviewed findings and wants to apply proposed changes.
@@ -349,20 +473,81 @@ These operations don't expose data and can proceed without anonymization:
 
 ### ANALYZE (Document Existing)
 
-**Use when:** User wants to understand what an existing dashboard does.
+**Use when:** User wants to understand what an existing dashboard does, explain metrics to stakeholders, or create documentation.
+
+**Trigger phrases:**
+- "Tell me what this dashboard is doing"
+- "Explain how this metric is calculated"
+- "Document this report for the business team"
+- "What does this page show?"
+- "Help me understand this dashboard"
 
 **Process:**
-1. Connect to project
-2. Discover all pages and visuals
-3. Extract measure definitions
-4. Analyze technical implementation
-5. Synthesize business-friendly documentation
+1. **Validate project** - Ensure .Report folder exists (required for visual analysis)
+2. **Extract structure** - Parse pages, visuals, filters, interactions from PBIR
+3. **Extract measures** - Parse DAX definitions and dependencies from TMDL
+4. **Translate to business language** - Apply translation guidelines
+5. **Generate report** - Structured markdown documentation
+
+**Translation principles:**
+- Focus on "what" and "why", not "how"
+- Use business terminology (not DAX function names)
+- Describe visual purpose, not just type
+- Include just enough technical detail for credibility
+
+**Example translations:**
+| Technical | Business |
+|-----------|----------|
+| `CALCULATE(SUM(...), ALL(...))` | Total ignoring current filters |
+| `SAMEPERIODLASTYEAR` | Same period last year |
+| Line chart with Date on X-axis | Line chart tracking trends over time |
 
 **Output:** `dashboard_analysis.md` with:
-- Executive Summary
-- Page descriptions (business-friendly)
-- Metrics explained
-- Technical appendix
+- **Executive Summary** - What the dashboard does, who it's for
+- **Page-by-Page Analysis** - Each page's purpose and visuals
+- **Metrics Glossary** - Business-friendly measure definitions with dependencies
+- **Filter & Interaction Guide** - How users navigate and filter
+
+**Output example structure:**
+```markdown
+# Dashboard Analysis: Sales Performance
+
+## Executive Summary
+This dashboard provides sales leadership with visibility into revenue
+performance, regional comparisons, and year-over-year growth trends.
+
+## Pages
+
+### 1. Executive Summary
+**Purpose:** High-level KPIs for executive stakeholders
+
+**Visuals:**
+- **Total Revenue Card** - Current total revenue ($2.4M)
+- **YoY Growth Card** - Year-over-year change (+12.5%)
+
+**Filters:** Year, Quarter
+
+### 2. Regional Breakdown
+[...]
+
+## Metrics Glossary
+
+### Total Sales
+- **Definition:** Sum of all invoice amounts excluding returns
+- **Dependencies:** Sales Amount column
+- **Logic:** Filters out cancelled orders
+
+### YoY Growth %
+- **Definition:** Percentage change vs same period last year
+- **Dependencies:** Total Sales, Prior Year Sales
+```
+
+**References:**
+- `references/translation-guidelines.md` - Technical to business language
+- `references/visual_types.md` - How to describe each visual type
+- `references/dax_common_patterns.md` - Common DAX pattern translations
+- `references/interaction_patterns.md` - Interaction behavior descriptions
+- `assets/analysis_report_template.md` - Full report template
 
 ---
 
@@ -436,11 +621,31 @@ These operations don't expose data and can proceed without anonymization:
 
 ---
 
-## Specialist Agents
+## Subagent Architecture
+
+This skill uses Claude Code's **subagent pattern** for context isolation and parallel execution. The central **orchestrator** spawns specialized subagents based on workflow phase.
+
+### Central Orchestrator (`powerbi-orchestrator`)
+
+The orchestrator manages multi-phase workflows by:
+1. Creating scratchpad with `findings.md`
+2. Spawning investigation subagents (parallel)
+3. Checking quality gates
+4. Spawning planning subagents
+5. Spawning validation subagents (parallel)
+6. Reporting completion
+
+**Invoke the orchestrator for these triggers:**
+- "Fix this measure" → `Task(powerbi-orchestrator)` with workflow=evaluate
+- "Create a YoY growth measure" → `Task(powerbi-orchestrator)` with workflow=create
+- "Apply the changes" → `Task(powerbi-orchestrator)` with workflow=implement
+- "Merge these two projects" → `Task(powerbi-orchestrator)` with workflow=merge
+
+### Specialist Agents
 
 The orchestrator delegates to specialized agents based on artifact type:
 
-### DAX Specialist (`powerbi-dax-specialist`)
+#### DAX Specialist (`powerbi-dax-specialist`)
 **Handles:** Measures, calculated columns, calculation groups, KPIs
 
 **Expertise:**
@@ -449,7 +654,7 @@ The orchestrator delegates to specialized agents based on artifact type:
 - Performance patterns (DIVIDE, iterator vs aggregator)
 - Relationship-aware calculations (RELATED, USERELATIONSHIP)
 
-### M-Code Specialist (`powerbi-mcode-specialist`)
+#### M-Code Specialist (`powerbi-mcode-specialist`)
 **Handles:** Partitions (table M queries), named expressions, ETL
 
 **Expertise:**
@@ -458,6 +663,65 @@ The orchestrator delegates to specialized agents based on artifact type:
 - Privacy levels
 - Data type enforcement
 - Error handling (try/otherwise)
+
+### Investigation Agents
+
+| Agent | Purpose | Output Section |
+|-------|---------|----------------|
+| `powerbi-code-locator` | Find DAX/M/TMDL code | Section 1.A |
+| `powerbi-visual-locator` | Find PBIR visuals | Section 1.B |
+| `powerbi-data-context-agent` | Query live data via XMLA | Section 1.C |
+| `powerbi-pattern-discovery` | Find similar artifacts | Section 1.D |
+
+### Planning Agents
+
+| Agent | Purpose | Output Section |
+|-------|---------|----------------|
+| `powerbi-dashboard-update-planner` | Design calculation & visual changes | Section 2 |
+| `powerbi-artifact-decomposer` | Break complex requests into artifacts | Section 1.0 |
+| `powerbi-data-understanding-agent` | Build specifications via Q&A | Section 1.2 |
+
+### Validation Agents
+
+| Agent | Purpose | Output Section |
+|-------|---------|----------------|
+| `powerbi-dax-review-agent` | Validate DAX syntax & best practices | Section 2.5 |
+| `powerbi-pbir-validator` | Validate PBIR visual.json structure | Section 2.6 |
+| `power-bi-verification` | Generate test cases & impact analysis | Section 3 |
+
+### Execution Agents
+
+| Agent | Purpose | Output Section |
+|-------|---------|----------------|
+| `powerbi-code-implementer-apply` | Apply TMDL changes | Section 4.A |
+| `powerbi-visual-implementer-apply` | Apply PBIR changes | Section 4.B |
+
+### Pro-Only Agents
+
+These agents are available only in the Pro edition:
+
+| Agent | Purpose |
+|-------|---------|
+| `powerbi-playwright-tester` | Browser automation testing |
+| `powerbi-ux-reviewer` | Design critique from screenshots |
+| `powerbi-qa-inspector` | DOM inspection for deployment errors |
+
+### Agent Directory Structure
+
+Subagent definitions are located in:
+```
+agents/
+├── core/                    # Core agents (all editions)
+│   ├── powerbi-orchestrator.md
+│   ├── powerbi-code-locator.md
+│   ├── powerbi-dax-specialist.md
+│   └── ... (20 core agents)
+│
+└── pro/                     # Pro agents (Pro edition only)
+    ├── powerbi-playwright-tester.md
+    ├── powerbi-ux-reviewer.md
+    └── powerbi-qa-inspector.md
+```
 
 ---
 
@@ -489,11 +753,14 @@ Tasks use the **Task Blackboard pattern** where specialists read/write to design
 
 ## Project Setup (Bootstrap)
 
-The skill requires Python tools and helper files to be present in the user's project directory. These are automatically copied from the plugin on first workflow run.
+The skill requires configuration files to be present in the user's project directory. For Pro edition, Python tools are also copied.
+
+**Core Edition:** Creates configuration only (no Python required)
+**Pro Edition:** Creates configuration + copies Python analysis tools
 
 ### Bootstrap Process
 
-**Automatic (recommended):** On first workflow execution, run bootstrap:
+**Run bootstrap in your project directory:**
 
 ```powershell
 # Windows
@@ -503,7 +770,7 @@ The skill requires Python tools and helper files to be present in the user's pro
 bash "$HOME/.claude/plugins/custom/powerbi-analyst/tools/bootstrap.sh"
 ```
 
-**What gets created:**
+**What gets created (Core Edition):**
 ```
 YourProject/
 ├── CLAUDE.md                        ← Project instructions
@@ -512,17 +779,25 @@ YourProject/
 │   ├── settings.json                ← Permissions
 │   ├── tasks/                       ← Task findings files
 │   ├── tools/
-│   │   ├── powerbi-analyst/         ← Plugin tools (isolated)
-│   │   │   ├── token_analyzer.py
-│   │   │   ├── tmdl_format_validator.py
-│   │   │   ├── version.txt
-│   │   │   └── ...
-│   │   └── (your scripts here)      ← Safe from overwrites
+│   │   └── powerbi-analyst/
+│   │       └── version.txt          ← Version tracking only
 │   └── helpers/
-│       ├── powerbi-analyst/         ← Plugin helpers (isolated)
-│       │   └── pbi-url-filter-encoder.md
-│       └── (your files here)        ← Safe from overwrites
+│       └── powerbi-analyst/
+│           └── pbi-url-filter-encoder.md
 └── YourProject.pbip
+```
+
+**Additional files for Pro Edition:**
+```
+YourProject/
+├── .claude/
+│   ├── tools/
+│   │   └── powerbi-analyst/         ← Python tools (Pro only)
+│   │       ├── token_analyzer.py
+│   │       ├── tmdl_format_validator.py
+│   │       └── ... (13 Python scripts)
+│   └── powerbi-design-standards.md  ← Design template (Pro only)
+└── ...
 ```
 
 ### Version Tracking
@@ -687,15 +962,22 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 
 ---
 
-## Quick Start
+## Example Prompts
 
-1. **Have a problem?** → "Help me fix the YoY calculation in my Sales dashboard"
-2. **Want something new?** → "Create a margin percentage measure"
-3. **Need a whole page?** → "Build a regional performance dashboard page"
-4. **Ready to apply?** → "Implement the changes from findings.md"
-5. **Want to understand?** → "Analyze this dashboard and explain what it does"
-6. **Check version/updates?** → "What version of Power BI Analyst am I running?"
-7. **Update the plugin?** → "Check for Power BI Analyst updates"
+| Goal | Example Prompt | Workflow |
+|------|----------------|----------|
+| Fix a problem | "Help me fix the YoY calculation in my Sales dashboard" | EVALUATE |
+| Create DAX measure | "Create a margin percentage measure" | CREATE_ARTIFACT |
+| Create a page | "Build a regional performance dashboard page" | CREATE_PAGE |
+| Transform data | "Filter the Customers table to active only" | DATA_PREP |
+| Edit M code | "Add a calculated column in Power Query" | DATA_PREP |
+| Apply changes | "Implement the changes from findings.md" | IMPLEMENT |
+| Understand dashboard | "Analyze this dashboard and explain what it does" | ANALYZE |
+| Document metrics | "Explain how the Total Sales metric works" | ANALYZE |
+| Compare projects | "Merge my dev and prod projects" | MERGE |
+| Check version | "What version of Power BI Analyst am I running?" | VERSION_CHECK |
+| Design standards | "Set up design guidelines for my dashboard" | SETUP_DESIGN_STANDARDS (Pro) |
+| Design review | "Review my dashboard against design guidelines" | QA_LOOP (Pro) |
 
 ---
 

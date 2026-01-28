@@ -71,5 +71,8 @@ skills/powerbi-analyst/resources/github-setup-for-powerbi.md
 skills/powerbi-analyst/resources/fabric-deployment-setup.md
 skills/powerbi-analyst/resources/playwright-mcp-setup.md
 
+# Pro-only agents (excluded on main branch, included on pro branch)
+agents/pro/
+
 # Internal development documentation (not for users)
 CONTRIBUTING.md
