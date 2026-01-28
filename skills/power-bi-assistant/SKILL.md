@@ -1,9 +1,22 @@
 ---
 name: power-bi-assistant
-description: This skill should be used when users need guidance navigating Power BI workflows and commands. Use when users ask for help with Power BI, need to choose the right workflow, want to understand command parameters, need step-by-step guidance for evaluate/create/implement/merge workflows, or ask about plugin version/updates/edition. Helps users prepare command inputs, understand multi-step sequences, check for updates, and follow best practices.
+description: "[DEPRECATED] This skill has been merged into powerbi-analyst. Use powerbi-analyst instead, which now includes routing and clarification features."
 ---
 
 # Power BI Assistant
+
+> **⚠️ DEPRECATED:** This skill has been consolidated into `powerbi-analyst`.
+>
+> The `powerbi-analyst` skill now includes:
+> - Automatic routing based on user intent
+> - Clarifying questions for unclear requests
+> - All workflow guidance previously in this skill
+>
+> **Please use `powerbi-analyst` instead.**
+
+---
+
+## Legacy Documentation (for reference)
 
 ## Overview
 

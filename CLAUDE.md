@@ -4,12 +4,18 @@ Claude Code plugin for Power BI project analysis, modification, and deployment.
 
 ## What It Does
 
-| Skill | Purpose |
-|-------|---------|
-| `powerbi-analyst` | Diagnose issues, create measures/visuals, deploy changes |
-| `power-bi-assistant` | Guides you to the right workflow |
-| `powerbi-dashboard-analyzer` | Explains dashboards in business language |
-| `powerbi-data-prep` | M code and Power Query transformations |
+One comprehensive skill: **`powerbi-analyst`**
+
+| Workflow | Purpose | Trigger Example |
+|----------|---------|-----------------|
+| EVALUATE | Diagnose and fix issues | "Fix this measure" |
+| CREATE_ARTIFACT | Create new DAX measures/columns | "Create a YoY measure" |
+| DATA_PREP | M code / Power Query transformations | "Filter this table" |
+| ANALYZE | Document dashboards in business language | "Explain this dashboard" |
+| IMPLEMENT | Apply planned changes | "Apply the changes" |
+| MERGE | Compare and merge projects | "Merge these projects" |
+
+The skill automatically routes requests to the appropriate workflow.
 
 ## Key Commands
 
@@ -19,6 +25,8 @@ Claude Code plugin for Power BI project analysis, modification, and deployment.
 | `/create-pbi-artifact` | Create measures, columns, tables, visuals |
 | `/implement-deploy-test-pbi-project-file` | Deploy and test changes |
 | `/merge-powerbi-projects` | Compare and merge projects |
+
+Or just describe what you need - the skill will route appropriately.
 
 ## Development
 
@@ -125,8 +133,8 @@ When modifying this plugin, **all affected documentation must be updated togethe
 |------|--------|----------|
 | `skills/powerbi-analyst/workflows/<name>.md` | Create workflow documentation | Yes |
 | `skills/powerbi-analyst/SKILL.md` | Add to "Trigger Actions" section | Yes |
-| `skills/powerbi-analyst/SKILL.md` | Add to "Quick Start" examples | Yes |
-| `skills/power-bi-assistant/SKILL.md` | Add to "Decision Framework" | Yes |
+| `skills/powerbi-analyst/SKILL.md` | Add to "Example Prompts" table | Yes |
+| `agents/core/powerbi-orchestrator.md` | Add to routing decision tree | Yes |
 | `skills/powerbi-analyst/pro-features.md` | Add trigger + workflow section | If Pro |
 | `CONTRIBUTING.md` | Add to "Pro-Only Features" table | If Pro |
 | `.gitignore` (on `main` branch) | Add workflow path | If Pro |
@@ -178,7 +186,7 @@ When modifying this plugin, **all affected documentation must be updated togethe
 | File | Action | Required |
 |------|--------|----------|
 | `skills/powerbi-analyst/SKILL.md` | Update "Trigger Actions" | Yes |
-| `skills/power-bi-assistant/SKILL.md` | Update "Decision Framework" | Yes |
+| `agents/core/powerbi-orchestrator.md` | Update routing decision tree | Yes |
 | `skills/powerbi-analyst/pro-features.md` | Update "Pro Trigger Actions" | If Pro |
 
 ### Modifying a Skill's Capabilities
@@ -221,13 +229,10 @@ When modifying this plugin, **all affected documentation must be updated togethe
 |------|---------|-------------|
 | `ux-review-guidelines.md` | UX evaluation criteria | UX review process changes |
 | `powerbi-design-standards.md` | Design constitution & critique rubric | Design standards change |
-
-### Assistant Skill (`skills/power-bi-assistant/`)
-| File | Purpose | Update When |
-|------|---------|-------------|
-| `SKILL.md` | User guidance, decision framework | Any workflow/trigger changes |
-| `references/workflow-decision-tree.md` | Routing logic | New workflows added |
-| `references/command-parameters.md` | Parameter documentation | Command signatures change |
+| `translation-guidelines.md` | Technical to business language | ANALYZE workflow changes |
+| `query_folding_guide.md` | M code query folding rules | DATA_PREP workflow changes |
+| `workflow-decision-tree.md` | Routing logic | New workflows added |
+| `command-parameters.md` | Parameter documentation | Command signatures change |
 
 ---
 
@@ -235,9 +240,10 @@ When modifying this plugin, **all affected documentation must be updated togethe
 
 Before committing, verify:
 
-- [ ] All trigger patterns are consistent across `SKILL.md`, `power-bi-assistant/SKILL.md`, and `pro-features.md`
+- [ ] Trigger patterns in `SKILL.md` match routing in `powerbi-orchestrator.md`
 - [ ] New Pro files are listed in `CONTRIBUTING.md` Pro features table
 - [ ] New Pro files are added to `.gitignore` on `main` branch
 - [ ] Bootstrap scripts updated if new tools/templates added
 - [ ] "See Also" sections reference related documentation
-- [ ] Examples in Quick Start sections are current
+- [ ] Examples in "Example Prompts" table are current
+- [ ] New agents added to `plugin.json` agents list

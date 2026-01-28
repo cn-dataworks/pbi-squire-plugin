@@ -1,9 +1,29 @@
 ---
 name: powerbi-data-prep
-description: Write and edit M code/Power Query transformations in Power BI TMDL projects for ETL and data preparation tasks. Use when users discuss data transformations, Power Query modifications, table filtering, column operations, merges/joins, or any ETL process changes in Power BI semantic models. Supports creating new tables with M code and editing existing partition M code, with automatic pattern analysis, query folding validation, and TMDL syntax checking.
+description: "[DEPRECATED] This skill has been merged into powerbi-analyst. Use powerbi-analyst instead with the DATA_PREP workflow."
 ---
 
 # Power BI Data Prep
+
+> **⚠️ DEPRECATED:** This skill has been consolidated into `powerbi-analyst`.
+>
+> The `powerbi-analyst` skill now includes the **DATA_PREP workflow** which provides:
+> - M code / Power Query transformations
+> - Query folding validation
+> - Pattern analysis and best practices
+> - Safe TMDL partition editing
+>
+> **Trigger the DATA_PREP workflow by saying:**
+> - "Filter this table in Power Query"
+> - "Add a calculated column in M code"
+> - "Merge these two tables"
+> - "Edit the M code for..."
+>
+> **Please use `powerbi-analyst` instead.**
+
+---
+
+## Legacy Documentation (for reference)
 
 Write and edit M code (Power Query) transformations in Power BI projects with intelligent pattern analysis, query folding validation, and safe TMDL editing.
 

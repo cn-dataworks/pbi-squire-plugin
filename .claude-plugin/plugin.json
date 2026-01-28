@@ -1,10 +1,42 @@
-﻿{
-    "name":  "powerbi-analyst",
-    "version":  "1.4.0",
-    "description":  "Power BI project analysis, modification, and deployment workflows with specialized agents for DAX, M, TMDL, and PBIR editing",
-    "author":  {
-                   "name":  "CN Dataworks",
-                   "email":  "info@cndataworks.com"
-               },
-    "repository":  "https://github.com/cn-dataworks/powerbi-analyst-plugin"
+{
+    "name": "powerbi-analyst",
+    "version": "1.4.0",
+    "edition": "pro",
+    "description": "Complete Power BI development assistant - diagnose issues, create DAX measures, transform data with M code, document dashboards, and deploy changes. Pro edition includes Python analysis tools, design standards, and QA loop features.",
+    "author": {
+        "name": "CN Dataworks",
+        "email": "info@cndataworks.com"
+    },
+    "repository": "https://github.com/cn-dataworks/powerbi-analyst-plugin",
+    "agents": [
+        "./agents/core/powerbi-orchestrator.md",
+        "./agents/core/powerbi-code-locator.md",
+        "./agents/core/powerbi-visual-locator.md",
+        "./agents/core/powerbi-data-context-agent.md",
+        "./agents/core/powerbi-pattern-discovery.md",
+        "./agents/core/powerbi-dashboard-update-planner.md",
+        "./agents/core/powerbi-dax-review-agent.md",
+        "./agents/core/powerbi-pbir-validator.md",
+        "./agents/core/powerbi-dax-specialist.md",
+        "./agents/core/powerbi-mcode-specialist.md",
+        "./agents/core/powerbi-artifact-decomposer.md",
+        "./agents/core/powerbi-data-understanding-agent.md",
+        "./agents/core/powerbi-code-implementer-apply.md",
+        "./agents/core/powerbi-visual-implementer-apply.md",
+        "./agents/core/power-bi-verification.md",
+        "./agents/core/powerbi-page-layout-designer.md",
+        "./agents/core/powerbi-interaction-designer.md",
+        "./agents/core/powerbi-visual-type-recommender.md",
+        "./agents/core/powerbi-code-understander.md",
+        "./agents/core/powerbi-compare-project-code.md",
+        "./agents/core/powerbi-template-harvester.md",
+        "./agents/core/powerbi-pbir-page-generator.md",
+        "./agents/core/powerbi-dashboard-documenter.md",
+        "./agents/pro/powerbi-playwright-tester.md",
+        "./agents/pro/powerbi-ux-reviewer.md",
+        "./agents/pro/powerbi-qa-inspector.md"
+    ],
+    "skills": [
+        "./skills/powerbi-analyst"
+    ]
 }

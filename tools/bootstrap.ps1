@@ -1,15 +1,34 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Bootstrap script for Power BI Analyst Plugin - copies tools to project directory.
+    Bootstrap script for Power BI Analyst Plugin - configures project for the plugin.
 
 .DESCRIPTION
-    This script ensures the user's project has the necessary tools and helpers
-    from the plugin. It:
-    - Checks if local tools exist
-    - Compares versions
-    - Copies/updates tools as needed
-    - Creates the .claude directory structure
+    This script configures your project for the Power BI Analyst plugin.
+
+    **For CORE edition:**
+    - Creates .claude/powerbi-analyst.json (skill configuration)
+    - Creates .claude/settings.json (permissions)
+    - Creates/updates CLAUDE.md (project instructions)
+    - Copies helper files
+    - NO Python tools required (uses MCP + Claude-native validation)
+
+    **For PRO edition (additional):**
+    - Copies Python analysis tools to .claude/tools/powerbi-analyst/
+    - Enables advanced features like TMDL validation, analytics
+
+    NOTE: Agents and skills are registered globally when you install the plugin.
+    This script only handles per-project configuration and (for Pro) Python tools.
+
+    What this script does:
+    - Creates skill configuration files
+    - Creates settings.json with recommended permissions
+    - Optionally configures Power BI project path for auto-approve
+    - [Pro only] Copies Python analysis tools
+
+    What this script does NOT do:
+    - Register agents (they're globally available from the plugin)
+    - Install skills (they're globally available from the plugin)
 
 .PARAMETER Force
     Force update even if versions match.
@@ -64,8 +83,15 @@ $script:LocalClaudeDir = ".claude"
 $script:LocalToolsDir = ".claude\tools\powerbi-analyst"
 $script:LocalHelpersDir = ".claude\helpers\powerbi-analyst"
 
-# Core files to copy (PUBLIC - always installed)
+# Core files to copy (PUBLIC - always installed, no Python)
+# Note: Core edition uses MCP + Claude-native validation, no Python required
 $script:CoreToolFiles = @(
+    "version.txt"
+)
+
+# Python tools (PRO only - require Python 3.10+)
+# These provide advanced analysis capabilities beyond MCP
+$script:PythonToolFiles = @(
     "token_analyzer.py",
     "analytics_merger.py",
     "tmdl_format_validator.py",
@@ -80,8 +106,7 @@ $script:CoreToolFiles = @(
     "anonymization_generator.py",
     "m_partition_editor.py",
     "m_pattern_analyzer.py",
-    "query_folding_validator.py",
-    "version.txt"
+    "query_folding_validator.py"
 )
 
 # Advanced files to copy (PRIVATE - only in Pro version)
@@ -212,10 +237,12 @@ function Initialize-LocalDirectories {
 }
 
 function Copy-ToolFiles {
+    param([bool]$IsPro)
+
     $copied = 0
     $skipped = 0
 
-    # Copy core files (always present)
+    # Copy core files (always present - version tracking only for Core)
     foreach ($file in $script:CoreToolFiles) {
         $sourcePath = Join-Path $script:CoreToolsPath $file
         $destPath = Join-Path $script:LocalToolsDir $file
@@ -229,13 +256,32 @@ function Copy-ToolFiles {
         }
     }
 
-    Write-Info "Copied $copied core tools"
-    if ($skipped -gt 0) {
-        Write-Warn "Skipped $skipped missing core files"
+    Write-Info "Copied $copied core files"
+
+    # Copy Python tools (Pro version only)
+    if ($IsPro) {
+        $pythonCopied = 0
+        foreach ($file in $script:PythonToolFiles) {
+            $sourcePath = Join-Path $script:CoreToolsPath $file
+            $destPath = Join-Path $script:LocalToolsDir $file
+
+            if (Test-Path $sourcePath) {
+                Copy-Item -Path $sourcePath -Destination $destPath -Force
+                $pythonCopied++
+            } else {
+                Write-Warn "Python tool not found: $file"
+            }
+        }
+        if ($pythonCopied -gt 0) {
+            Write-Success "Copied $pythonCopied Python analysis tools (Pro)"
+        }
+    } else {
+        Write-Info "Core edition: Python tools not required"
+        Write-Info "  (Uses MCP + Claude-native validation)"
     }
 
     # Copy advanced files if present (Pro version only)
-    if ((Test-Path $script:AdvancedToolsPath) -and $script:AdvancedToolFiles.Count -gt 0) {
+    if ($IsPro -and (Test-Path $script:AdvancedToolsPath) -and $script:AdvancedToolFiles.Count -gt 0) {
         $advCopied = 0
         foreach ($file in $script:AdvancedToolFiles) {
             $sourcePath = Join-Path $script:AdvancedToolsPath $file
@@ -247,7 +293,7 @@ function Copy-ToolFiles {
             }
         }
         if ($advCopied -gt 0) {
-            Write-Success "Copied $advCopied Pro features"
+            Write-Success "Copied $advCopied advanced Pro features"
         }
     }
 }
@@ -621,11 +667,15 @@ try {
 
     # Perform copy if needed
     if ($needsCopy) {
+        $isPro = ($edition -eq "Pro")
+
         Initialize-LocalDirectories
-        Copy-ToolFiles
+        Copy-ToolFiles -IsPro $isPro
         Copy-HelperFiles
         Copy-DocsFiles
-        Copy-ProTemplateFiles
+        if ($isPro) {
+            Copy-ProTemplateFiles
+        }
 
         # Get PBI project path (from parameter or prompt)
         $pbiPath = $PBIProjectPath
@@ -642,8 +692,19 @@ try {
         Initialize-SettingsFile -PBIPath $pbiPath
         Initialize-ClaudeMd -PBIPath $pbiPath
 
-        Write-Success "Bootstrap complete! Tools installed to $script:LocalToolsDir"
+        Write-Success "Bootstrap complete! ($edition edition)"
+        Write-Info "Configuration installed to: $script:LocalClaudeDir"
         Write-Info "Version: $pluginVersion"
+        Write-Info ""
+        if ($isPro) {
+            Write-Info "Pro features enabled: Python analysis tools installed"
+            Write-Info "  Tools location: $script:LocalToolsDir"
+        } else {
+            Write-Info "Core edition: Uses MCP + Claude-native validation"
+            Write-Info "  No Python required - install Power BI Modeling MCP for best results"
+        }
+        Write-Info ""
+        Write-Info "Note: Agents and skills are already available globally from the plugin."
     }
 
     exit 0

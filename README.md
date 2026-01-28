@@ -40,7 +40,9 @@ cd "C:\path\to\your\powerbi-project"
 This creates:
 - `CLAUDE.md` - Project instructions
 - `.claude/settings.json` - Permissions
-- `.claude/tools/` - Local tool copies
+- `.claude/powerbi-analyst.json` - Skill configuration
+
+**For Pro edition:** Also copies Python analysis tools to `.claude/tools/`
 
 See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 
@@ -124,14 +126,22 @@ Bootstrap creates `.claude/settings.json` with permissions so common tools run w
 
 Customize by editing `.claude/settings.json`. See [INSTALL.md](INSTALL.md#auto-approve-permissions) for details.
 
-## Skills
+## Skill
 
-| Skill | Description |
-|-------|-------------|
-| `powerbi-analyst` | Main skill - diagnose issues, create measures/visuals, deploy changes |
-| `power-bi-assistant` | Guides you to the right workflow command |
-| `powerbi-dashboard-analyzer` | Analyzes dashboards in business-friendly language |
-| `powerbi-data-prep` | M code and Power Query transformations |
+This plugin provides one comprehensive skill:
+
+**`powerbi-analyst`** - Complete Power BI development assistant
+
+| Capability | Description |
+|------------|-------------|
+| Diagnose & Fix | EVALUATE workflow - fix calculation issues |
+| Create Artifacts | CREATE_ARTIFACT workflow - new measures, columns, tables |
+| Transform Data | DATA_PREP workflow - M code / Power Query |
+| Document | ANALYZE workflow - business-friendly dashboard docs |
+| Deploy | IMPLEMENT workflow - apply changes with validation |
+| Merge Projects | MERGE workflow - compare and combine projects |
+
+The skill automatically routes your requests to the appropriate workflow. Just describe what you need.
 
 ## Key Workflows
 
@@ -174,10 +184,14 @@ git pull; if ($?) { claude -c "/plugin update powerbi-analyst" }
 
 ## Requirements
 
+### Core Edition (Default)
 - Claude Code (latest version)
-- Python 3.10+
 - Power BI Desktop (for testing)
-- Optional: Power BI Service access (for deployment)
+- **Recommended:** Power BI Modeling MCP (for live validation)
+
+### Pro Edition (Additional)
+- Python 3.10+ (for advanced analysis tools)
+- Power BI Service access (for deployment)
 
 ## Structure
 
