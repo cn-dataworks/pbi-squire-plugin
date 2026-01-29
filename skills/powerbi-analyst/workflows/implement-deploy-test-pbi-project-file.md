@@ -161,12 +161,31 @@ Visuals may reference measures or columns created in Phase 2a. Running code chan
 - Context about what was changed
 
 **Agent Actions:**
+
+**Tool Selection (Try Tool First, Fallback to Claude-Native):**
+
+1. **Check for Python validator:**
+   ```bash
+   test -f ".claude/tools/tmdl_format_validator.py" && echo "TOOL_AVAILABLE" || echo "TOOL_NOT_AVAILABLE"
+   ```
+
+2. **If tool available (Pro edition):**
+   - Execute Python validator: `.claude/tools/tmdl_format_validator.py`
+   - Fast, comprehensive validation with auto-fix capability
+   - Precise line number reporting
+
+3. **If tool NOT available (Core edition):**
+   - Read TMDL file(s) directly
+   - Validate against TMDL format rules (see `references/tmdl_partition_structure.md`)
+   - Check indentation using regex patterns
+   - Manual verification of property placement
+
+**Validation Steps (both modes):**
 1. For each modified TMDL file, run format validation
-2. Execute Python validator: `.claude/tools/tmdl_format_validator.py`
-3. Check indentation consistency (tabs, proper levels)
-4. Verify property placement (formatString, displayFolder, etc.)
-5. Ensure properties are outside DAX expression blocks
-6. Validate TMDL structure and syntax
+2. Check indentation consistency (tabs, proper levels)
+3. Verify property placement (formatString, displayFolder, etc.)
+4. Ensure properties are outside DAX expression blocks
+5. Validate TMDL structure and syntax
 
 **Validation Outcomes:**
 - **✅ PASS**: All format checks passed → Proceed to Phase 3 (DAX Validation)

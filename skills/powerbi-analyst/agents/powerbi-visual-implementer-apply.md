@@ -106,20 +106,50 @@ Templates use schema v2.4.0 with `queryState/projections` structure - NOT the le
 - If XML is malformed → ABORT with parse error details
 - If required attributes missing → ABORT with specific step number and missing attribute
 
-### Step 3: Execute XML Edit Plan Using Python Utility
+### Step 3: Execute XML Edit Plan
 
-**Invoke Python Utility:**
+**Tool Selection (Try Tool First, Fallback to Claude-Native):**
 
-```bash
-python .claude/tools/pbir_visual_editor.py <temp_edit_plan.xml> <versioned_project_path>/.Report
-```
+1. **Check if Python tool is available:**
+   ```bash
+   # Check for tool existence
+   test -f ".claude/tools/pbir_visual_editor.py" && echo "TOOL_AVAILABLE" || echo "TOOL_NOT_AVAILABLE"
+   ```
 
-**Process:**
+2. **If tool available (Pro edition):** Use Python utility for faster, validated execution
+   ```bash
+   python .claude/tools/pbir_visual_editor.py <temp_edit_plan.xml> <versioned_project_path>/.Report
+   ```
+
+3. **If tool NOT available (Core edition):** Execute edits directly using Claude's Edit tool
+   - For each `<step>` in the edit plan:
+     - Read the target visual.json file
+     - Parse the JSON structure
+     - Apply the operation (replace_property or config_edit)
+     - Write the modified JSON back
+
+**Why This Pattern:**
+| Method | Speed | Token Cost | Precision |
+|--------|-------|------------|-----------|
+| Python Tool | Fast (ms) | Zero | Deterministic |
+| Claude-Native | Slower | Higher | Works without Python |
+
+**Process (Tool Mode):**
 1. Write XML edit plan to temporary file (e.g., `edit_plan_temp.xml`)
 2. Determine base path: `<versioned_project_path>/.Report`
 3. Execute Python utility
 4. Capture output (stdout and stderr)
 5. Parse results
+
+**Process (Claude-Native Mode):**
+1. Parse the XML edit plan in memory
+2. For each step, determine operation type
+3. Read target visual.json using Read tool
+4. Apply transformations:
+   - `replace_property`: Modify top-level JSON property directly
+   - `config_edit`: Parse config string → modify nested path → re-stringify
+5. Write modified JSON using Edit tool
+6. Validate JSON structure after each edit
 
 **Python Utility Operations:**
 
@@ -291,14 +321,15 @@ IF Section 2.A AND Section 2.B both exist:
 ## Prerequisites
 
 **Required:**
-- Python 3.x installed
 - Findings file with Section 2.B populated
 - Power BI Project in .pbip format with .Report folder
 - Versioned project path (created by code implementer or provided)
 
-**Python Utility:**
-- `.claude/tools/pbir_visual_editor.py` must exist
-- If missing, create it from template or report error
+**Optional (Pro Edition - Faster Execution):**
+- Python 3.x installed
+- `.claude/tools/pbir_visual_editor.py` available
+- If Python tool is available, it will be used for faster, deterministic execution
+- If not available, Claude-native JSON editing will be used (works without Python)
 
 **Not Required:**
 - Power BI Desktop

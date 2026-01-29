@@ -76,7 +76,26 @@ If MCP is available, use live model queries for faster, more accurate pattern di
 
 **Fallback Mode (File-Based):**
 
-If MCP is unavailable, use file search:
+If MCP is unavailable, use file search.
+
+**Tool Selection (Try Tool First, Fallback to Claude-Native):**
+
+1. **Check for Python pattern analyzer:**
+   ```bash
+   test -f ".claude/tools/m_pattern_analyzer.py" && echo "TOOL_AVAILABLE" || echo "TOOL_NOT_AVAILABLE"
+   ```
+
+2. **If tool available (Pro edition):**
+   - Use `m_pattern_analyzer.py` for M code pattern scanning
+   - Faster extraction of naming conventions and transformation styles
+   - Structured output for pattern matching
+
+3. **If tool NOT available (Core edition):**
+   - Use Grep and Read tools to scan TMDL files directly
+   - Analyze patterns using Claude's understanding of M code
+   - Extract conventions through manual inspection
+
+**File Search (Core mode):**
 
 ### For Measures:
 

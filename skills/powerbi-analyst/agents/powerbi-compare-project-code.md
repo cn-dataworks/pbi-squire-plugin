@@ -84,7 +84,26 @@ For each measure in main_schema:
 
 **Fallback Mode (File-Based):**
 
-If MCP is unavailable, parse files directly:
+If MCP is unavailable, use file-based comparison.
+
+**Tool Selection (Try Tool First, Fallback to Claude-Native):**
+
+1. **Check for Python merger utilities:**
+   ```bash
+   test -f ".claude/tools/pbi_merger_utils.py" && echo "TOOL_AVAILABLE" || echo "TOOL_NOT_AVAILABLE"
+   ```
+
+2. **If tool available (Pro edition):**
+   - Import and use `pbi_merger_utils.ProjectComparer` class
+   - Faster parsing, structured diff output
+   - Handles edge cases in TMDL/BIM parsing
+
+3. **If tool NOT available (Core edition):**
+   - Parse files directly using Read tool
+   - Compare structures using Claude's analysis
+   - Generate diff report manually
+
+**File Parsing (both modes):**
 
 #### For TMDL Format:
 
