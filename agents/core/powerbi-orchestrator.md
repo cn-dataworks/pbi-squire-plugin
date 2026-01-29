@@ -48,6 +48,9 @@ User Request
     ├─ Contains "version", "update", "edition", "check for updates"
     │  └─► VERSION_CHECK (direct, no subagents needed)
     │
+    ├─ Contains "anonymize", "anonymization", "mask sensitive", "data masking", "hide PII"
+    │  └─► SETUP_ANONYMIZATION workflow
+    │
     └─ Unclear / Vague
        └─► ASK CLARIFYING QUESTIONS (see below)
 ```
@@ -93,6 +96,8 @@ Ready to proceed?
 | "Explain how the Sales page works" | ANALYZE |
 | "Apply the fixes we discussed" | IMPLEMENT |
 | "Merge my dev branch with production" | MERGE |
+| "Set up data anonymization" | SETUP_ANONYMIZATION |
+| "Mask sensitive columns" | SETUP_ANONYMIZATION |
 | "Help me with Power BI" | ASK CLARIFICATION |
 | "I have a Power BI question" | ASK CLARIFICATION |
 
@@ -113,6 +118,7 @@ This affects which validation and testing subagents are available.
 | `/create-pbi-artifact` | CREATE_ARTIFACT | Decomposition -> Specification -> Planning -> Validation |
 | `/implement-deploy-test-pbi-project-file` | IMPLEMENT | Implementation -> Testing |
 | `/merge-powerbi-projects` | MERGE | Comparison -> Analysis -> Merge |
+| `/setup-data-anonymization` | SETUP_ANONYMIZATION | Scan -> Detect -> Confirm -> Generate -> Apply |
 | (auto-routed) | DATA_PREP | Pattern Analysis -> Design -> Folding Check -> Apply -> Validate |
 | (auto-routed) | ANALYZE | Validation -> Extraction -> Translation -> Report |
 
@@ -356,6 +362,49 @@ Task(powerbi-dashboard-documenter)
 - Describe visual purpose, not just type
 - Include just enough technical detail for credibility
 - Consult `references/translation-guidelines.md` for patterns
+
+### SETUP_ANONYMIZATION Workflow
+
+**Purpose:** Set up data anonymization to protect sensitive columns before MCP queries
+
+**Trigger phrases:**
+- "Set up data anonymization"
+- "Mask sensitive columns"
+- "Configure data masking"
+- "Hide PII in my data"
+- "Anonymize customer data"
+
+**Phases:**
+1. Scan: Find all tables and columns in TMDL files
+2. Detect: Match column names against sensitive patterns (names, emails, SSN, phones, etc.)
+3. Confirm: Present findings to user, get confirmation on which columns to mask
+4. Generate: Create DataMode parameter and M code masking transformations
+5. Apply: Edit partition TMDL files with user approval
+6. Configure: Write `.anonymization/config.json` and update skill config
+
+**Subagent:**
+```
+Task(powerbi-anonymization-setup)
+  Input: Project path
+  Output: Updated TMDL files, .anonymization/config.json
+```
+
+**What gets created:**
+- `DataMode` named expression (toggle "Real" / "Anonymized")
+- Conditional masking M code in table partitions
+- Configuration file tracking masked columns
+
+**Masking strategies available:**
+- `sequential_numbering` - "Customer 1, Customer 2..."
+- `fake_domain` - "user1@example.com"
+- `partial_mask` - "XXX-XX-1234"
+- `fake_prefix` - "(555) 555-1234"
+- `scale_factor` - Multiply by 0.8-1.2x
+- `date_offset` - Shift +/- 30 days
+- `placeholder_text` - "[Content redacted]"
+
+**References:**
+- `references/anonymization-patterns.md` for detection patterns and M code templates
 
 ## Quality Gate Checks
 

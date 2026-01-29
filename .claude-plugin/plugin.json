@@ -30,7 +30,8 @@
         "./agents/core/powerbi-compare-project-code.md",
         "./agents/core/powerbi-template-harvester.md",
         "./agents/core/powerbi-pbir-page-generator.md",
-        "./agents/core/powerbi-dashboard-documenter.md"
+        "./agents/core/powerbi-dashboard-documenter.md",
+        "./agents/core/powerbi-anonymization-setup.md"
     ],
     "skills": [
         "./skills/powerbi-analyst"
