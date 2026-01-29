@@ -293,19 +293,38 @@ Before saving partition changes:
 
 ## Integration with TMDL Validator
 
-After editing partition M code, **always run:**
+After editing partition M code, **always validate format.**
 
-```bash
-python .claude/tools/tmdl_format_validator.py "<tmdl-file>" --context "Modified <TableName> partition"
-```
+**Tool Selection (Try Tool First, Fallback to Claude-Native):**
 
-The validator checks:
+1. **Check for Python validator:**
+   ```bash
+   test -f ".claude/tools/tmdl_format_validator.py" && echo "TOOL_AVAILABLE" || echo "TOOL_NOT_AVAILABLE"
+   ```
+
+2. **If tool available (Pro edition - recommended):**
+   ```bash
+   python .claude/tools/tmdl_format_validator.py "<tmdl-file>" --context "Modified <TableName> partition"
+   ```
+   - Fast, comprehensive validation
+   - Auto-fix capability for TMDL012 warnings
+   - Precise line number reporting
+
+3. **If tool NOT available (Core edition):**
+   - Read the TMDL file and manually verify:
+     - All indentation uses tabs (count tab characters)
+     - Property placement is correct (not inside DAX blocks)
+     - TMDL structure follows patterns in this document
+   - Use regex to check indentation patterns
+   - Verify against examples in this reference
+
+**The validator/validation checks:**
 - Indentation consistency
 - Property placement
 - TMDL structure
 - Partition syntax
 
-**If validator reports errors, fix before proceeding to deployment.**
+**If validation reports errors, fix before proceeding to deployment.**
 
 ## Best Practices
 

@@ -356,6 +356,19 @@ in
 | Custom Functions | Inline logic | Fold-friendly alternatives |
 | Table.TransformColumns (complex) | Simple type cast | Keep transformations simple |
 
+**Tool Selection for M Code Operations:**
+
+When writing or editing M code, use this priority order:
+
+1. **MCP (Preferred):** If MCP is available, use partition_operations/table_operations
+2. **Python Tool (Pro):** If `.claude/tools/m_partition_editor.py` exists, use for precise editing
+3. **Claude-Native (Core):** Use Edit tool with careful attention to TMDL tab formatting
+
+**Check for Python tool:**
+```bash
+test -f ".claude/tools/m_partition_editor.py" && echo "TOOL_AVAILABLE" || echo "TOOL_NOT_AVAILABLE"
+```
+
 **MCP Tools Available:**
 
 | Tool | Usage |
@@ -364,6 +377,21 @@ in
 | `mcp.partition_operations.update(table, name, expression)` | Modify partition |
 | `mcp.table_operations.create(name, ...)` | Create new table |
 | `mcp.named_expression_operations.create(name, expression)` | Create shared expression |
+
+**Python Tools (Pro Edition):**
+
+| Tool | Usage |
+|------|-------|
+| `m_partition_editor.py` | Edit M code with proper tab handling |
+| `query_folding_validator.py` | Analyze query folding status |
+
+**Claude-Native Fallback (Core Edition):**
+
+When editing M code directly:
+- Reference `references/tmdl_partition_structure.md` for indentation rules
+- Use 3 tabs for M code body
+- Validate triple-quoted strings are properly formatted
+- Check `references/query_folding_guide.md` for folding analysis
 
 **Input Format:**
 

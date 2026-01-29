@@ -931,6 +931,45 @@ Warnings are reported but don't block implementation.
 
 ---
 
+## Tool-First Fallback Pattern (Core vs Pro)
+
+The plugin uses a **tool-first fallback pattern** to provide optimal performance for Pro users while ensuring Core users can still accomplish all tasks.
+
+### How It Works
+
+| Check | Pro Edition | Core Edition |
+|-------|-------------|--------------|
+| Python tools available? | Yes (via bootstrap) | No |
+| Execution speed | Fast (milliseconds) | Slower (uses LLM) |
+| Token cost | Lower | Higher |
+| Functionality | Same | Same |
+
+### When Agents Use Tools
+
+Agents check for tool availability before executing:
+
+```bash
+# Example check
+test -f ".claude/tools/tmdl_format_validator.py" && echo "TOOL_AVAILABLE" || echo "TOOL_NOT_AVAILABLE"
+```
+
+- **If available**: Use Python tool for faster, deterministic execution
+- **If not available**: Use Claude-native approach (Read, Edit, reference docs)
+
+### Tool Mapping
+
+| Task | Pro Tool | Core Fallback |
+|------|----------|---------------|
+| TMDL validation | `tmdl_format_validator.py` | Claude validates against `tmdl_partition_structure.md` |
+| Visual editing | `pbir_visual_editor.py` | Claude uses Edit tool on visual.json |
+| M code editing | `m_partition_editor.py` | Claude uses Edit tool with tab handling |
+| Pattern analysis | `m_pattern_analyzer.py` | Claude reads and analyzes TMDL |
+| Anonymization | `sensitive_column_detector.py` | Claude uses `anonymization-patterns.md` |
+
+See `references/tool-fallback-pattern.md` for complete documentation.
+
+---
+
 ## Tracing & Observability
 
 The skill provides structured trace output to show workflow progress, agent invocations, and MCP tool usage.

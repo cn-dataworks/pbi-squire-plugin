@@ -364,6 +364,31 @@ The M code structure in this file is complex. Would you like to:
 
 ---
 
+## Tool Selection Note
+
+**This agent implements Claude-native anonymization** (no Python required).
+
+However, if Pro edition Python tools are available, they can provide faster execution:
+
+1. **Check for Python tools:**
+   ```bash
+   test -f ".claude/tools/sensitive_column_detector.py" && echo "TOOL_AVAILABLE" || echo "TOOL_NOT_AVAILABLE"
+   ```
+
+2. **If tools available (Pro edition):**
+   - Use `sensitive_column_detector.py` for pattern matching
+   - Use `anonymization_generator.py` for M code generation
+   - Faster execution, lower token cost
+
+3. **If tools NOT available (Core edition - default):**
+   - Use this agent's Claude-native workflow
+   - Load patterns from `references/anonymization-patterns.md`
+   - Generate M code using templates in the reference
+
+Both approaches produce identical results - Pro just runs faster.
+
+---
+
 ## References
 
 - `references/anonymization-patterns.md` - Detection patterns and M code templates
