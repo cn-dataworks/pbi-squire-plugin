@@ -37,6 +37,7 @@ Tell me what you need help with. I'll route to the appropriate workflow:
 | "Explain what this dashboard does" | **ANALYZE** - document in business language |
 | "Apply the changes" | **IMPLEMENT** - execute the planned changes |
 | "Compare these two projects" | **MERGE** - diff and merge projects |
+| "Set up data anonymization" | **SETUP_ANONYMIZATION** - mask sensitive columns |
 | "Help me with Power BI" | I'll ask clarifying questions first |
 
 **Not sure what you need?** Just describe your situation - I'll ask clarifying questions to understand your goal before starting any workflow.
@@ -69,6 +70,9 @@ Tell me what you need help with. I'll route to the appropriate workflow:
 - "Explain this metric" → ANALYZE workflow
 - "Document this dashboard" → ANALYZE workflow
 - "Merge these two projects" → MERGE workflow
+- "Set up data anonymization" → SETUP_ANONYMIZATION workflow
+- "Mask sensitive columns" → SETUP_ANONYMIZATION workflow
+- "Configure data masking" → SETUP_ANONYMIZATION workflow
 - "Set up design standards" → SETUP_DESIGN_STANDARDS (Pro)
 - "Review dashboard for consistency" → QA_LOOP with design critique (Pro)
 - "Check against design guidelines" → QA_LOOP with design critique (Pro)
@@ -624,6 +628,57 @@ performance, regional comparisons, and year-over-year growth trends.
 
 ---
 
+### SETUP_ANONYMIZATION (Data Masking)
+
+**Use when:** User wants to set up data anonymization to protect sensitive information before using MCP queries.
+
+**Trigger phrases:**
+- "Set up data anonymization"
+- "Mask sensitive columns"
+- "Configure data masking"
+- "Hide PII in my data"
+- "Anonymize customer data"
+
+**Process:**
+1. **Scan for sensitive columns** - Parse TMDL files for table/column definitions
+2. **Match against patterns** - Detect names, emails, SSN, phones, addresses, amounts
+3. **Confirm with user** - Present findings grouped by confidence (HIGH/MEDIUM/LOW)
+4. **Generate M code** - Create DataMode parameter and masking transformations
+5. **Apply changes** - Edit partition TMDL files with user approval
+6. **Configure** - Write `.anonymization/config.json` and update skill config
+
+**What gets created:**
+- `DataMode` parameter (toggle between "Real" and "Anonymized")
+- Conditional M code transformations in table partitions
+- Configuration file for tracking masked columns
+
+**Masking strategies:**
+
+| Strategy | Example | Use For |
+|----------|---------|---------|
+| Sequential numbering | "Customer 1, Customer 2" | Names |
+| Fake domain | "user1@example.com" | Emails |
+| Partial mask | "XXX-XX-1234" | SSN, Tax ID |
+| Fake prefix | "(555) 555-1234" | Phone numbers |
+| Scale factor | Original * 0.8-1.2 | Financial amounts |
+| Date offset | Original +/- 30 days | Birth dates |
+| Placeholder | "[Content redacted]" | Free text |
+
+**Output:**
+- Updated TMDL files with masking logic
+- `.anonymization/config.json` with configuration
+- Updated `.claude/powerbi-analyst.json` with `dataSensitiveMode: true`
+
+**Invokes:** `powerbi-anonymization-setup` agent
+
+**References:**
+- `references/anonymization-patterns.md` - Detection patterns and M code templates
+
+**After setup:**
+To test, open Power BI Desktop → Transform Data → Manage Parameters → Change DataMode to "Anonymized".
+
+---
+
 ## Subagent Architecture
 
 This skill uses Claude Code's **subagent pattern** for context isolation and parallel execution. The central **orchestrator** spawns specialized subagents based on workflow phase.
@@ -698,6 +753,12 @@ The orchestrator delegates to specialized agents based on artifact type:
 |-------|---------|----------------|
 | `powerbi-code-implementer-apply` | Apply TMDL changes | Section 4.A |
 | `powerbi-visual-implementer-apply` | Apply PBIR changes | Section 4.B |
+
+### Configuration Agents
+
+| Agent | Purpose | Output |
+|-------|---------|--------|
+| `powerbi-anonymization-setup` | Set up data masking for sensitive columns | .anonymization/config.json |
 
 ### Pro-Only Agents
 
@@ -979,6 +1040,8 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 | Document metrics | "Explain how the Total Sales metric works" | ANALYZE |
 | Compare projects | "Merge my dev and prod projects" | MERGE |
 | Check version | "What version of Power BI Analyst am I running?" | VERSION_CHECK |
+| Anonymize data | "Set up data anonymization for this project" | SETUP_ANONYMIZATION |
+| Mask PII | "Hide sensitive columns like names and emails" | SETUP_ANONYMIZATION |
 | Design standards | "Set up design guidelines for my dashboard" | SETUP_DESIGN_STANDARDS (Pro) |
 | Design review | "Review my dashboard against design guidelines" | QA_LOOP (Pro) |
 

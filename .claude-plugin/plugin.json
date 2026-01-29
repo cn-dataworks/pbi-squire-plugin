@@ -32,6 +32,7 @@
         "./agents/core/powerbi-template-harvester.md",
         "./agents/core/powerbi-pbir-page-generator.md",
         "./agents/core/powerbi-dashboard-documenter.md",
+        "./agents/core/powerbi-anonymization-setup.md",
         "./agents/pro/powerbi-playwright-tester.md",
         "./agents/pro/powerbi-ux-reviewer.md",
         "./agents/pro/powerbi-qa-inspector.md"
