@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     This script ensures version consistency between:
-    - tools/core/version.txt (source of truth)
+    - tools/developer/version.txt (source of truth)
     - .claude-plugin/plugin.json (plugin metadata)
 
     Can also bump the version when a new version is provided.
@@ -48,7 +48,7 @@ if (-not (Test-Path "$scriptDir\.claude-plugin")) {
     $scriptDir = Resolve-Path "$scriptDir\..\.."
 }
 
-$versionTxtPath = Join-Path $scriptDir "tools\core\version.txt"
+$versionTxtPath = Join-Path $scriptDir "tools\developer\version.txt"
 $pluginJsonPath = Join-Path $scriptDir ".claude-plugin\plugin.json"
 
 # Read current versions
@@ -127,7 +127,7 @@ Write-Host @"
 
 Next steps:
   1. Review changes: git diff
-  2. Commit: git add tools/core/version.txt .claude-plugin/plugin.json
+  2. Commit: git add tools/developer/version.txt .claude-plugin/plugin.json
   3. Commit: git commit -m "Bump version to $targetVersion"
   4. If on main, merge to pro: git checkout pro && git merge main
 "@

@@ -2,7 +2,7 @@
 
 **Project-Specific Design Configuration**
 
-This file was created during Power BI Analyst Pro bootstrap. Customize it to match your organization's design standards. The agent will use these rules when generating dashboards and critiquing visual designs.
+This file was created during PBI Squire Pro bootstrap. Customize it to match your organization's design standards. The agent will use these rules when generating dashboards and critiquing visual designs.
 
 ---
 
@@ -223,4 +223,4 @@ Every dashboard page must include:
 
 ---
 
-*This file is checked by the Power BI Analyst agent during dashboard generation and QA loops. Keep it updated as your standards evolve.*
+*This file is checked by the PBI Squire agent during dashboard generation and QA loops. Keep it updated as your standards evolve.*

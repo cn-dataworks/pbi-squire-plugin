@@ -3,7 +3,7 @@
     Hook script executed when a Power BI subagent stops.
 
 .DESCRIPTION
-    This script is invoked by Claude Code when a powerbi-* subagent completes.
+    This script is invoked by Claude Code when a pbi-squire-* subagent completes.
     It can be used to:
     - Record completion time
     - Clean up temporary resources
@@ -11,13 +11,13 @@
     - Trigger follow-up actions
 
 .PARAMETER AgentName
-    The name of the subagent that stopped (e.g., powerbi-code-locator)
+    The name of the subagent that stopped (e.g., pbi-squire-code-locator)
 
 .PARAMETER ExitCode
     The exit code from the subagent (0 = success, non-zero = failure)
 
 .EXAMPLE
-    .\on-subagent-stop.ps1 powerbi-code-locator 0
+    .\on-subagent-stop.ps1 pbi-squire-code-locator 0
 #>
 
 param(
@@ -47,7 +47,7 @@ $logEntry = @{
 Write-Host "[HOOK] Subagent stopped: $AgentName at $timestamp ($status)"
 
 # Optional: Write to log file
-$logDir = Join-Path $env:TEMP "powerbi-analyst-logs"
+$logDir = Join-Path $env:TEMP "pbi-squire-logs"
 if (-not (Test-Path $logDir)) {
     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 }

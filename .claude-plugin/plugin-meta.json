@@ -1,6 +1,6 @@
 {
-  "tier": "pro",
-  "releases": "https://github.com/cn-dataworks/powerbi-analyst-plugin/releases",
-  "updateCheckUrl": "https://api.github.com/repos/cn-dataworks/powerbi-analyst-plugin/releases/latest",
+  "tier": "developer",
+  "releases": "https://github.com/cn-dataworks/pbi-squire-plugin/releases",
+  "updateCheckUrl": "https://api.github.com/repos/cn-dataworks/pbi-squire-plugin/releases/latest",
   "notes": "This file stores metadata not supported by Claude Code's plugin.json schema. The official plugin.json only supports: name, version, description, author, repository."
 }

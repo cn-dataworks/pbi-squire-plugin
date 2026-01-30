@@ -5,12 +5,12 @@
     "email": "info@cndataworks.com"
   },
   "metadata": {
-    "description": "Power BI analyst workflows and tools",
+    "description": "PBI Squire - Power BI development workflows and tools",
     "version": "1.0.0"
   },
   "plugins": [
     {
-      "name": "powerbi-analyst",
+      "name": "pbi-squire",
       "source": "./"
     }
   ]

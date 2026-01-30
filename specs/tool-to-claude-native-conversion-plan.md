@@ -2,7 +2,7 @@
 
 ## Objective
 
-Apply the established pattern (used for `m_pattern_analyzer.py` → `m_pattern_discovery.md`) to all remaining convertible tools, enabling Core edition to work without Python.
+Apply the established pattern (used for `m_pattern_analyzer.py` → `m_pattern_discovery.md`) to all remaining convertible tools, enabling Analyst Edition to work without Python.
 
 ---
 
@@ -22,10 +22,10 @@ Apply the established pattern (used for `m_pattern_analyzer.py` → `m_pattern_d
 
 | Tool | Reason |
 |------|--------|
-| `pbir_visual_editor.py` | User confirmed Pro-only |
-| `agent_logger.py` | Analytics (Pro-only) |
-| `analytics_merger.py` | Analytics (Pro-only) |
-| `token_analyzer.py` | Analytics (Pro-only) |
+| `pbir_visual_editor.py` | User confirmed Developer-only |
+| `agent_logger.py` | Analytics (Developer-only) |
+| `analytics_merger.py` | Analytics (Developer-only) |
+| `token_analyzer.py` | Analytics (Developer-only) |
 
 ### Already MCP-Preferred
 
@@ -217,7 +217,7 @@ Search for these indicators:
 
 ## Files to Modify
 
-### Reference Documents (in skills/powerbi-analyst/references/)
+### Reference Documents (in skills/pbi-squire/references/)
 
 | File | Action |
 |------|--------|
@@ -229,7 +229,7 @@ Search for these indicators:
 | `pbir_visual_structure.md` | CREATE new |
 | `tool-fallback-pattern.md` | Update all mappings with specific parts |
 
-### Agents (in skills/powerbi-analyst/agents/)
+### Agents (in skills/pbi-squire/agents/)
 
 | File | Action |
 |------|--------|
@@ -258,7 +258,7 @@ Phase 3 (P3) - Create remaining references
 Phase 4 - Final updates
 ├── Update tool-fallback-pattern.md with all mappings
 ├── Update SKILL.md if needed
-└── Test Core edition workflows
+└── Test Analyst Edition workflows
 ```
 
 ---
@@ -271,7 +271,7 @@ Phase 4 - Final updates
 
 #### Step 1: Extract Python Logic
 ```
-Read: tools/core/query_folding_validator.py
+Read: tools/developer/query_folding_validator.py
 Extract:
 - FOLDING_BREAKERS dict (operations that break folding)
 - FOLDING_PRESERVERS dict (operations that preserve folding)
@@ -282,7 +282,7 @@ Extract:
 
 #### Step 2: Enhance Reference Document
 ```
-Edit: skills/powerbi-analyst/references/query_folding_guide.md
+Edit: skills/pbi-squire/references/query_folding_guide.md
 
 Add sections:
 1. Quick Reference table (Pro vs Core methods)
@@ -296,7 +296,7 @@ Add sections:
 
 #### Step 3: Update Agent
 ```
-Edit: skills/powerbi-analyst/agents/powerbi-mcode-specialist.md
+Edit: skills/pbi-squire/agents/powerbi-mcode-specialist.md
 
 Add to Core fallback section:
 - Reference: query_folding_guide.md → Part 1
@@ -305,7 +305,7 @@ Add to Core fallback section:
 
 #### Step 4: Update Fallback Pattern
 ```
-Edit: skills/powerbi-analyst/references/tool-fallback-pattern.md
+Edit: skills/pbi-squire/references/tool-fallback-pattern.md
 
 Update row:
 | query_folding_validator.py | query_folding_guide.md | Part 1: Folding Analysis |
@@ -319,7 +319,7 @@ Update row:
 
 #### Step 1: Extract Python Logic
 ```
-Read: tools/core/sensitive_column_detector.py
+Read: tools/developer/sensitive_column_detector.py
 Extract:
 - PII_PATTERNS dict (regex patterns by category)
 - Column name patterns (names, emails, SSN, phones, addresses)
@@ -330,7 +330,7 @@ Extract:
 
 #### Step 2: Enhance Reference Document
 ```
-Edit: skills/powerbi-analyst/references/anonymization-patterns.md
+Edit: skills/pbi-squire/references/anonymization-patterns.md
 
 Add sections:
 1. Quick Reference table (Pro vs Core methods)
@@ -344,7 +344,7 @@ Add sections:
 
 #### Step 3: Update Agent
 ```
-Edit: skills/powerbi-analyst/agents/powerbi-anonymization-setup.md
+Edit: skills/pbi-squire/agents/powerbi-anonymization-setup.md
 
 Add to Core fallback section:
 - Reference: anonymization-patterns.md → Part 1
@@ -353,7 +353,7 @@ Add to Core fallback section:
 
 #### Step 4: Update Fallback Pattern
 ```
-Edit: skills/powerbi-analyst/references/tool-fallback-pattern.md
+Edit: skills/pbi-squire/references/tool-fallback-pattern.md
 
 Update row:
 | sensitive_column_detector.py | anonymization-patterns.md | Part 1: Detection |
@@ -367,7 +367,7 @@ Update row:
 
 #### Step 1: Extract Python Logic
 ```
-Read: tools/core/tmdl_format_validator.py
+Read: tools/developer/tmdl_format_validator.py
 Extract:
 - Error codes TMDL001-TMDL013 with descriptions
 - Indentation rules (tabs vs spaces, nesting levels)
@@ -378,7 +378,7 @@ Extract:
 
 #### Step 2: Enhance Reference Document
 ```
-Edit: skills/powerbi-analyst/references/tmdl_partition_structure.md
+Edit: skills/pbi-squire/references/tmdl_partition_structure.md
 
 Add sections:
 1. Quick Reference table (Pro vs Core methods)
@@ -393,7 +393,7 @@ Add sections:
 
 #### Step 3: Update Agent/Workflow
 ```
-Edit: skills/powerbi-analyst/workflows/implement-deploy-test-pbi-project-file.md
+Edit: skills/pbi-squire/workflows/implement-deploy-test-pbi-project-file.md
 
 Add to Core fallback section:
 - Reference: tmdl_partition_structure.md → Part 1
@@ -402,7 +402,7 @@ Add to Core fallback section:
 
 #### Step 4: Update Fallback Pattern
 ```
-Edit: skills/powerbi-analyst/references/tool-fallback-pattern.md
+Edit: skills/pbi-squire/references/tool-fallback-pattern.md
 
 Update row:
 | tmdl_format_validator.py | tmdl_partition_structure.md | Part 1: Validation |
@@ -416,7 +416,7 @@ Update row:
 
 #### Step 1: Extract Python Logic
 ```
-Read: tools/core/pbi_project_validator.py
+Read: tools/developer/pbi_project_validator.py
 Extract:
 - Format detection logic (PBIP vs pbi-tools vs PBIX)
 - Required files per format
@@ -427,7 +427,7 @@ Extract:
 
 #### Step 2: Create New Reference Document
 ```
-Create: skills/powerbi-analyst/references/project_structure_validation.md
+Create: skills/pbi-squire/references/project_structure_validation.md
 
 Structure:
 # Project Structure Validation
@@ -460,7 +460,7 @@ Structure:
 
 #### Step 3: Update Agent/Workflow
 ```
-Edit: skills/powerbi-analyst/workflows/qa-loop-pbi-dashboard.md (or relevant workflow)
+Edit: skills/pbi-squire/workflows/qa-loop-pbi-dashboard.md (or relevant workflow)
 
 Add Core fallback section:
 - Reference: project_structure_validation.md → Part 1
@@ -468,7 +468,7 @@ Add Core fallback section:
 
 #### Step 4: Update Fallback Pattern
 ```
-Edit: skills/powerbi-analyst/references/tool-fallback-pattern.md
+Edit: skills/pbi-squire/references/tool-fallback-pattern.md
 
 Add row:
 | pbi_project_validator.py | project_structure_validation.md | Part 1: Detection |
@@ -482,7 +482,7 @@ Add row:
 
 #### Step 1: Extract Python Logic
 ```
-Read: tools/advanced/pbi_merger_utils.py
+Read: tools/developer/pbi_merger_utils.py
 Extract:
 - TMDL parsing patterns
 - Measure extraction logic
@@ -493,7 +493,7 @@ Extract:
 
 #### Step 2: Create New Reference Document
 ```
-Create: skills/powerbi-analyst/references/project_comparison_guide.md
+Create: skills/pbi-squire/references/project_comparison_guide.md
 
 Structure:
 # Project Comparison Guide
@@ -526,7 +526,7 @@ Structure:
 
 #### Step 3: Update Agent
 ```
-Edit: skills/powerbi-analyst/agents/powerbi-compare-project-code.md
+Edit: skills/pbi-squire/agents/powerbi-compare-project-code.md
 
 Add Core fallback section:
 - Reference: project_comparison_guide.md → Part 1
@@ -534,7 +534,7 @@ Add Core fallback section:
 
 #### Step 4: Update Fallback Pattern
 ```
-Edit: skills/powerbi-analyst/references/tool-fallback-pattern.md
+Edit: skills/pbi-squire/references/tool-fallback-pattern.md
 
 Add row:
 | pbi_merger_utils.py | project_comparison_guide.md | Part 1: Comparison |
@@ -548,7 +548,7 @@ Add row:
 
 #### Step 1: Extract Python Logic
 ```
-Read: tools/advanced/extract_visual_layout.py
+Read: tools/developer/extract_visual_layout.py
 Extract:
 - visual.json schema
 - Page hierarchy structure
@@ -559,7 +559,7 @@ Extract:
 
 #### Step 2: Create New Reference Document
 ```
-Create: skills/powerbi-analyst/references/pbir_visual_structure.md
+Create: skills/pbi-squire/references/pbir_visual_structure.md
 
 Structure:
 # PBIR Visual Structure
@@ -600,7 +600,7 @@ Add Core fallback section:
 
 #### Step 4: Update Fallback Pattern
 ```
-Edit: skills/powerbi-analyst/references/tool-fallback-pattern.md
+Edit: skills/pbi-squire/references/tool-fallback-pattern.md
 
 Add row:
 | extract_visual_layout.py | pbir_visual_structure.md | Part 1: Extraction |
@@ -612,7 +612,7 @@ Add row:
 
 #### Step 1: Consolidate tool-fallback-pattern.md
 ```
-Edit: skills/powerbi-analyst/references/tool-fallback-pattern.md
+Edit: skills/pbi-squire/references/tool-fallback-pattern.md
 
 Verify all mappings are complete:
 | Tool | Reference Doc | Part |
@@ -628,18 +628,18 @@ Verify all mappings are complete:
 
 #### Step 2: Update SKILL.md (if needed)
 ```
-Edit: skills/powerbi-analyst/SKILL.md
+Edit: skills/pbi-squire/SKILL.md
 
 If any new references are user-facing, add to References section
 ```
 
-#### Step 3: Test Core Edition Workflows
+#### Step 3: Test Analyst Edition Workflows
 ```
 Test procedure:
-1. Remove .claude/tools/ folder (simulate Core edition)
+1. Remove .claude/tools/ folder (simulate Analyst Edition)
 2. Run each workflow that uses converted tools
 3. Verify Claude follows reference doc Part 1
-4. Compare output quality to Pro edition
+4. Compare output quality to Developer Edition
 ```
 
 ---
@@ -650,60 +650,60 @@ Use these prompts to execute each phase:
 
 ### Phase 1A Prompt
 ```
-Read tools/core/query_folding_validator.py and extract:
+Read tools/developer/query_folding_validator.py and extract:
 1. All FOLDING_BREAKERS patterns with descriptions
 2. All FOLDING_PRESERVERS patterns with descriptions
 3. All FOLDING_MAYBE patterns with descriptions
 4. The score calculation logic
 5. The report format
 
-Then enhance skills/powerbi-analyst/references/query_folding_guide.md by adding
+Then enhance skills/pbi-squire/references/query_folding_guide.md by adding
 a "Part 1: Folding Analysis (Claude-Native)" section with step-by-step
 instructions for Claude to perform the same analysis using Grep/Read tools.
 ```
 
 ### Phase 1B Prompt
 ```
-Read tools/core/sensitive_column_detector.py and extract all PII detection
+Read tools/developer/sensitive_column_detector.py and extract all PII detection
 patterns, confidence scoring rules, and report format.
 
-Then enhance skills/powerbi-analyst/references/anonymization-patterns.md by
+Then enhance skills/pbi-squire/references/anonymization-patterns.md by
 adding a "Part 1: Sensitive Column Detection (Claude-Native)" section.
 ```
 
 ### Phase 2A Prompt
 ```
-Read tools/core/tmdl_format_validator.py and extract all error codes
+Read tools/developer/tmdl_format_validator.py and extract all error codes
 (TMDL001-TMDL013), validation rules, and auto-fix recommendations.
 
-Then enhance skills/powerbi-analyst/references/tmdl_partition_structure.md by
+Then enhance skills/pbi-squire/references/tmdl_partition_structure.md by
 adding a "Part 1: Format Validation (Claude-Native)" section.
 ```
 
 ### Phase 2B Prompt
 ```
-Read tools/core/pbi_project_validator.py and extract format detection logic,
+Read tools/developer/pbi_project_validator.py and extract format detection logic,
 required files per format, and validation rules.
 
-Then create skills/powerbi-analyst/references/project_structure_validation.md
+Then create skills/pbi-squire/references/project_structure_validation.md
 following the template in the conversion plan spec.
 ```
 
 ### Phase 3A Prompt
 ```
-Read tools/advanced/pbi_merger_utils.py and extract TMDL parsing patterns,
+Read tools/developer/pbi_merger_utils.py and extract TMDL parsing patterns,
 comparison algorithms, and merge decision rules.
 
-Then create skills/powerbi-analyst/references/project_comparison_guide.md
+Then create skills/pbi-squire/references/project_comparison_guide.md
 following the template in the conversion plan spec.
 ```
 
 ### Phase 3B Prompt
 ```
-Read tools/advanced/extract_visual_layout.py and extract visual.json schema,
+Read tools/developer/extract_visual_layout.py and extract visual.json schema,
 coordinate system, and visual type mappings.
 
-Then create skills/powerbi-analyst/references/pbir_visual_structure.md
+Then create skills/pbi-squire/references/pbir_visual_structure.md
 following the template in the conversion plan spec.
 ```
 
@@ -743,7 +743,7 @@ following the template in the conversion plan spec.
 - [x] Each reference doc has "Part 1: Detection/Validation (Claude-Native)" section
 - [x] Each agent using these tools has updated Core fallback section
 - [x] `tool-fallback-pattern.md` mappings point to specific reference doc parts
-- [ ] Core edition workflows function without Python (requires testing)
+- [ ] Analyst Edition workflows function without Python (requires testing)
 
 ### Implementation Status
 
@@ -759,7 +759,7 @@ following the template in the conversion plan spec.
 
 ### Remaining Work
 
-- End-to-end testing with Core edition (no Python)
+- End-to-end testing with Analyst Edition (no Python)
 
 ### Agent Updates Completed
 

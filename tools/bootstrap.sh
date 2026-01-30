@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Bootstrap script for Power BI Analyst Plugin - copies tools to project directory.
+# Bootstrap script for PBI Squire Plugin - copies tools to project directory.
 #
 # This script ensures the user's project has the necessary tools and helpers
 # from the plugin. It:
@@ -32,13 +32,14 @@ if [[ ! -d "$PLUGIN_PATH/.claude-plugin" ]]; then
 fi
 
 PLUGIN_TOOLS_PATH="$PLUGIN_PATH/tools"
-PLUGIN_RESOURCES_PATH="$PLUGIN_PATH/skills/powerbi-analyst/resources"
+DEVELOPER_TOOLS_PATH="$PLUGIN_TOOLS_PATH/developer"
+PLUGIN_RESOURCES_PATH="$PLUGIN_PATH/skills/pbi-squire/resources"
 VERSION_FILE="version.txt"
 
 # Local paths (in user's project)
 LOCAL_CLAUDE_DIR=".claude"
-LOCAL_TOOLS_DIR=".claude/tools"
-LOCAL_HELPERS_DIR=".claude/helpers"
+LOCAL_TOOLS_DIR=".claude/tools/pbi-squire"
+LOCAL_HELPERS_DIR=".claude/helpers/pbi-squire"
 
 # Files to copy
 TOOL_FILES=(
@@ -120,7 +121,7 @@ write_error() {
 # ============================================================
 
 get_plugin_version() {
-    local version_path="$PLUGIN_TOOLS_PATH/$VERSION_FILE"
+    local version_path="$DEVELOPER_TOOLS_PATH/$VERSION_FILE"
     if [[ -f "$version_path" ]]; then
         cat "$version_path" | tr -d '[:space:]'
     else
@@ -202,7 +203,7 @@ copy_tool_files() {
     local skipped=0
 
     for file in "${TOOL_FILES[@]}"; do
-        local source_path="$PLUGIN_TOOLS_PATH/$file"
+        local source_path="$DEVELOPER_TOOLS_PATH/$file"
         local dest_path="$LOCAL_TOOLS_DIR/$file"
 
         if [[ -f "$source_path" ]]; then
@@ -262,14 +263,14 @@ main() {
     local_version=$(get_local_version)
     status=$(compare_versions "$plugin_version" "$local_version")
 
-    # Detect edition (Pro vs Core)
-    local pro_features_path="$PLUGIN_PATH/skills/powerbi-analyst/pro-features.md"
-    local edition="Core"
-    if [[ -f "$pro_features_path" ]]; then
-        edition="Pro"
+    # Detect edition (Developer vs Analyst)
+    local dev_features_path="$PLUGIN_PATH/skills/pbi-squire/developer-features.md"
+    local edition="Analyst"
+    if [[ -f "$dev_features_path" ]]; then
+        edition="Developer"
     fi
 
-    write_info "Plugin version: $plugin_version ($edition edition)"
+    write_info "Plugin version: $plugin_version ($edition Edition)"
     write_info "Local version:  ${local_version:-(not installed)}"
     write_info "Status: $status"
 

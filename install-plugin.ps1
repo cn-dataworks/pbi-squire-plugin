@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Installs or updates the Power BI Analyst plugin for Claude Code.
+    Installs or updates the PBI Squire plugin for Claude Code.
 
 .DESCRIPTION
-    This script clones (or pulls) the powerbi-analyst-plugin repository
+    This script clones (or pulls) the pbi-squire-plugin repository
     and registers it with Claude Code using the /plugin install command.
 
 .NOTES
@@ -20,7 +20,7 @@
 
 [CmdletBinding()]
 param(
-    [string]$TargetDir = "$HOME\.claude\plugins\custom\powerbi-analyst",
+    [string]$TargetDir = "$HOME\.claude\plugins\custom\pbi-squire",
     [switch]$SkipMcpConfig
 )
 
@@ -215,7 +215,7 @@ function Show-CapabilitySummary {
 # Banner
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Magenta
-Write-Host "  Power BI Analyst Plugin Installer" -ForegroundColor Magenta
+Write-Host "  PBI Squire Plugin Installer" -ForegroundColor Magenta
 Write-Host "========================================" -ForegroundColor Magenta
 
 # Step 1: Check prerequisites
@@ -242,7 +242,7 @@ try {
 # Step 2: Clone or update repository
 Write-Step "Setting up plugin directory..."
 
-$repoUrl = "https://github.com/cn-dataworks/powerbi-analyst-plugin.git"
+$repoUrl = "https://github.com/cn-dataworks/pbi-squire-plugin.git"
 
 if (!(Test-Path $TargetDir)) {
     Write-Host "   Cloning repository to: $TargetDir" -ForegroundColor White
@@ -297,14 +297,14 @@ if ($LASTEXITCODE -ne 0) {
 
 # B. Install Plugin (by ID, not path, so it links to the marketplace)
 Write-Info "Installing plugin..."
-$installCommand = "/plugin install powerbi-analyst"
+$installCommand = "/plugin install pbi-squire"
 $installResult = claude -c $installCommand 2>&1
 
 if ($LASTEXITCODE -eq 0) {
     Write-Success "Plugin installed successfully."
 } elseif ($installResult -match "already installed") {
     Write-Info "Plugin is already installed. Attempting update..."
-    claude -c "/plugin update powerbi-analyst" | Out-Null
+    claude -c "/plugin update pbi-squire" | Out-Null
     Write-Success "Plugin updated."
 } else {
     Write-Warn "Plugin installation returned non-zero exit code"

@@ -54,19 +54,22 @@ nul
 # User-generated scratchpads
 agent_scratchpads/
 
-# Private/Pro features
+# Private/Developer features
 # NOTE: On 'pro' branch, these files are TRACKED (not gitignored)
 # On 'main' branch, they are excluded via gitignore
 
-# Pro-only agents (main branch only - remove on pro branch)
-# agents/pro/
-# agents/pro/*
+# Developer-only agents (main branch only - remove on pro branch)
+# agents/developer/
+# agents/developer/*
 
-# Pro-only agents (excluded on main branch, included on pro branch)
-agents/pro/
+# Developer-only agents (excluded on main branch, included on pro branch)
+agents/developer/
 
-# Pro-only workflows (excluded on main branch, included on pro branch)
-skills/powerbi-analyst/workflows/create-pbi-page-specs.md
+# Developer-only workflows (excluded on main branch, included on pro branch)
+skills/pbi-squire/workflows/create-pbi-page-specs.md
 
 # Internal development documentation (not for users)
 CONTRIBUTING.md
+
+# Local development folder (hooks, scripts, personal notes)
+dev/

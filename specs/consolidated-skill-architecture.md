@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the consolidation of four skills into one unified `powerbi-analyst` skill:
+This document describes the consolidation of four skills into one unified `pbi-squire` skill:
 
 | Absorbed Skill | What It Becomes |
 |----------------|-----------------|
@@ -23,10 +23,10 @@ This document describes the consolidation of four skills into one unified `power
 
 ```
 skills/
-└── powerbi-analyst/
+└── pbi-squire/
     ├── SKILL.md                    # Unified skill definition
     │
-    ├── agents/                     # (moved from agents/core/)
+    ├── agents/                     # (moved from agents/analyst/)
     │   ├── powerbi-orchestrator.md      # Enhanced: routing + clarification
     │   ├── powerbi-mcode-specialist.md  # Enhanced: data-prep workflow
     │   ├── powerbi-dax-specialist.md
@@ -82,7 +82,7 @@ skills/
 
 ```yaml
 ---
-name: powerbi-analyst
+name: pbi-squire
 description: >
   Complete Power BI development assistant. Diagnose issues, create measures/visuals,
   edit M code transformations, analyze dashboards, and deploy changes. Uses Power BI
@@ -352,7 +352,7 @@ tools:
   - Glob
   - Grep
 skills:
-  - powerbi-analyst
+  - pbi-squire
 ---
 
 ## Purpose
@@ -419,17 +419,17 @@ See `assets/analysis_report_template.md` for the full structure.
 
 ```json
 {
-    "name": "powerbi-analyst",
+    "name": "pbi-squire",
     "version": "1.5.0",
     "description": "Complete Power BI development assistant - diagnose, create, transform, analyze, and deploy",
     "agents": [
-        "./skills/powerbi-analyst/agents/powerbi-orchestrator.md",
-        "./skills/powerbi-analyst/agents/powerbi-dashboard-documenter.md",
-        "./skills/powerbi-analyst/agents/powerbi-mcode-specialist.md",
+        "./skills/pbi-squire/agents/powerbi-orchestrator.md",
+        "./skills/pbi-squire/agents/powerbi-dashboard-documenter.md",
+        "./skills/pbi-squire/agents/powerbi-mcode-specialist.md",
         // ... all other agents
     ],
     "skills": [
-        "./skills/powerbi-analyst"
+        "./skills/pbi-squire"
     ]
 }
 ```
@@ -441,9 +441,9 @@ See `assets/analysis_report_template.md` for the full structure.
 ## Migration Checklist
 
 ### Phase 1: Consolidate References
-- [ ] Copy references from dashboard-analyzer to powerbi-analyst/references/
-- [ ] Copy references from data-prep to powerbi-analyst/references/
-- [ ] Copy references from assistant to powerbi-analyst/references/
+- [ ] Copy references from dashboard-analyzer to pbi-squire/references/
+- [ ] Copy references from data-prep to pbi-squire/references/
+- [ ] Copy references from assistant to pbi-squire/references/
 - [ ] Update any internal links
 
 ### Phase 2: Create/Enhance Agents
@@ -484,13 +484,13 @@ See `assets/analysis_report_template.md` for the full structure.
 
 ```
 User: "Help me with Power BI"
-Claude: Which skill? powerbi-analyst? power-bi-assistant? powerbi-dashboard-analyzer?
+Claude: Which skill? pbi-squire? power-bi-assistant? powerbi-dashboard-analyzer?
 
 User: "I want to filter a table"
-Claude: Is this powerbi-data-prep or powerbi-analyst?
+Claude: Is this powerbi-data-prep or pbi-squire?
 
 User: "Explain this dashboard"
-Claude: Should I use powerbi-analyst ANALYZE or powerbi-dashboard-analyzer?
+Claude: Should I use pbi-squire ANALYZE or powerbi-dashboard-analyzer?
 ```
 
 ### After (1 Skill)
@@ -525,8 +525,8 @@ Claude: → SUMMARIZE workflow (automatic routing)
 
 ## Open Questions
 
-1. **Agent location:** Should agents move to `skills/powerbi-analyst/agents/` or stay in `agents/core/`?
-   - Recommendation: Keep in `agents/core/` for now, reference from skill
+1. **Agent location:** Should agents move to `skills/pbi-squire/agents/` or stay in `agents/analyst/`?
+   - Recommendation: Keep in `agents/analyst/` for now, reference from skill
 
 2. **Workflow files:** Should each workflow have its own file in `workflows/`?
    - Recommendation: Keep workflow details in SKILL.md for simplicity, extract to files if SKILL.md gets too long

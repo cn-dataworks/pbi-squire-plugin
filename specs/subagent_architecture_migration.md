@@ -9,13 +9,13 @@
 
 ## Executive Summary
 
-The powerbi-analyst-plugin has a sophisticated orchestration system using a **Task Blackboard pattern** (findings.md), but its "agents" are **persona documents** rather than actual Claude Code subagents. This means everything runs in one conversation context, leading to context rot. The reference architecture (claude-sub-agent) demonstrates how to use **actual isolated subagents** with fresh contexts, skill injection, and hooks.
+The pbi-squire-plugin has a sophisticated orchestration system using a **Task Blackboard pattern** (findings.md), but its "agents" are **persona documents** rather than actual Claude Code subagents. This means everything runs in one conversation context, leading to context rot. The reference architecture (claude-sub-agent) demonstrates how to use **actual isolated subagents** with fresh contexts, skill injection, and hooks.
 
 ---
 
 ## Side-by-Side Comparison
 
-| Aspect | Reference Architecture (claude-sub-agent) | Current powerbi-analyst | Gap |
+| Aspect | Reference Architecture (claude-sub-agent) | Current pbi-squire | Gap |
 |--------|-------------------------------------------|------------------------|-----|
 | **Agent Definition** | `.claude/agents/*.md` with frontmatter (actual subagents) | `skills/.../agents/*.md` (persona docs) | **CRITICAL** - Not real subagents |
 | **Context Isolation** | Each subagent has fresh context window | All runs in main conversation | Context rot issue |
@@ -71,7 +71,7 @@ The powerbi-analyst-plugin has a sophisticated orchestration system using a **Ta
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │ Task(powerbi-code-locator)     Task(powerbi-visual-locator) │   │
 │  │ - Fresh context                - Fresh context              │   │
-│  │ - skills: [powerbi-analyst]    - skills: [powerbi-analyst]  │   │
+│  │ - skills: [pbi-squire]    - skills: [pbi-squire]  │   │
 │  │ - tools: [Read, Glob, Grep]    - tools: [Read, Glob, Grep]  │   │
 │  │ - Writes: Section 1.A          - Writes: Section 1.B        │   │
 │  │ - Returns: summary             - Returns: summary           │   │
@@ -81,7 +81,7 @@ The powerbi-analyst-plugin has a sophisticated orchestration system using a **Ta
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │ Task(powerbi-dashboard-planner)                             │   │
 │  │ - Fresh context (no investigation noise)                    │   │
-│  │ - skills: [powerbi-analyst]                                 │   │
+│  │ - skills: [pbi-squire]                                 │   │
 │  │ - Reads: Section 1.A, 1.B from findings.md                  │   │
 │  │ - Writes: Section 2                                         │   │
 │  │ - Returns: summary                                          │   │
@@ -137,17 +137,17 @@ Phase 3: VALIDATION (Quality Gate: configurable)
 | Delivery mechanism | **Plugin agents/ directory** | Auto-registered, centralized updates, clean for users |
 | Orchestrator | **Dedicated orchestrator agent** | Single agent manages phases, spawns subagents, checks gates |
 | Conversion scope | **All 22 agents** | Full context isolation, maximum benefit |
-| Directory structure | **Subdirectories** (agents/core/, agents/pro/) | Clear Core/Pro separation, easy gitignore |
+| Directory structure | **Subdirectories** (agents/analyst/, agents/developer/) | Clear Core/Pro separation, easy gitignore |
 
 ---
 
-## Critical: Core vs Pro Edition Architecture
+## Critical: Core vs Developer Edition Architecture
 
 The plugin uses **two repositories** with cascading branches:
 
 ```
-Public (Core):  cn-dataworks/powerbi-analyst-plugin     → main branch
-Private (Pro):  cn-dataworks/powerbi-analyst-pro-plugin → pro branch
+Public (Analyst):  cn-dataworks/pbi-squire-plugin     → main branch
+Private (Developer):  cn-dataworks/pbi-squire-pro-plugin → pro branch
 
 Changes flow: main → pro (never reverse)
 Pro is a SUPERSET of Core
@@ -186,7 +186,7 @@ Pro is a SUPERSET of Core
 ### Directory Structure with Edition Split
 
 ```
-powerbi-analyst-plugin/
+pbi-squire-plugin/
 ├── agents/                          # Plugin subagents (auto-registered)
 │   ├── core/                        # Core agents (in both repos)
 │   │   ├── powerbi-orchestrator.md
@@ -200,11 +200,11 @@ powerbi-analyst-plugin/
 │       └── powerbi-qa-inspector.md
 │
 ├── skills/
-│   └── powerbi-analyst/
+│   └── pbi-squire/
 │       ├── SKILL.md
-│       └── pro-features.md          # Pro-only (gitignored on main)
+│       └── developer-features.md          # Developer-only (gitignored on main)
 │
-└── .gitignore                       # On main: ignores agents/pro/*
+└── .gitignore                       # On main: ignores agents/developer/*
 ```
 
 ---
@@ -247,7 +247,7 @@ PHASE 5: TESTING (Optional, Pro only)
 
 ### Current Format (Persona Doc)
 
-Location: `skills/powerbi-analyst/agents/powerbi-visual-locator.md`
+Location: `skills/pbi-squire/agents/powerbi-visual-locator.md`
 
 ```markdown
 ---
@@ -263,7 +263,7 @@ color: purple
 
 ### Target Format (Actual Subagent)
 
-Location: `agents/core/powerbi-visual-locator.md`
+Location: `agents/analyst/powerbi-visual-locator.md`
 
 ```markdown
 ---
@@ -272,7 +272,7 @@ description: Locate and document PBIR visuals. Use when investigating visual cha
 model: sonnet
 tools: Read, Glob, Grep
 skills:
-  - powerbi-analyst
+  - pbi-squire
 color: purple
 ---
 
@@ -295,7 +295,7 @@ Before returning:
 ### Key Changes
 
 1. Add `tools:` field (explicit tool access)
-2. Add `skills:` field (injects powerbi-analyst knowledge)
+2. Add `skills:` field (injects pbi-squire knowledge)
 3. Remove `thinking:` (not needed for subagents)
 4. Condense instructions (skill provides base knowledge)
 5. Add clear input/output contract
@@ -304,7 +304,7 @@ Before returning:
 
 ## Orchestrator Agent Specification
 
-**File:** `agents/core/powerbi-orchestrator.md`
+**File:** `agents/analyst/powerbi-orchestrator.md`
 
 ```markdown
 ---
@@ -313,7 +313,7 @@ description: Orchestrate Power BI workflows. Use for evaluate, create, implement
 model: sonnet
 tools: Read, Write, Edit, Task, Glob, Grep, Bash
 skills:
-  - powerbi-analyst
+  - pbi-squire
 color: blue
 ---
 
@@ -332,7 +332,7 @@ specialized subagents and coordinating their work through a shared findings.md f
 ## Edition Detection
 
 On startup, check for Pro agents:
-1. Check if `agents/pro/` directory exists and has files
+1. Check if `agents/developer/` directory exists and has files
 2. OR check for Pro indicators in skill config
 3. Set `edition = "pro"` or `edition = "core"`
 
@@ -457,15 +457,15 @@ After each phase, verify:
 ### Migration Order by Branch
 
 **Step 1: Core agents (main branch)**
-1. Create `agents/core/` directory
+1. Create `agents/analyst/` directory
 2. Convert 20 Core agents + create orchestrator
 3. Update SKILL.md to delegate to orchestrator
-4. Add `agents/pro/` to `.gitignore`
+4. Add `agents/developer/` to `.gitignore`
 5. Push to `origin/main`
 
 **Step 2: Cascade to Pro branch**
 1. Merge main into pro: `git checkout pro && git merge main`
-2. Create `agents/pro/` with 3 Pro agents
+2. Create `agents/developer/` with 3 Pro agents
 3. Update orchestrator with Pro conditionals
 4. Push to `pro-origin/main`
 
@@ -477,10 +477,10 @@ After each phase, verify:
 
 | File | Purpose |
 |------|---------|
-| `agents/core/powerbi-orchestrator.md` | Central orchestrator (edition-aware) |
-| `agents/core/powerbi-code-locator.md` | Converted subagent |
-| `agents/core/powerbi-visual-locator.md` | Converted subagent |
-| `agents/core/...` | (all 20 core agents) |
+| `agents/analyst/powerbi-orchestrator.md` | Central orchestrator (edition-aware) |
+| `agents/analyst/powerbi-code-locator.md` | Converted subagent |
+| `agents/analyst/powerbi-visual-locator.md` | Converted subagent |
+| `agents/analyst/...` | (all 20 core agents) |
 | `tools/hooks/on-subagent-start.ps1` | Hook script |
 | `tools/hooks/on-subagent-stop.ps1` | Hook script |
 
@@ -488,24 +488,24 @@ After each phase, verify:
 
 | File | Purpose |
 |------|---------|
-| `agents/pro/powerbi-playwright-tester.md` | Browser testing subagent |
-| `agents/pro/powerbi-ux-reviewer.md` | UX critique subagent |
-| `agents/pro/powerbi-qa-inspector.md` | QA inspection subagent |
+| `agents/developer/powerbi-playwright-tester.md` | Browser testing subagent |
+| `agents/developer/powerbi-ux-reviewer.md` | UX critique subagent |
+| `agents/developer/powerbi-qa-inspector.md` | QA inspection subagent |
 
 ### Modified Files
 
 | File | Changes |
 |------|---------|
-| `skills/powerbi-analyst/SKILL.md` | Delegate to orchestrator |
-| `skills/powerbi-analyst/workflows/*.md` | Simplify - orchestrator handles phases |
+| `skills/pbi-squire/SKILL.md` | Delegate to orchestrator |
+| `skills/pbi-squire/workflows/*.md` | Simplify - orchestrator handles phases |
 | `.claude-plugin/plugin.json` | Add agents directory reference |
-| `.gitignore` (main only) | Add `agents/pro/*` |
+| `.gitignore` (main only) | Add `agents/developer/*` |
 
 ### Deprecated Files
 
 | File | Status |
 |------|--------|
-| `skills/powerbi-analyst/agents/*.md` | Move to `/agents/core/` or `/agents/pro/` |
+| `skills/pbi-squire/agents/*.md` | Move to `/agents/analyst/` or `/agents/developer/` |
 
 ---
 
@@ -548,7 +548,7 @@ After each phase, verify:
 ## Expected Benefits
 
 1. **Context isolation** - Each subagent gets fresh context (no rot)
-2. **Skill injection** - powerbi-analyst knowledge loaded per subagent
+2. **Skill injection** - pbi-squire knowledge loaded per subagent
 3. **Parallel execution** - Investigation/validation agents run concurrently
 4. **Edition-aware** - Orchestrator adapts to Core vs Pro capabilities
 5. **Maintainability** - Smaller, focused agent files; centralized orchestration

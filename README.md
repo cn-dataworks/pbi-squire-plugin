@@ -1,4 +1,4 @@
-# Power BI Analyst Plugin
+# PBI Squire Plugin
 
 Claude Code plugin for Power BI project analysis, modification, and deployment.
 
@@ -9,8 +9,8 @@ Claude Code plugin for Power BI project analysis, modification, and deployment.
 Run these commands inside Claude Code:
 
 ```
-/plugin marketplace add https://github.com/cn-dataworks/powerbi-analyst-plugin
-/plugin install powerbi-analyst
+/plugin marketplace add https://github.com/cn-dataworks/pbi-squire-plugin
+/plugin install pbi-squire
 ```
 
 That's it! The plugin is now available in all your projects.
@@ -21,10 +21,10 @@ If you plan to contribute or need offline access:
 
 ```powershell
 # 1. Clone the repository
-git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+git clone https://github.com/cn-dataworks/pbi-squire-plugin.git "$HOME\.claude\plugins\custom\pbi-squire"
 
 # 2. Run installer
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+cd "$HOME\.claude\plugins\custom\pbi-squire"
 .\install-plugin.ps1
 ```
 
@@ -34,15 +34,15 @@ In each Power BI project, run the bootstrap tool to configure project-specific s
 
 ```powershell
 cd "C:\path\to\your\powerbi-project"
-& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+& "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
 ```
 
 This creates:
 - `CLAUDE.md` - Project instructions
 - `.claude/settings.json` - Permissions
-- `.claude/powerbi-analyst.json` - Skill configuration
+- `.claude/pbi-squire.json` - Skill configuration
 
-**For Pro edition:** Also copies Python analysis tools to `.claude/tools/`
+**For Developer Edition:** Also copies Python analysis tools to `.claude/tools/`
 
 See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 
@@ -60,7 +60,7 @@ See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 2. Search "Power BI Modeling MCP" → Install (by Analysis Services)
 3. Re-run installer:
    ```powershell
-   cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+   cd "$HOME\.claude\plugins\custom\pbi-squire"
    .\install-plugin.ps1
    ```
 
@@ -71,7 +71,7 @@ See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 The plugin installs **once** to a central location on your computer:
 
 ```
-C:\Users\YourName\.claude\plugins\custom\powerbi-analyst\
+C:\Users\YourName\.claude\plugins\custom\pbi-squire\
 ```
 
 After installation, it's automatically available in **every project** you open with Claude Code. No per-project setup required.
@@ -83,7 +83,7 @@ After installation, it's automatically available in **every project** you open w
 ```json
 {
   "plugins": {
-    "powerbi-analyst": {
+    "pbi-squire": {
       "enabled": false
     }
   }
@@ -95,8 +95,8 @@ After installation, it's automatically available in **every project** you open w
 ```json
 {
   "plugins": {
-    "powerbi-analyst": {
-      "path": "C:\\Users\\YourName\\.claude\\plugins\\custom\\powerbi-analyst"
+    "pbi-squire": {
+      "path": "C:\\Users\\YourName\\.claude\\plugins\\custom\\pbi-squire"
     }
   }
 }
@@ -130,7 +130,7 @@ Customize by editing `.claude/settings.json`. See [INSTALL.md](INSTALL.md#auto-a
 
 This plugin provides one comprehensive skill:
 
-**`powerbi-analyst`** - Complete Power BI development assistant
+**`pbi-squire`** - Complete Power BI development assistant
 
 | Capability | Description |
 |------------|-------------|
@@ -240,24 +240,24 @@ Templates are used automatically when you create visuals via `/create-pbi-artifa
 **If you used Option A (Direct Install):**
 
 ```
-/plugin update powerbi-analyst
+/plugin update pbi-squire
 ```
 
 **If you used Option B (Git Clone):**
 
 ```powershell
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
-git pull; if ($?) { claude -c "/plugin update powerbi-analyst" }
+cd "$HOME\.claude\plugins\custom\pbi-squire"
+git pull; if ($?) { claude -c "/plugin update pbi-squire" }
 ```
 
 ## Requirements
 
-### Core Edition (Default)
+### Analyst Edition (Default)
 - Claude Code (latest version)
 - Power BI Desktop (for testing)
 - **Recommended:** Power BI Modeling MCP (for live validation)
 
-### Pro Edition (Additional)
+### Developer Edition (Additional)
 - Python 3.10+ (for advanced analysis tools)
 - Power BI Service access (for deployment)
 
@@ -279,8 +279,8 @@ The plugin uses a **tool-first fallback pattern** to optimize performance while 
 
 ```
 Agent checks: Does .claude/tools/tmdl_format_validator.py exist?
-  ├─ Yes (Pro) → Run Python tool (fast, deterministic)
-  └─ No (Core) → Claude validates against tmdl_partition_structure.md (slower, same result)
+  ├─ Yes (Developer) → Run Python tool (fast, deterministic)
+  └─ No (Analyst) → Claude validates against tmdl_partition_structure.md (slower, same result)
 ```
 
 **Example tasks affected:**
@@ -291,25 +291,25 @@ Agent checks: Does .claude/tools/tmdl_format_validator.py exist?
 | Sensitive column detection | `sensitive_column_detector.py` | Claude + `anonymization-patterns.md` |
 | M code pattern analysis | `m_pattern_analyzer.py` | Claude reads and analyzes TMDL directly |
 
-**Pro tools** are available from a private repository. Contact the maintainers for access. Core edition is fully functional without them.
+**Pro tools** are available from a private repository. Contact the maintainers for access. Analyst Edition is fully functional without them.
 
 ## Structure
 
 ```
-powerbi-analyst-plugin/
+pbi-squire-plugin/
 ├── agents/                        # Leaf subagent definitions
 │   ├── core/                      # Core agents (23 agents, all editions)
 │   │   ├── powerbi-code-locator.md    # Finds DAX/M code
 │   │   ├── powerbi-visual-locator.md  # Finds PBIR visuals
 │   │   ├── powerbi-dax-specialist.md  # DAX expertise
 │   │   └── ...                        # 20 more specialists
-│   └── pro/                       # Pro-only agents (3 agents)
+│   └── pro/                       # Developer-only agents (3 agents)
 │       ├── powerbi-playwright-tester.md
 │       ├── powerbi-ux-reviewer.md
 │       └── powerbi-qa-inspector.md
 │
 ├── skills/
-│   └── powerbi-analyst/           # Main skill definition
+│   └── pbi-squire/           # Main skill definition
 │       ├── SKILL.md               # Skill routing & capabilities
 │       ├── workflows/             # Detailed workflow definitions
 │       │   ├── evaluate-pbi-project-file.md
@@ -324,7 +324,7 @@ powerbi-analyst-plugin/
 ├── tools/                         # Bootstrap & utilities
 │   ├── bootstrap.ps1              # Windows project setup
 │   ├── bootstrap.sh               # macOS/Linux project setup
-│   └── core/                      # Python tools (Pro edition)
+│   └── core/                      # Python tools (Developer Edition)
 │
 └── .mcp.json                      # Playwright MCP config
 ```
@@ -336,7 +336,7 @@ powerbi-analyst-plugin/
 | `SKILL.md` | Routes requests to workflows, defines triggers |
 | `workflows/*.md` | Detailed step-by-step workflow logic (executed by main thread) |
 | `references/orchestration-pattern.md` | Routing logic and quality gate reference |
-| `agents/core/*.md` | Leaf subagent definitions (do not spawn other subagents) |
+| `agents/analyst/*.md` | Leaf subagent definitions (do not spawn other subagents) |
 | `findings.md` (runtime) | Shared document for agent coordination |
 
 ## License
@@ -345,4 +345,4 @@ Proprietary - All rights reserved.
 
 ## Support
 
-For issues: [GitHub Issues](https://github.com/cn-dataworks/powerbi-analyst-plugin/issues)
+For issues: [GitHub Issues](https://github.com/cn-dataworks/pbi-squire-plugin/issues)

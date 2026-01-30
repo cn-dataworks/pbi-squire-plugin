@@ -1,4 +1,4 @@
-# Installing the Power BI Analyst Plugin
+# Installing the PBI Squire Plugin
 
 This plugin provides Power BI development assistance including DAX/M code generation, dashboard analysis, and PBIR visual editing.
 
@@ -11,8 +11,8 @@ This plugin provides Power BI development assistance including DAX/M code genera
 Run these commands inside Claude Code:
 
 ```
-/plugin marketplace add https://github.com/cn-dataworks/powerbi-analyst-plugin
-/plugin install powerbi-analyst
+/plugin marketplace add https://github.com/cn-dataworks/pbi-squire-plugin
+/plugin install pbi-squire
 ```
 
 That's it! The plugin is now available in all your projects.
@@ -23,10 +23,10 @@ If you plan to contribute, need offline access, or want more control:
 
 ```powershell
 # 1. Clone the repository
-git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+git clone https://github.com/cn-dataworks/pbi-squire-plugin.git "$HOME\.claude\plugins\custom\pbi-squire"
 
 # 2. Run installer (registers as local marketplace + detects MCP)
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+cd "$HOME\.claude\plugins\custom\pbi-squire"
 .\install-plugin.ps1
 ```
 
@@ -44,7 +44,7 @@ claude
 /plugin list
 ```
 
-You should see `powerbi-analyst` under **cn-dataworks-plugins**.
+You should see `pbi-squire` under **cn-dataworks-plugins**.
 
 ---
 
@@ -61,7 +61,7 @@ to use it with.
 
 Why? The plugin requires:
   - A CLAUDE.md file referencing the plugin
-  - Skill configuration in .claude/powerbi-analyst.json
+  - Skill configuration in .claude/pbi-squire.json
   - [Pro only] Python tools copied to your project
 
 Without bootstrap, the plugin may not activate properly.
@@ -70,12 +70,12 @@ NEXT STEP: Run bootstrap in your Power BI project folder
 ─────────────────────────────────────────────────────────
 
   cd "C:\path\to\your\powerbi-project"
-  & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+  & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
 
 This only takes a few seconds and enables full plugin functionality.
 
-NOTE: Core edition does NOT require Python. The bootstrap creates
-configuration files only. Pro edition additionally copies Python tools.
+NOTE: Analyst Edition does NOT require Python. The bootstrap creates
+configuration files only. Developer Edition additionally copies Python tools.
 ```
 
 ### Quick Start Checklist
@@ -109,7 +109,7 @@ After installing the plugin, run bootstrap in each Power BI project to copy the 
 
 ```powershell
 cd "C:\path\to\your\powerbi-project"
-& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+& "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
 ```
 
 See [Project Bootstrap](#project-bootstrap-first-run) section below for details.
@@ -135,7 +135,7 @@ See [Project Bootstrap](#project-bootstrap-first-run) section below for details.
 4. Install the extension by **Analysis Services**
 5. Re-run the plugin installer to detect it:
    ```powershell
-   cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+   cd "$HOME\.claude\plugins\custom\pbi-squire"
    .\install-plugin.ps1
    ```
 
@@ -188,7 +188,7 @@ Or if MCP is not installed:
    To enable full features:
        1. Install MCP: https://github.com/microsoft/powerbi-modeling-mcp
        2. Re-run the installer from the plugin folder:
-          cd $HOME\.claude\plugins\custom\powerbi-analyst
+          cd $HOME\.claude\plugins\custom\pbi-squire
           .\install-plugin.ps1
 ```
 
@@ -209,7 +209,7 @@ If you install Power BI Modeling MCP after the initial plugin installation:
 
 ```powershell
 # Navigate to plugin folder and re-run installer
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+cd "$HOME\.claude\plugins\custom\pbi-squire"
 .\install-plugin.ps1
 ```
 
@@ -223,7 +223,7 @@ The installer will:
 If you want to skip MCP auto-configuration:
 
 ```powershell
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+cd "$HOME\.claude\plugins\custom\pbi-squire"
 .\install-plugin.ps1 -SkipMcpConfig
 ```
 
@@ -233,8 +233,8 @@ cd "$HOME\.claude\plugins\custom\powerbi-analyst"
 
 When you first use the plugin in a Power BI project, bootstrap creates the configuration files needed for the skill to activate. This is called "bootstrapping."
 
-**Core edition:** Creates configuration files only (no Python)
-**Pro edition:** Creates configuration files + copies Python analysis tools
+**Analyst Edition:** Creates configuration files only (no Python)
+**Developer Edition:** Creates configuration files + copies Python analysis tools
 
 ### Automatic Bootstrap
 
@@ -242,39 +242,39 @@ Run the bootstrap script from your project directory:
 
 ```powershell
 # Windows (from your Power BI project folder)
-& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+& "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
 ```
 
 ```bash
 # macOS/Linux
-bash "$HOME/.claude/plugins/custom/powerbi-analyst/tools/bootstrap.sh"
+bash "$HOME/.claude/plugins/custom/pbi-squire/tools/bootstrap.sh"
 ```
 
 ### What Gets Created
 
-**Core Edition:**
+**Analyst Edition:**
 ```
 YourProject/
 ├── CLAUDE.md                        ← Project instructions for Claude
 ├── .claude/
-│   ├── powerbi-analyst.json         ← Skill configuration
+│   ├── pbi-squire.json         ← Skill configuration
 │   ├── settings.json                ← Auto-approve permissions
 │   ├── tasks/                       ← Task findings files
 │   ├── tools/
-│   │   └── powerbi-analyst/
+│   │   └── pbi-squire/
 │   │       └── version.txt          ← Version tracking only
 │   └── helpers/
-│       └── powerbi-analyst/
+│       └── pbi-squire/
 │           └── pbi-url-filter-encoder.md
 └── YourProject.pbip
 ```
 
-**Pro Edition (additional):**
+**Developer Edition (additional):**
 ```
 YourProject/
 ├── .claude/
 │   ├── tools/
-│   │   └── powerbi-analyst/         ← Plugin tools (Pro only)
+│   │   └── pbi-squire/         ← Plugin tools (Pro only)
 │   │       ├── token_analyzer.py
 │   │       ├── tmdl_format_validator.py
 │   │       ├── version.txt
@@ -285,18 +285,18 @@ YourProject/
 
 ### CLAUDE.md (Project Instructions)
 
-Bootstrap creates or updates a `CLAUDE.md` file in your project root. This file tells Claude Code to use the Power BI Analyst skill when working with Power BI files.
+Bootstrap creates or updates a `CLAUDE.md` file in your project root. This file tells Claude Code to use the PBI Squire skill when working with Power BI files.
 
 **What gets added:**
 
 ```markdown
 # CLAUDE.md
 
-This project uses the **Power BI Analyst Plugin**.
+This project uses the **PBI Squire Plugin**.
 
 ## When to Use
 
-Invoke the `powerbi-analyst` skill when working with:
+Invoke the `pbi-squire` skill when working with:
 - Power BI files (*.pbip, *.pbix)
 - TMDL files (semantic model definitions)
 - PBIR files (report visuals)
@@ -389,10 +389,10 @@ The bootstrap script tracks versions so you know when updates are available:
 
 ```powershell
 # Check if update needed (exit code 1 = update available)
-& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1" -CheckOnly
+& "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1" -CheckOnly
 
 # Force reinstall even if current
-& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1" -Force
+& "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1" -Force
 ```
 
 ### When to Re-run Bootstrap
@@ -423,7 +423,7 @@ When you run the installer, it:
 
 1. **Clones the plugin** to a central location:
    ```
-   C:\Users\YourName\.claude\plugins\custom\powerbi-analyst\
+   C:\Users\YourName\.claude\plugins\custom\pbi-squire\
    ```
 
 2. **Registers it globally** with Claude Code
@@ -447,7 +447,7 @@ No per-project setup required. The plugin is stored **once** in your user profil
 When you update the plugin:
 
 ```powershell
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+cd "$HOME\.claude\plugins\custom\pbi-squire"
 git pull
 ```
 
@@ -466,7 +466,7 @@ Create `.claude/settings.json` in the project root:
 ```json
 {
   "plugins": {
-    "powerbi-analyst": {
+    "pbi-squire": {
       "enabled": false
     }
   }
@@ -479,15 +479,15 @@ If you prefer opt-in instead of opt-out:
 
 1. **Skip the global registration** - just clone, don't run `/plugin install`:
    ```powershell
-   git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+   git clone https://github.com/cn-dataworks/pbi-squire-plugin.git "$HOME\.claude\plugins\custom\pbi-squire"
    ```
 
 2. **Add to specific projects** - in each project's `.claude/settings.json`:
    ```json
    {
      "plugins": {
-       "powerbi-analyst": {
-         "path": "C:\\Users\\YourName\\.claude\\plugins\\custom\\powerbi-analyst"
+       "pbi-squire": {
+         "path": "C:\\Users\\YourName\\.claude\\plugins\\custom\\pbi-squire"
        }
      }
    }
@@ -504,7 +504,7 @@ C:\Projects\
 │
 ├── WebApp\                         ← Non-Power BI project
 │   ├── .claude\
-│   │   └── settings.json           ← {"plugins": {"powerbi-analyst": {"enabled": false}}}
+│   │   └── settings.json           ← {"plugins": {"pbi-squire": {"enabled": false}}}
 │   └── src\
 │
 └── FinanceDashboard\               ← Power BI project
@@ -534,8 +534,8 @@ For teams, you have two options:
 Each team member runs inside Claude Code:
 
 ```
-/plugin marketplace add https://github.com/cn-dataworks/powerbi-analyst-plugin
-/plugin install powerbi-analyst
+/plugin marketplace add https://github.com/cn-dataworks/pbi-squire-plugin
+/plugin install pbi-squire
 ```
 
 ### Option 2: Git Clone (For Contributors)
@@ -543,8 +543,8 @@ Each team member runs inside Claude Code:
 If team members need to contribute or need offline access:
 
 ```powershell
-git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+git clone https://github.com/cn-dataworks/pbi-squire-plugin.git "$HOME\.claude\plugins\custom\pbi-squire"
+cd "$HOME\.claude\plugins\custom\pbi-squire"
 .\install-plugin.ps1
 ```
 
@@ -555,8 +555,8 @@ For project-specific installation, add to your project's `.claude/settings.json`
 ```json
 {
   "plugins": {
-    "powerbi-analyst": {
-      "path": "C:\\Users\\USERNAME\\.claude\\plugins\\custom\\powerbi-analyst"
+    "pbi-squire": {
+      "path": "C:\\Users\\USERNAME\\.claude\\plugins\\custom\\pbi-squire"
     }
   }
 }
@@ -572,14 +572,14 @@ Each team member still needs to clone the repo first.
 
 Inside Claude Code:
 ```
-/plugin update powerbi-analyst
+/plugin update pbi-squire
 ```
 
 ### If You Used Option B (Git Clone)
 
 ```powershell
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
-git pull; if ($?) { claude -c "/plugin update powerbi-analyst" }
+cd "$HOME\.claude\plugins\custom\pbi-squire"
+git pull; if ($?) { claude -c "/plugin update pbi-squire" }
 ```
 
 ### Update Project Tools
@@ -588,7 +588,7 @@ After updating, re-run bootstrap in your projects to get updated tools:
 
 ```powershell
 cd "C:\path\to\your\powerbi-project"
-& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+& "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
 ```
 
 ### Re-detect MCP (if newly installed)
@@ -596,7 +596,7 @@ cd "C:\path\to\your\powerbi-project"
 If you installed MCP after the initial setup:
 
 ```powershell
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+cd "$HOME\.claude\plugins\custom\pbi-squire"
 .\install-plugin.ps1
 ```
 
@@ -609,13 +609,13 @@ Test that the plugin is working:
 1. **Navigate to a Power BI project folder** (containing .pbip file)
 2. **Run bootstrap first** (if not already done):
    ```powershell
-   & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+   & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
    ```
 3. **Open Claude Code** in that folder:
    ```powershell
    claude
    ```
-4. **Verify plugin is listed**: `/plugin list` - you should see `powerbi-analyst`
+4. **Verify plugin is listed**: `/plugin list` - you should see `pbi-squire`
 5. **Test the skill**: Ask "What Power BI workflows can you help me with?"
 6. **Or try a command**: `/evaluate-pbi-project-file`
 
@@ -637,12 +637,12 @@ The most common cause is **missing bootstrap**. The plugin is installed globally
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
 Look for these files:
-  ✓ .claude/powerbi-analyst.json
-  ✓ .claude/tools/powerbi-analyst/
+  ✓ .claude/pbi-squire.json
+  ✓ .claude/tools/pbi-squire/
   ✓ CLAUDE.md (with plugin reference)
 
 If any are missing, run:
-  & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+  & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
 ```
 
 ---
@@ -653,7 +653,7 @@ If any are missing, run:
 
 | Skill | Purpose |
 |-------|---------|
-| `powerbi-analyst` | Main skill - 7 workflows for DAX, TMDL, PBIR editing |
+| `pbi-squire` | Main skill - 7 workflows for DAX, TMDL, PBIR editing |
 | `power-bi-assistant` | Guides users to the right workflow |
 | `powerbi-dashboard-analyzer` | Analyzes dashboards in business language |
 | `powerbi-data-prep` | M code and Power Query transformations |
@@ -677,15 +677,15 @@ Specialized agents for DAX, M Code, PBIR editing, validation, and more.
 
 ## Requirements
 
-### Core Edition (Default) - Simple Install
+### Analyst Edition (Default) - Simple Install
 - **Claude Code** (latest version)
 - **Power BI Project** in PBIP format (`.pbip` file with `.SemanticModel/` and `.Report/` folders)
 - **Power BI Desktop** - For testing and (with MCP) live validation
 - **Recommended: Power BI Modeling MCP** - For DAX validation before writing
 
-> **Note:** Core edition does NOT require Python. It uses MCP + Claude-native validation.
+> **Note:** Analyst Edition does NOT require Python. It uses MCP + Claude-native validation.
 
-### Pro Edition (Additional Requirements)
+### Developer Edition (Additional Requirements)
 - **Python 3.10+** - Required for advanced analysis tools
 - **Git** (for cloning the Pro repository)
 - **Power BI Service access** - For deployment features
@@ -715,7 +715,7 @@ If you see `terminal prompts disabled`:
 gh auth login
 
 # Then try cloning again
-git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.claude\plugins\custom\powerbi-analyst"
+git clone https://github.com/cn-dataworks/pbi-squire-plugin.git "$HOME\.claude\plugins\custom\pbi-squire"
 ```
 
 ### Plugin not showing in /plugin list
@@ -723,14 +723,14 @@ git clone https://github.com/cn-dataworks/powerbi-analyst-plugin.git "$HOME\.cla
 Make sure you ran the installer script:
 
 ```powershell
-cd "$HOME\.claude\plugins\custom\powerbi-analyst"
+cd "$HOME\.claude\plugins\custom\pbi-squire"
 .\install-plugin.ps1
 ```
 
 Or manually register inside Claude Code:
 ```
-/plugin marketplace add ~/.claude/plugins/custom/powerbi-analyst
-/plugin install powerbi-analyst
+/plugin marketplace add ~/.claude/plugins/custom/pbi-squire
+/plugin install pbi-squire
 ```
 
 ### Skills not activating
@@ -741,13 +741,13 @@ The plugin is installed globally, but each project needs bootstrap to work prope
 
 ```powershell
 cd "C:\path\to\your\project"
-& "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+& "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
 ```
 
 **Also check:**
 - Project has a `.pbip` file or `.SemanticModel/` folder (triggers skill activation)
-- `CLAUDE.md` exists and references the Power BI Analyst plugin
-- `.claude/powerbi-analyst.json` exists in your project
+- `CLAUDE.md` exists and references the PBI Squire plugin
+- `.claude/pbi-squire.json` exists in your project
 
 ### MCP not detected
 
@@ -757,14 +757,14 @@ To enable full features:
 1. Install Power BI Modeling MCP from: https://github.com/microsoft/powerbi-modeling-mcp
 2. Re-run bootstrap in your project:
    ```powershell
-   & "$HOME\.claude\plugins\custom\powerbi-analyst\tools\bootstrap.ps1"
+   & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
    ```
 
 ### Need more help?
 
-- See `skills/powerbi-analyst/references/troubleshooting-faq.md`
-- See `skills/powerbi-analyst/references/getting-started.md`
-- [Open an issue](https://github.com/cn-dataworks/powerbi-analyst-plugin/issues)
+- See `skills/pbi-squire/references/troubleshooting-faq.md`
+- See `skills/pbi-squire/references/getting-started.md`
+- [Open an issue](https://github.com/cn-dataworks/pbi-squire-plugin/issues)
 
 ---
 
@@ -772,10 +772,10 @@ To enable full features:
 
 Inside Claude Code:
 ```
-/plugin uninstall powerbi-analyst
+/plugin uninstall pbi-squire
 ```
 
 Then delete the files:
 ```powershell
-Remove-Item -Recurse -Force "$HOME\.claude\plugins\custom\powerbi-analyst"
+Remove-Item -Recurse -Force "$HOME\.claude\plugins\custom\pbi-squire"
 ```

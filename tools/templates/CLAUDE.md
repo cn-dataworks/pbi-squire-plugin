@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-This project uses the **Power BI Analyst Plugin**.
+This project uses the **PBI Squire Plugin**.
 
 ## When to Use
 
-Invoke the `powerbi-analyst` skill when working with:
+Invoke the `pbi-squire` skill when working with:
 - Power BI files (*.pbip, *.pbix)
 - TMDL files (semantic model definitions)
 - PBIR files (report visuals)

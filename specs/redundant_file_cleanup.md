@@ -14,12 +14,12 @@ The plugin has significant file sprawl with duplicate and potentially obsolete f
 
 ### Current State
 ```
-agents/core/           (23 files) ← AUTHORITATIVE (plugin.json uses this)
-agents/pro/            (3 files)  ← AUTHORITATIVE (plugin.json uses this)
-skills/powerbi-analyst/agents/  (22 .md files + 1 nul) ← STALE COPIES (not registered)
+agents/analyst/           (23 files) ← AUTHORITATIVE (plugin.json uses this)
+agents/developer/            (3 files)  ← AUTHORITATIVE (plugin.json uses this)
+skills/pbi-squire/agents/  (22 .md files + 1 nul) ← STALE COPIES (not registered)
 ```
 
-The `plugin.json` references `agents/core/` and `agents/pro/`, making `skills/powerbi-analyst/agents/` **orphaned/obsolete**.
+The `plugin.json` references `agents/analyst/` and `agents/developer/`, making `skills/pbi-squire/agents/` **orphaned/obsolete**.
 
 ### Analysis (2025-01-29)
 
@@ -27,7 +27,7 @@ Compared multiple agents in both locations:
 
 #### Agent 1: `powerbi-dax-specialist.md`
 
-| Aspect | `agents/core/` (7.2KB) | `skills/.../agents/` (10.6KB) |
+| Aspect | `agents/analyst/` (7.2KB) | `skills/.../agents/` (10.6KB) |
 |--------|------------------------|-------------------------------|
 | Format | Clean YAML frontmatter with `tools:` and `skills:` | Verbose YAML with `thinking:` config |
 | Structure | Step-based workflow (5 steps) | Same steps but more prose |
@@ -35,18 +35,18 @@ Compared multiple agents in both locations:
 
 #### Agent 2: `powerbi-code-understander.md`
 
-| Aspect | `agents/core/` (4.2KB) | `skills/.../agents/` (8.8KB) |
+| Aspect | `agents/analyst/` (4.2KB) | `skills/.../agents/` (8.8KB) |
 |--------|------------------------|-------------------------------|
 | Purpose | Explain DAX/M code in business language | Same purpose but different scope |
 | Format | Clean YAML with `tools:` list | No YAML frontmatter (markdown only) |
 | Focus | General code explanation | Merge workflow business impact analysis |
 | Output | Business explanation to findings.md | JSON with `business_impact` field |
 
-**Note:** These agents have **diverged in purpose**. The `agents/core/` version is a general code explainer, while `skills/.../agents/` version is specialized for merge workflow business impact. The core version is the registered, authoritative one.
+**Note:** These agents have **diverged in purpose**. The `agents/analyst/` version is a general code explainer, while `skills/.../agents/` version is specialized for merge workflow business impact. The core version is the registered, authoritative one.
 
 #### Agent 3: `powerbi-visual-locator.md`
 
-| Aspect | `agents/core/` (8.1KB) | `skills/.../agents/` (8.5KB) |
+| Aspect | `agents/analyst/` (8.1KB) | `skills/.../agents/` (8.5KB) |
 |--------|------------------------|-------------------------------|
 | Format | Clean YAML with `tools:` and `skills:` | Verbose YAML with `thinking:` and examples |
 | Workflow | Mandatory 4-step workflow | Same 3-step workflow with more prose |
@@ -55,7 +55,7 @@ Compared multiple agents in both locations:
 
 #### Agent 4: `powerbi-pattern-discovery.md`
 
-| Aspect | `agents/core/` (9.3KB) | `skills/.../agents/` (13.5KB) |
+| Aspect | `agents/analyst/` (9.3KB) | `skills/.../agents/` (13.5KB) |
 |--------|------------------------|-------------------------------|
 | Format | Clean YAML with `tools:` and `skills:` | Verbose YAML with `thinking:` and examples |
 | MCP support | Not mentioned | Detailed MCP mode instructions |
@@ -66,32 +66,32 @@ Compared multiple agents in both locations:
 
 #### Summary Table
 
-| Agent | `agents/core/` | `skills/.../agents/` | Verdict |
+| Agent | `agents/analyst/` | `skills/.../agents/` | Verdict |
 |-------|----------------|----------------------|---------|
 | powerbi-dax-specialist | 7.2KB, lean | 10.6KB, verbose | Core is authoritative |
 | powerbi-code-understander | 4.2KB, general | 8.8KB, merge-specific | Core is authoritative (different purpose) |
 | powerbi-visual-locator | 8.1KB, with tracing | 8.5KB, no tracing | Core is authoritative |
 | powerbi-pattern-discovery | 9.3KB, simple | 13.5KB, MCP details | Core is authoritative |
 
-**Conclusion:** The `agents/core/` versions are consistently:
+**Conclusion:** The `agents/analyst/` versions are consistently:
 - Leaner and more focused
 - Use clean YAML frontmatter with `tools:` and `skills:` arrays
 - Include tracing output patterns
 - Aligned with current workflow section numbering
 - Registered in `plugin.json`
 
-The `skills/powerbi-analyst/agents/` folder contains older, verbose drafts that:
+The `skills/pbi-squire/agents/` folder contains older, verbose drafts that:
 - Often include `thinking:` configuration (not used in production)
 - Have outdated section numbering
 - Are NOT registered in `plugin.json`
 - In some cases have diverged in purpose
 
 ### Recommendation
-**DELETE** the entire `skills/powerbi-analyst/agents/` directory.
+**DELETE** the entire `skills/pbi-squire/agents/` directory.
 
 **Files to delete:**
-- `skills/powerbi-analyst/agents/*.md` (22 files)
-- `skills/powerbi-analyst/agents/nul` (empty artifact file)
+- `skills/pbi-squire/agents/*.md` (22 files)
+- `skills/pbi-squire/agents/nul` (empty artifact file)
 
 ---
 
@@ -156,9 +156,9 @@ Compared content coverage:
 | `setup-data-anonymization.md` | 20KB | CORE - referenced in SKILL.md |
 | `summarize-pbi-dashboard.md` | 19KB | CORE - referenced in SKILL.md |
 | `create-pbi-page-specs.md` | 27KB | CORE - referenced in SKILL.md |
-| `harvest-templates.md` | 3KB | PRO - documented in pro-features.md |
-| `qa-loop-pbi-dashboard.md` | 16KB | PRO - documented in pro-features.md |
-| `review-ux-pbi-dashboard.md` | 16KB | PRO - documented in pro-features.md |
+| `harvest-templates.md` | 3KB | PRO - documented in developer-features.md |
+| `qa-loop-pbi-dashboard.md` | 16KB | PRO - documented in developer-features.md |
+| `review-ux-pbi-dashboard.md` | 16KB | PRO - documented in developer-features.md |
 
 ### Recommendation
 **KEEP ALL 10 WORKFLOWS** - They all serve documented purposes (7 Core + 3 Pro).
@@ -207,15 +207,15 @@ Compared content coverage:
 
 ### Phase 1: Delete Obsolete Agents Folder
 ```bash
-rm -rf skills/powerbi-analyst/agents/
+rm -rf skills/pbi-squire/agents/
 ```
 **Impact**: Removes 22 obsolete agent files + 1 empty `nul` file (stale copies)
 
 ### Phase 2: Delete Duplicate/Obsolete References
 ```bash
-rm skills/powerbi-analyst/references/anonymization_patterns.md
-rm skills/powerbi-analyst/references/multi-step-workflows.md
-rm skills/powerbi-analyst/references/workflow-decision-tree.md
+rm skills/pbi-squire/references/anonymization_patterns.md
+rm skills/pbi-squire/references/multi-step-workflows.md
+rm skills/pbi-squire/references/workflow-decision-tree.md
 ```
 **Impact**: Removes 3 obsolete reference files
 
@@ -235,7 +235,7 @@ Before deleting `multi-step-workflows.md`, consider migrating "Workflow Executio
 
 ### Before
 ```
-skills/powerbi-analyst/
+skills/pbi-squire/
 ├── agents/          (23 files - OBSOLETE)
 ├── references/      (24 files - some duplicates)
 ├── resources/       (12 files)
@@ -245,7 +245,7 @@ skills/powerbi-analyst/
 
 ### After
 ```
-skills/powerbi-analyst/
+skills/pbi-squire/
 ├── references/      (21 files - no duplicates, best-practices + command-parameters KEPT)
 ├── resources/       (12 files - unchanged)
 ├── workflows/       (10 files - unchanged)
@@ -269,7 +269,7 @@ After cleanup:
 
 **Analysis performed:** 2025-01-29
 
-This appendix contains the detailed file-by-file comparison of agents in `agents/core/` vs `skills/powerbi-analyst/agents/`.
+This appendix contains the detailed file-by-file comparison of agents in `agents/analyst/` vs `skills/pbi-squire/agents/`.
 
 ### Methodology
 
@@ -285,14 +285,14 @@ For each agent, compared:
 
 #### `powerbi-dax-specialist.md`
 
-**`agents/core/` version (7.2KB):**
+**`agents/analyst/` version (7.2KB):**
 ```yaml
 ---
 name: powerbi-dax-specialist
 description: Generate validated, production-ready DAX code...
 model: sonnet
 tools: [Read, Write, Edit, Glob, Grep]
-skills: [powerbi-analyst]
+skills: [pbi-squire]
 color: cyan
 ---
 ```
@@ -323,14 +323,14 @@ color: cyan
 
 #### `powerbi-code-understander.md`
 
-**`agents/core/` version (4.2KB):**
+**`agents/analyst/` version (4.2KB):**
 ```yaml
 ---
 name: powerbi-code-understander
 description: Explain DAX measures and M code in plain business language...
 model: sonnet
 tools: [Read, Write, Edit, Glob, Grep]
-skills: [powerbi-analyst]
+skills: [pbi-squire]
 color: teal
 ---
 ```
@@ -357,14 +357,14 @@ color: teal
 
 #### `powerbi-visual-locator.md`
 
-**`agents/core/` version (8.1KB):**
+**`agents/analyst/` version (8.1KB):**
 ```yaml
 ---
 name: powerbi-visual-locator
 description: Locate and document PBIR visuals...
 model: sonnet
 tools: [Read, Glob, Grep, Write, Edit]
-skills: [powerbi-analyst]
+skills: [pbi-squire]
 color: purple
 ---
 ```
@@ -396,14 +396,14 @@ color: purple
 
 #### `powerbi-pattern-discovery.md`
 
-**`agents/core/` version (9.3KB):**
+**`agents/analyst/` version (9.3KB):**
 ```yaml
 ---
 name: powerbi-pattern-discovery
 description: Find existing similar artifacts and extract patterns...
 model: sonnet
 tools: [Read, Glob, Grep, Write, Edit]
-skills: [powerbi-analyst]
+skills: [pbi-squire]
 color: yellow
 ---
 ```
@@ -433,18 +433,18 @@ color: yellow
 
 ---
 
-### Files Only in `skills/powerbi-analyst/agents/`
+### Files Only in `skills/pbi-squire/agents/`
 
-These files exist in the skills folder but have no counterpart in `agents/core/`:
+These files exist in the skills folder but have no counterpart in `agents/analyst/`:
 
 | File | Size | Notes |
 |------|------|-------|
 | `powerbi-page-question-analyzer.md` | 22KB | May be obsolete or merged into another agent |
 | `nul` | 0 bytes | Empty artifact file (Windows `nul` device) |
 
-### Files Only in `agents/core/`
+### Files Only in `agents/analyst/`
 
-These files exist in `agents/core/` but have no counterpart in skills folder:
+These files exist in `agents/analyst/` but have no counterpart in skills folder:
 
 | File | Notes |
 |------|-------|
@@ -456,11 +456,11 @@ These files exist in `agents/core/` but have no counterpart in skills folder:
 
 ### Conclusion
 
-The `agents/core/` directory contains the **authoritative, production-ready** versions of all agents. The `skills/powerbi-analyst/agents/` directory contains:
+The `agents/analyst/` directory contains the **authoritative, production-ready** versions of all agents. The `skills/pbi-squire/agents/` directory contains:
 
 1. **Older drafts** - More verbose, using deprecated `thinking:` config
 2. **Diverged versions** - Some agents evolved in different directions
 3. **Outdated references** - Using old section numbering (1.3 vs 1.D)
 4. **Orphaned files** - Not registered in `plugin.json`
 
-**Recommendation confirmed:** DELETE the entire `skills/powerbi-analyst/agents/` directory.
+**Recommendation confirmed:** DELETE the entire `skills/pbi-squire/agents/` directory.

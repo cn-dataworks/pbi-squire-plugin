@@ -1,30 +1,30 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Bootstrap script for Power BI Analyst Plugin - configures project for the plugin.
+    Bootstrap script for PBI Squire Plugin - configures project for the plugin.
 
 .DESCRIPTION
-    This script configures your project for the Power BI Analyst plugin.
+    This script configures your project for the PBI Squire plugin.
 
-    **For CORE edition:**
-    - Creates .claude/powerbi-analyst.json (skill configuration)
+    **For ANALYST edition:**
+    - Creates .claude/pbi-squire.json (skill configuration)
     - Creates .claude/settings.json (permissions)
     - Creates/updates CLAUDE.md (project instructions)
     - Copies helper files
     - NO Python tools required (uses MCP + Claude-native validation)
 
-    **For PRO edition (additional):**
-    - Copies Python analysis tools to .claude/tools/powerbi-analyst/
+    **For DEVELOPER edition (additional):**
+    - Copies Python analysis tools to .claude/tools/pbi-squire/
     - Enables advanced features like TMDL validation, analytics
 
     NOTE: Agents and skills are registered globally when you install the plugin.
-    This script only handles per-project configuration and (for Pro) Python tools.
+    This script only handles per-project configuration and (for Developer) Python tools.
 
     What this script does:
     - Creates skill configuration files
     - Creates settings.json with recommended permissions
     - Optionally configures Power BI project path for auto-approve
-    - [Pro only] Copies Python analysis tools
+    - [Developer only] Copies Python analysis tools
 
     What this script does NOT do:
     - Register agents (they're globally available from the plugin)
@@ -73,23 +73,22 @@ if (-not (Test-Path "$script:PluginPath\.claude-plugin")) {
 }
 
 $script:PluginToolsPath = Join-Path $script:PluginPath "tools"
-$script:CoreToolsPath = Join-Path $script:PluginToolsPath "core"
-$script:AdvancedToolsPath = Join-Path $script:PluginToolsPath "advanced"
-$script:PluginResourcesPath = Join-Path $script:PluginPath "skills\powerbi-analyst\resources"
+$script:DeveloperToolsPath = Join-Path $script:PluginToolsPath "developer"
+$script:PluginResourcesPath = Join-Path $script:PluginPath "skills\pbi-squire\resources"
 $script:VersionFile = "version.txt"
 
 # Local paths (in user's project)
 $script:LocalClaudeDir = ".claude"
-$script:LocalToolsDir = ".claude\tools\powerbi-analyst"
-$script:LocalHelpersDir = ".claude\helpers\powerbi-analyst"
+$script:LocalToolsDir = ".claude\tools\pbi-squire"
+$script:LocalHelpersDir = ".claude\helpers\pbi-squire"
 
 # Core files to copy (PUBLIC - always installed, no Python)
-# Note: Core edition uses MCP + Claude-native validation, no Python required
+# Note: Analyst Edition uses MCP + Claude-native validation, no Python required
 $script:CoreToolFiles = @(
     "version.txt"
 )
 
-# Python tools (PRO only - require Python 3.10+)
+# Python tools (DEVELOPER only - require Python 3.10+)
 # These provide advanced analysis capabilities beyond MCP
 $script:PythonToolFiles = @(
     "token_analyzer.py",
@@ -109,13 +108,13 @@ $script:PythonToolFiles = @(
     "query_folding_validator.py"
 )
 
-# Advanced files to copy (PRIVATE - only in Pro version)
+# Advanced files to copy (PRIVATE - only in Developer edition)
 $script:AdvancedToolFiles = @(
     # Playwright testing, template harvesting scripts go here
 )
 
-# Pro template files (copied to .claude/ root for user customization)
-$script:ProTemplateFiles = @(
+# Developer template files (copied to .claude/ root for user customization)
+$script:DeveloperTemplateFiles = @(
     "powerbi-design-standards.md"
 )
 
@@ -155,7 +154,7 @@ function Write-Warn {
 # ============================================================
 
 function Get-PluginVersion {
-    $versionPath = Join-Path $script:CoreToolsPath $script:VersionFile
+    $versionPath = Join-Path $script:DeveloperToolsPath $script:VersionFile
     if (Test-Path $versionPath) {
         return (Get-Content $versionPath -Raw).Trim()
     }
@@ -237,14 +236,14 @@ function Initialize-LocalDirectories {
 }
 
 function Copy-ToolFiles {
-    param([bool]$IsPro)
+    param([bool]$IsDeveloper)
 
     $copied = 0
     $skipped = 0
 
-    # Copy core files (always present - version tracking only for Core)
+    # Copy core files (always present - version tracking only for Analyst)
     foreach ($file in $script:CoreToolFiles) {
-        $sourcePath = Join-Path $script:CoreToolsPath $file
+        $sourcePath = Join-Path $script:DeveloperToolsPath $file
         $destPath = Join-Path $script:LocalToolsDir $file
 
         if (Test-Path $sourcePath) {
@@ -258,11 +257,11 @@ function Copy-ToolFiles {
 
     Write-Info "Copied $copied core files"
 
-    # Copy Python tools (Pro version only)
-    if ($IsPro) {
+    # Copy Python tools (Developer edition only)
+    if ($IsDeveloper) {
         $pythonCopied = 0
         foreach ($file in $script:PythonToolFiles) {
-            $sourcePath = Join-Path $script:CoreToolsPath $file
+            $sourcePath = Join-Path $script:DeveloperToolsPath $file
             $destPath = Join-Path $script:LocalToolsDir $file
 
             if (Test-Path $sourcePath) {
@@ -273,18 +272,18 @@ function Copy-ToolFiles {
             }
         }
         if ($pythonCopied -gt 0) {
-            Write-Success "Copied $pythonCopied Python analysis tools (Pro)"
+            Write-Success "Copied $pythonCopied Python analysis tools (Developer)"
         }
     } else {
-        Write-Info "Core edition: Python tools not required"
+        Write-Info "Analyst Edition: Python tools not required"
         Write-Info "  (Uses MCP + Claude-native validation)"
     }
 
-    # Copy advanced files if present (Pro version only)
-    if ($IsPro -and (Test-Path $script:AdvancedToolsPath) -and $script:AdvancedToolFiles.Count -gt 0) {
+    # Copy advanced files if present (Developer edition only)
+    if ($IsDeveloper -and $script:AdvancedToolFiles.Count -gt 0) {
         $advCopied = 0
         foreach ($file in $script:AdvancedToolFiles) {
-            $sourcePath = Join-Path $script:AdvancedToolsPath $file
+            $sourcePath = Join-Path $script:DeveloperToolsPath $file
             $destPath = Join-Path $script:LocalToolsDir $file
 
             if (Test-Path $sourcePath) {
@@ -293,7 +292,7 @@ function Copy-ToolFiles {
             }
         }
         if ($advCopied -gt 0) {
-            Write-Success "Copied $advCopied advanced Pro features"
+            Write-Success "Copied $advCopied advanced Developer features"
         }
     }
 }
@@ -330,17 +329,18 @@ function Copy-DocsFiles {
     }
 }
 
-function Copy-ProTemplateFiles {
-    # Copy Pro template files to .claude/ root for user customization
-    # These are only copied if the advanced tools path exists (Pro version)
+function Copy-DeveloperTemplateFiles {
+    # Copy Developer template files to .claude/ root for user customization
+    # These are only copied if this is a Developer edition installation
 
-    if (-not (Test-Path $script:AdvancedToolsPath)) {
-        return  # Not a Pro installation
+    $devFeaturesPath = Join-Path $script:PluginPath "skills\pbi-squire\developer-features.md"
+    if (-not (Test-Path $devFeaturesPath)) {
+        return  # Not a Developer installation
     }
 
     $copied = 0
 
-    foreach ($file in $script:ProTemplateFiles) {
+    foreach ($file in $script:DeveloperTemplateFiles) {
         $sourcePath = Join-Path $script:TemplatesPath $file
         $destPath = Join-Path $script:LocalClaudeDir $file
 
@@ -355,7 +355,7 @@ function Copy-ProTemplateFiles {
     }
 
     if ($copied -gt 0) {
-        Write-Info "Pro templates ready for customization in $script:LocalClaudeDir"
+        Write-Info "Developer templates ready for customization in $script:LocalClaudeDir"
     }
 }
 
@@ -408,7 +408,7 @@ function Get-PBIProjectPath {
         Write-Host "  POWER BI PROJECT PATH CONFIGURATION" -ForegroundColor Cyan
         Write-Host "  ============================================================" -ForegroundColor Cyan
         Write-Host ""
-        Write-Host "  To allow the analyst to read/edit your Power BI files without" -ForegroundColor White
+        Write-Host "  To allow PBI Squire to read/edit your Power BI files without" -ForegroundColor White
         Write-Host "  prompting for permission each time, enter the path to your" -ForegroundColor White
         Write-Host "  Power BI project folder." -ForegroundColor White
         Write-Host ""
@@ -426,7 +426,7 @@ function Get-PBIProjectPath {
 
 function Get-DataSensitiveMode {
     # Check if config already exists
-    $configPath = Join-Path $script:LocalClaudeDir "powerbi-analyst.json"
+    $configPath = Join-Path $script:LocalClaudeDir "pbi-squire.json"
 
     if (Test-Path $configPath) {
         try {
@@ -468,10 +468,10 @@ function Initialize-SkillConfig {
         [bool]$DataSensitiveMode
     )
 
-    $configPath = Join-Path $script:LocalClaudeDir "powerbi-analyst.json"
+    $configPath = Join-Path $script:LocalClaudeDir "pbi-squire.json"
 
     if (Test-Path $configPath) {
-        Write-Info "powerbi-analyst.json already exists"
+        Write-Info "pbi-squire.json already exists"
         return
     }
 
@@ -483,7 +483,7 @@ function Initialize-SkillConfig {
     $config | ConvertTo-Json | Set-Content $configPath -Encoding UTF8
 
     $mode = if ($DataSensitiveMode) { "enabled" } else { "disabled" }
-    Write-Success "Created powerbi-analyst.json"
+    Write-Success "Created pbi-squire.json"
     if ($ProjectPath) {
         Write-Info "  Project path: $ProjectPath"
     }
@@ -548,7 +548,7 @@ function Initialize-SettingsFile {
 function Initialize-ClaudeMd {
     param([string]$PBIPath)
 
-    # Create minimal CLAUDE.md that references the Power BI plugin
+    # Create minimal CLAUDE.md that references the PBI Squire plugin
     # Detailed instructions live in SKILL.md (updated with plugin, not user files)
     $claudeMdPath = "CLAUDE.md"
     $templatePath = Join-Path $script:TemplatesPath "CLAUDE.md"
@@ -571,8 +571,8 @@ function Initialize-ClaudeMd {
 
     if (Test-Path $claudeMdPath) {
         $existing = Get-Content $claudeMdPath -Raw
-        if ($existing -match "Power BI Analyst Plugin") {
-            Write-Info "CLAUDE.md already references Power BI Analyst Plugin"
+        if ($existing -match "PBI Squire") {
+            Write-Info "CLAUDE.md already references PBI Squire Plugin"
             return
         }
 
@@ -584,7 +584,7 @@ function Initialize-ClaudeMd {
             Write-Host "  ============================================================" -ForegroundColor Yellow
             Write-Host ""
             Write-Host "  Your project has a CLAUDE.md file, but it doesn't reference" -ForegroundColor White
-            Write-Host "  the Power BI Analyst Plugin. Claude won't automatically use" -ForegroundColor White
+            Write-Host "  the PBI Squire Plugin. Claude won't automatically use" -ForegroundColor White
             Write-Host "  the skill without this reference." -ForegroundColor White
             Write-Host ""
             Write-Host "  Would you like to append the plugin reference to CLAUDE.md?" -ForegroundColor Cyan
@@ -599,14 +599,14 @@ function Initialize-ClaudeMd {
         }
 
         # Append to existing CLAUDE.md
-        Write-Info "Appending Power BI plugin reference to existing CLAUDE.md"
+        Write-Info "Appending PBI Squire plugin reference to existing CLAUDE.md"
         $content = $existing + "`n`n" + $content
     } else {
-        Write-Info "Creating CLAUDE.md with Power BI plugin reference"
+        Write-Info "Creating CLAUDE.md with PBI Squire plugin reference"
     }
 
     Set-Content -Path $claudeMdPath -Value $content -Encoding UTF8
-    Write-Success "CLAUDE.md configured with Power BI plugin reference"
+    Write-Success "CLAUDE.md configured with PBI Squire plugin reference"
 }
 
 # ============================================================
@@ -618,11 +618,11 @@ try {
     $localVersion = Get-LocalVersion
     $status = Compare-Versions -PluginVersion $pluginVersion -LocalVersion $localVersion
 
-    # Detect edition (Pro vs Core)
-    $proFeaturesPath = Join-Path $script:PluginPath "skills\powerbi-analyst\pro-features.md"
-    $edition = if (Test-Path $proFeaturesPath) { "Pro" } else { "Core" }
+    # Detect edition (Developer vs Analyst)
+    $devFeaturesPath = Join-Path $script:PluginPath "skills\pbi-squire\developer-features.md"
+    $edition = if (Test-Path $devFeaturesPath) { "Developer" } else { "Analyst" }
 
-    Write-Info "Plugin version: $pluginVersion ($edition edition)"
+    Write-Info "Plugin version: $pluginVersion ($edition Edition)"
     Write-Info "Local version:  $(if ($localVersion) { $localVersion } else { '(not installed)' })"
     Write-Info "Status: $status"
 
@@ -667,14 +667,14 @@ try {
 
     # Perform copy if needed
     if ($needsCopy) {
-        $isPro = ($edition -eq "Pro")
+        $isDeveloper = ($edition -eq "Developer")
 
         Initialize-LocalDirectories
-        Copy-ToolFiles -IsPro $isPro
+        Copy-ToolFiles -IsDeveloper $isDeveloper
         Copy-HelperFiles
         Copy-DocsFiles
-        if ($isPro) {
-            Copy-ProTemplateFiles
+        if ($isDeveloper) {
+            Copy-DeveloperTemplateFiles
         }
 
         # Get PBI project path (from parameter or prompt)
@@ -692,15 +692,15 @@ try {
         Initialize-SettingsFile -PBIPath $pbiPath
         Initialize-ClaudeMd -PBIPath $pbiPath
 
-        Write-Success "Bootstrap complete! ($edition edition)"
+        Write-Success "Bootstrap complete! ($edition Edition)"
         Write-Info "Configuration installed to: $script:LocalClaudeDir"
         Write-Info "Version: $pluginVersion"
         Write-Info ""
-        if ($isPro) {
-            Write-Info "Pro features enabled: Python analysis tools installed"
+        if ($isDeveloper) {
+            Write-Info "Developer features enabled: Python analysis tools installed"
             Write-Info "  Tools location: $script:LocalToolsDir"
         } else {
-            Write-Info "Core edition: Uses MCP + Claude-native validation"
+            Write-Info "Analyst Edition: Uses MCP + Claude-native validation"
             Write-Info "  No Python required - install Power BI Modeling MCP for best results"
         }
         Write-Info ""

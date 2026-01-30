@@ -1,4 +1,4 @@
-# Power BI Analyst Tools
+# PBI Squire Tools
 
 This directory contains specialized tools used by the Power BI analyst agent system. These tools provide core functionality for TMDL validation, visual editing, project merging, and data extraction.
 
