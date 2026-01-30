@@ -1,8 +1,7 @@
 {
     "name": "pbi-squire",
     "version": "1.0.0",
-    "edition": "developer",
-    "description": "PBI Squire - Complete Power BI development assistant. Diagnose issues, create DAX measures, transform data with M code, document dashboards, and deploy changes. Developer Edition includes Python analysis tools, design standards, and QA loop features.",
+    "description": "PBI Squire - Complete Power BI development assistant. Diagnose issues, create DAX measures, transform data with M code, document dashboards, and deploy changes.",
     "author": {
         "name": "CN Dataworks",
         "email": "info@cndataworks.com"
@@ -31,10 +30,7 @@
         "./agents/analyst/pbi-squire-template-harvester.md",
         "./agents/analyst/pbi-squire-pbir-page-generator.md",
         "./agents/analyst/pbi-squire-dashboard-documenter.md",
-        "./agents/analyst/pbi-squire-anonymization-setup.md",
-        "./agents/developer/pbi-squire-playwright-tester.md",
-        "./agents/developer/pbi-squire-ux-reviewer.md",
-        "./agents/developer/pbi-squire-qa-inspector.md"
+        "./agents/analyst/pbi-squire-anonymization-setup.md"
     ],
     "skills": [
         "./skills/pbi-squire"
