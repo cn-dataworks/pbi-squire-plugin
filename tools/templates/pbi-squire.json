@@ -1,4 +1,6 @@
 {
   "projectPath": null,
-  "dataSensitiveMode": false
+  "dataSensitiveMode": false,
+  "mode": "single",
+  "projectOverrides": {}
 }

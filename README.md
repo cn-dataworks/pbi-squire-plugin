@@ -28,21 +28,41 @@ cd "$HOME\.claude\plugins\custom\pbi-squire"
 .\install-plugin.ps1
 ```
 
-### Bootstrap (per project)
+### First-Time Setup (Automatic)
 
-In each Power BI project, run the bootstrap tool to configure project-specific settings:
+**No bootstrap required!** When you first invoke the skill, PBI Squire automatically:
+
+1. Detects Power BI projects in your folder
+2. Asks about data sensitivity settings
+3. Creates configuration files inline
+4. Continues with your request
+
+```
+You: "Help me fix this YoY measure"
+
+PBI Squire: "Let me configure PBI Squire for this location...
+             Found 1 Power BI project: SalesReport.pbip
+             Does this project contain sensitive data? [Y/N]"
+
+You: "N"
+
+PBI Squire: "✅ Configured! Now let me help with that YoY measure..."
+```
+
+### Bootstrap (Optional)
+
+Bootstrap is **optional** for Analyst Edition but recommended for Developer Edition:
+
+| Edition | Bootstrap Required? | What It Does |
+|---------|---------------------|--------------|
+| **Analyst** | No (auto-configures) | Creates config files only |
+| **Developer** | Recommended | Installs Python tools for faster performance |
 
 ```powershell
+# Optional: Run bootstrap for explicit control or Developer Edition Python tools
 cd "C:\path\to\your\powerbi-project"
 & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
 ```
-
-This creates:
-- `CLAUDE.md` - Project instructions
-- `.claude/settings.json` - Permissions
-- `.claude/pbi-squire.json` - Skill configuration
-
-**For Developer Edition:** Also copies Python analysis tools to `.claude/tools/`
 
 See [INSTALL.md](INSTALL.md) for detailed instructions and team setup.
 
@@ -74,7 +94,9 @@ The plugin installs **once** to a central location on your computer:
 C:\Users\YourName\.claude\plugins\custom\pbi-squire\
 ```
 
-After installation, it's automatically available in **every project** you open with Claude Code. No per-project setup required.
+After installation, it's automatically available in **every project** you open with Claude Code.
+
+**First-time setup is automatic:** When you first use the skill in a new project, it auto-configures itself inline. No separate bootstrap step required for Analyst Edition.
 
 ### Per-Project Control
 

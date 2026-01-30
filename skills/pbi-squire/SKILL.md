@@ -137,114 +137,208 @@ Before executing any workflow, perform these checks in order:
 
 **For write workflows (EVALUATE, CREATE_ARTIFACT, IMPLEMENT):** Show the warning above and let user decide.
 
-### Step -1: Project Setup Check (CRITICAL)
+### Step -1: Project Setup Check (AUTOMATIC)
 
-**Purpose**: Ensure the project has required configuration files for this plugin.
+**Purpose**: Auto-configure the project on first skill invocation. No manual bootstrap needed for Analyst Edition.
 
 **Check for setup indicators in the current project directory:**
 
 1. Look for `.claude/pbi-squire.json`
 2. Look for `CLAUDE.md` with plugin reference
 
-**If ANY of these are missing, check edition:**
+**If BOTH exist → Continue to Step 0**
 
-1. Detect edition: Check if `skills/pbi-squire/developer-features.md` exists in the plugin directory
+**If EITHER missing → Inline Setup Flow**
+
+---
+
+#### Inline Setup Flow (Both Editions)
+
+When configuration is missing, automatically guide the user through setup inline:
+
+##### 1. Detect Power BI Projects
+
+Search the current working directory for Power BI projects:
+
+```bash
+# Find .pbip files within 2 levels
+find . -maxdepth 2 -name "*.pbip" -type f 2>/dev/null
+```
+
+##### 2. Determine Configuration Scope
+
+Based on the number of projects found:
+
+| Projects Found | Mode | Action |
+|----------------|------|--------|
+| 0 | N/A | Ask user for project path |
+| 1 | `single` | Auto-configure for that project |
+| 2+ | `shared` | Ask if shared repository |
+
+**For 0 projects found:**
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  FIRST-TIME SETUP                                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  No Power BI projects (.pbip) found in the current directory.       │
+│                                                                     │
+│  Please provide the path to your Power BI project folder:           │
+│                                                                     │
+│  Example: C:\Projects\SalesReport                                   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**For 1 project found (auto-configure as single):**
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  FIRST-TIME SETUP                                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Found Power BI project:                                            │
+│  • SalesReport/SalesReport.pbip                                     │
+│                                                                     │
+│  Configuring PBI Squire for this project...                         │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**For 2+ projects found (ask about shared mode):**
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  FIRST-TIME SETUP                                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Found 3 Power BI projects in this folder:                          │
+│  • SalesReport/SalesReport.pbip                                     │
+│  • SalesOverview/SalesOverview.pbip                                 │
+│  • SalesKPIs/SalesKPIs.pbip                                         │
+│                                                                     │
+│  Configure as a shared repository where all these projects use      │
+│  the same PBI Squire settings?                                      │
+│                                                                     │
+│  [Y] Yes - shared settings for all (Recommended)                    │
+│  [N] No - configure each project separately                         │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+##### 3. Prompt for Data Sensitivity
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  DATA SENSITIVITY                                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Should PBI Squire require data anonymization before querying       │
+│  data via MCP?                                                      │
+│                                                                     │
+│  Select YES if:                                                     │
+│  • Data contains PII, financial, or healthcare information          │
+│  • Your organization prohibits using real data with AI models       │
+│  • Compliance policies require data masking                         │
+│                                                                     │
+│  [Y] Yes - require anonymization setup before data queries          │
+│  [N] No - proceed without masking requirements (Recommended)        │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+##### 4. Create Configuration Files
+
+Create the following files inline (no bootstrap script needed):
+
+**`.claude/pbi-squire.json`** - Skill configuration:
+```json
+{
+  "projectPath": "<detected-or-provided-path>",
+  "dataSensitiveMode": false,
+  "mode": "single",
+  "projectOverrides": {}
+}
+```
+
+For shared repositories:
+```json
+{
+  "projectPath": "<current-directory>",
+  "dataSensitiveMode": false,
+  "mode": "shared",
+  "projectOverrides": {}
+}
+```
+
+**`.claude/settings.json`** - Permissions (if doesn't exist):
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "Bash(python *)",
+      "Bash(git *)"
+    ]
+  }
+}
+```
+
+**`CLAUDE.md`** - Add plugin reference (append if exists, create if not):
+```markdown
+## PBI Squire Plugin
+
+This project uses the PBI Squire plugin for DAX/M code analysis.
+
+Power BI projects are located at: `<project-path>`
+```
+
+**`.claude/tools/pbi-squire/version.txt`** - Version tracking:
+- Read version from plugin's `tools/developer/version.txt`
+- Write to local project
+
+##### 5. Developer Edition Additional Check
+
+After inline setup, check if this is Developer Edition:
+
+1. Check if `skills/pbi-squire/developer-features.md` exists in the plugin directory
    - Exists → **Developer Edition**
-   - Missing → **Analyst Edition**
+   - Missing → **Analyst Edition** (continue normally)
+
+2. **If Developer Edition**, check for Python tools:
+   ```bash
+   test -f ".claude/tools/pbi-squire/tmdl_format_validator.py" && echo "TOOLS_AVAILABLE" || echo "TOOLS_MISSING"
+   ```
+
+3. **If Python tools missing**, show informational message but **DO NOT block**:
+   ```
+   ┌─────────────────────────────────────────────────────────────────────┐
+   │  ⚠️ PYTHON TOOLS NOT INSTALLED                                      │
+   ├─────────────────────────────────────────────────────────────────────┤
+   │                                                                     │
+   │  Developer Edition detected, but Python analysis tools are not     │
+   │  installed. Using Claude-native fallback (slightly slower).        │
+   │                                                                     │
+   │  For faster performance, run bootstrap to install Python tools:    │
+   │                                                                     │
+   │  Windows:                                                           │
+   │  & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"   │
+   │                                                                     │
+   │  macOS/Linux:                                                       │
+   │  bash "$HOME/.claude/plugins/custom/pbi-squire/tools/bootstrap.sh" │
+   │                                                                     │
+   │  Continuing with Claude-native validation...                        │
+   │                                                                     │
+   └─────────────────────────────────────────────────────────────────────┘
+   ```
+
+4. **Continue with workflow** - do not require user to re-run command
 
 ---
 
-#### Developer Edition: Bootstrap Required
-
-**If Developer Edition and config files missing:**
-
-```
-+-------------------------------------------------------------------------+
-|  BOOTSTRAP REQUIRED (Developer Edition)                                        |
-+-------------------------------------------------------------------------+
-
-This project has not been set up for the PBI Squire plugin.
-
-Developer Edition requires the bootstrap script to copy Python analysis tools.
-
-To set up this project, run:
-
-  Windows:
-  & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
-
-  macOS/Linux:
-  bash "$HOME/.claude/plugins/custom/pbi-squire/tools/bootstrap.sh"
-
-This creates:
-  - .claude/pbi-squire.json  (skill configuration)
-  - .claude/tools/pbi-squire/*.py (Python analysis tools)
-  - CLAUDE.md (project instructions)
-
-After bootstrap, re-run your command.
-+-------------------------------------------------------------------------+
-```
-
-**Exit workflow** - do not proceed until bootstrap is complete.
-
----
-
-#### Analyst Edition: Interactive Setup
-
-**If Analyst Edition and config files missing, offer to create them interactively:**
-
-```
-+-------------------------------------------------------------------------+
-|  PROJECT SETUP NEEDED (Analyst Edition)                                     |
-+-------------------------------------------------------------------------+
-
-This project hasn't been configured for the PBI Squire plugin yet.
-
-I can set this up for you now. I'll need to know:
-1. Where are your Power BI project files located?
-2. Does this project contain sensitive data (PII, financial, healthcare)?
-
-Would you like me to configure the project now? (Y/n)
-+-------------------------------------------------------------------------+
-```
-
-**If user confirms, create these files:**
-
-1. **`.claude/pbi-squire.json`** - Skill configuration:
-   ```json
-   {
-     "projectPath": "<user-provided-path>",
-     "dataSensitiveMode": <true|false based on user answer>
-   }
-   ```
-
-2. **`.claude/settings.json`** - Permissions (if doesn't exist):
-   ```json
-   {
-     "permissions": {
-       "allow": [
-         "Bash(python*)",
-         "Read(<project-path>/**)",
-         "Edit(<project-path>/**)",
-         "Write(<project-path>/**)"
-       ]
-     }
-   }
-   ```
-
-3. **`CLAUDE.md`** - Add plugin reference (append if exists, create if not):
-   ```markdown
-   ## PBI Squire Plugin
-
-   This project uses the PBI Squire plugin for DAX/M code analysis.
-
-   Power BI projects are located at: `<project-path>`
-   ```
-
-4. **`.claude/tools/pbi-squire/version.txt`** - Version tracking:
-   - Read version from plugin's `tools/developer/version.txt`
-   - Write to local project
-
-**After creating files, continue with the workflow** - no need to re-run command.
+**Key Principle**: Setup happens inline on first invocation. The user never needs to run a separate bootstrap step for Analyst Edition. Developer Edition can use bootstrap for Python tools, but works without them via fallback.
 
 ---
 
@@ -382,7 +476,73 @@ Would you like me to create the project folder for you?
 
 ### Step 1: Project Selection (Multi-Project Handling)
 
-When the user provides a folder path (not a specific .pbip file):
+**Read config to determine mode:**
+- Load `.claude/pbi-squire.json`
+- Check `mode` field: `"single"` or `"shared"`
+
+---
+
+#### Single Mode
+
+When `mode: "single"`:
+- Use `projectPath` directly
+- If it's a folder, search for .pbip files
+- If 1 project found → use it automatically
+- If 0 projects found → report error and suggest checking the path
+
+---
+
+#### Shared Repository Mode
+
+When `mode: "shared"`:
+
+1. **List all .pbip files in `projectPath`**
+2. **Check for project-specific overrides in `projectOverrides`**
+3. **Ask user which project to work with THIS session**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  📁 Repository: C:/Projects/Analytics                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Found 4 Power BI projects:                                         │
+│                                                                     │
+│  [1] HR-Dashboard        ⚠️ data masking required                   │
+│  [2] Sales-Report                                                   │
+│  [3] Marketing-Overview                                             │
+│  [4] Finance-Summary                                                │
+│                                                                     │
+│  Which project? (1-4 or project name):                              │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+4. **Apply override settings for selected project**:
+   - Check if `projectOverrides["<project-name>"]` exists
+   - If exists, merge those settings with base config
+   - Example: `dataSensitiveMode` may be overridden per-project
+
+**Example config with overrides:**
+```json
+{
+  "projectPath": "C:/Projects/Analytics",
+  "dataSensitiveMode": false,
+  "mode": "shared",
+  "projectOverrides": {
+    "HR-Dashboard": {
+      "dataSensitiveMode": true
+    }
+  }
+}
+```
+
+When "HR-Dashboard" is selected, `dataSensitiveMode` becomes `true` for that session.
+
+---
+
+#### Fallback Behavior
+
+When the user provides a folder path directly (not from config):
 
 1. Search for `*.pbip` files in the target folder
 2. **If 1 project found**: Use it automatically
@@ -916,16 +1076,30 @@ Tasks use the **Task Blackboard pattern** where specialists read/write to design
 
 ---
 
-## Project Setup (Bootstrap)
+## Project Setup (Automatic or Bootstrap)
 
-The skill requires configuration files to be present in the user's project directory. For Developer Edition, Python tools are also copied.
+The skill auto-configures on first invocation. No separate bootstrap step required for Analyst Edition.
 
-**Analyst Edition:** Creates configuration only (no Python required)
-**Developer Edition:** Creates configuration + copies Python analysis tools
+**Analyst Edition:** Auto-configures inline (no Python required)
+**Developer Edition:** Auto-configures inline + optional bootstrap for Python tools
 
-### Bootstrap Process
+### Automatic Setup (Default)
 
-**Run bootstrap in your project directory:**
+When you first invoke the skill in a new project, it will:
+1. Detect Power BI projects in your folder
+2. Ask about shared repository mode (if multiple projects found)
+3. Ask about data sensitivity settings
+4. Create configuration files inline
+5. Continue with your request
+
+See "Step -1: Project Setup Check" for the detailed flow.
+
+### Bootstrap Process (Optional)
+
+**Use bootstrap for:**
+- Developer Edition Python tools (faster performance)
+- CI/CD automation (explicit setup without prompts)
+- Force refresh of configuration
 
 ```powershell
 # Windows

@@ -1,9 +1,25 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Bootstrap script for PBI Squire Plugin - configures project for the plugin.
+    OPTIONAL bootstrap script for PBI Squire Plugin - configures project for the plugin.
 
 .DESCRIPTION
+    ╔═══════════════════════════════════════════════════════════════════════════╗
+    ║  THIS SCRIPT IS OPTIONAL                                                   ║
+    ╠═══════════════════════════════════════════════════════════════════════════╣
+    ║                                                                           ║
+    ║  ANALYST EDITION: This script is NOT REQUIRED. The skill will auto-       ║
+    ║  configure on first invocation. Use bootstrap only for:                   ║
+    ║  - Explicit control over setup                                            ║
+    ║  - CI/CD automation                                                       ║
+    ║  - Force refresh of configuration                                         ║
+    ║                                                                           ║
+    ║  DEVELOPER EDITION: Run bootstrap to install Python analysis tools for   ║
+    ║  faster performance. Without bootstrap, skill uses Claude-native          ║
+    ║  fallback (same functionality, slightly slower).                          ║
+    ║                                                                           ║
+    ╚═══════════════════════════════════════════════════════════════════════════╝
+
     This script configures your project for the PBI Squire plugin.
 
     **For ANALYST edition:**
@@ -478,16 +494,19 @@ function Initialize-SkillConfig {
     $config = @{
         projectPath = if ($ProjectPath) { $ProjectPath.Replace('\', '/') } else { $null }
         dataSensitiveMode = $DataSensitiveMode
+        mode = "single"
+        projectOverrides = @{}
     }
 
-    $config | ConvertTo-Json | Set-Content $configPath -Encoding UTF8
+    $config | ConvertTo-Json -Depth 3 | Set-Content $configPath -Encoding UTF8
 
-    $mode = if ($DataSensitiveMode) { "enabled" } else { "disabled" }
+    $sensitiveMode = if ($DataSensitiveMode) { "enabled" } else { "disabled" }
     Write-Success "Created pbi-squire.json"
     if ($ProjectPath) {
         Write-Info "  Project path: $ProjectPath"
     }
-    Write-Info "  Data-sensitive mode: $mode"
+    Write-Info "  Data-sensitive mode: $sensitiveMode"
+    Write-Info "  Repository mode: single"
 }
 
 function Initialize-SettingsFile {

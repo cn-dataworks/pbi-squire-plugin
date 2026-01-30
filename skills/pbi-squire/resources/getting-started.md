@@ -16,6 +16,46 @@ The PBI Squire skill helps you work with Power BI projects by:
 
 ---
 
+## First-Time Setup (Automatic)
+
+**No separate bootstrap step required!** When you first use the skill, it auto-configures:
+
+```
+You: "Help me fix this YoY measure"
+
+PBI Squire: "I need to configure PBI Squire for this location.
+             Found 1 Power BI project: SalesReport.pbip
+             Does this project contain sensitive data? [Y/N]"
+
+You: "N"
+
+PBI Squire: "✅ Configured! Now let me help with that YoY measure..."
+```
+
+### What Gets Configured Automatically
+
+- **`.claude/pbi-squire.json`** - Skill configuration (project path, data sensitivity)
+- **`.claude/settings.json`** - File permissions
+- **`CLAUDE.md`** - Plugin reference (created or updated)
+
+### Shared Repositories
+
+If you have multiple Power BI projects in one folder, the skill will ask:
+
+```
+Found 3 Power BI projects:
+• SalesReport/SalesReport.pbip
+• SalesOverview/SalesOverview.pbip
+• SalesKPIs/SalesKPIs.pbip
+
+Configure as a shared repository where all these projects use
+the same PBI Squire settings? [Y/N]
+```
+
+**Shared mode** lets you work with multiple projects from one configuration, with optional per-project overrides (like different data sensitivity settings per project).
+
+---
+
 ## Before You Start
 
 ### Requirements

@@ -52,60 +52,93 @@ You should see `pbi-squire` under **cn-dataworks-plugins**.
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════╗
-║  IMPORTANT: Global Install vs Project Setup                               ║
+║  YOU'RE READY TO GO!                                                       ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
-You've just completed the GLOBAL installation. The plugin is now available
-in Claude Code, but it needs to be bootstrapped for EACH PROJECT you want
-to use it with.
+The plugin is now installed globally. Just navigate to any Power BI project
+and start using the skill - it will auto-configure on first use!
 
-Why? The plugin requires:
-  - A CLAUDE.md file referencing the plugin
-  - Skill configuration in .claude/pbi-squire.json
-  - [Pro only] Python tools copied to your project
+ANALYST EDITION: No bootstrap required. The skill sets up automatically.
 
-Without bootstrap, the plugin may not activate properly.
-
-NEXT STEP: Run bootstrap in your Power BI project folder
-─────────────────────────────────────────────────────────
-
-  cd "C:\path\to\your\powerbi-project"
-  & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
-
-This only takes a few seconds and enables full plugin functionality.
-
-NOTE: Analyst Edition does NOT require Python. The bootstrap creates
-configuration files only. Developer Edition additionally copies Python tools.
+DEVELOPER EDITION: Bootstrap is optional but recommended for Python tools.
+Without it, the skill uses Claude-native fallback (same features, slightly slower).
 ```
+
+### Quick Start (No Bootstrap Needed)
+
+```powershell
+# 1. Navigate to your Power BI project folder
+cd "C:\path\to\your\powerbi-project"
+
+# 2. Open Claude Code
+claude
+
+# 3. Just ask for help - first-time setup happens automatically!
+# "Help me fix the YoY growth measure"
+```
+
+**What happens on first use:**
+1. PBI Squire detects your Power BI projects
+2. Asks if this is a shared repository (if multiple projects found)
+3. Asks about data sensitivity settings
+4. Creates configuration files inline
+5. Proceeds with your request
 
 ### Quick Start Checklist
 
 After global installation:
 
 - [ ] **Navigate to your Power BI project folder**
-- [ ] **Run bootstrap** (see command above)
 - [ ] **Verify your project is in PBIP format** (not .pbix)
   - If you have a .pbix file, convert it first:
     1. Open in Power BI Desktop
     2. File → Save As → Power BI Project (.pbip)
 - [ ] **Open Claude Code** in your project folder
-- [ ] **Try a command**: `/evaluate-pbi-project-file`
+- [ ] **Try a command**: `/evaluate-pbi-project-file` or just describe your need
+- [ ] **(Developer Edition only)** Optionally run bootstrap for Python tools
+
+### Optional Bootstrap
+
+Bootstrap is **optional** for Analyst Edition but provides benefits:
+
+| Use Case | Run Bootstrap? |
+|----------|----------------|
+| Analyst Edition - normal use | No (auto-configures) |
+| Developer Edition - want Python tools | Yes (recommended) |
+| CI/CD automation | Yes (explicit setup) |
+| Force refresh configuration | Yes (with `-Force` flag) |
+
+```powershell
+# Optional: Run bootstrap for explicit control
+cd "C:\path\to\your\powerbi-project"
+& "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
+```
 
 ### Common First-Time Issues
 
 | Issue | Solution |
 |-------|----------|
-| "Skill not activating" | Run bootstrap in your project folder |
-| "Python tools not found" | Pro only - Core doesn't require Python. If Pro, run bootstrap |
 | "Limited analysis mode" | Convert your .pbix to .pbip format |
-| "CLAUDE.md not referencing plugin" | Run bootstrap to create/update it |
 | "MCP not detected" | Install Power BI Modeling MCP for live validation |
+| "Python tools not found" | Developer only - run bootstrap or use Claude-native fallback |
 
 ---
 
-## First Project Setup (Bootstrap)
+## First Project Setup (Automatic or Bootstrap)
 
-After installing the plugin, run bootstrap in each Power BI project to copy the tools:
+### Automatic Setup (Recommended)
+
+For **Analyst Edition**, setup happens automatically on first skill invocation. Just:
+
+1. Navigate to your Power BI project folder
+2. Open Claude Code
+3. Ask for help with Power BI
+
+The skill will detect your projects and configure itself inline.
+
+### Manual Bootstrap (Optional)
+
+For **Developer Edition** or explicit control, run bootstrap:
 
 ```powershell
 cd "C:\path\to\your\powerbi-project"
@@ -231,14 +264,25 @@ cd "$HOME\.claude\plugins\custom\pbi-squire"
 
 ## Project Bootstrap (First Run)
 
-When you first use the plugin in a Power BI project, bootstrap creates the configuration files needed for the skill to activate. This is called "bootstrapping."
+### Automatic Setup (Analyst Edition)
+
+For **Analyst Edition**, no separate bootstrap is needed. The skill auto-configures when you first invoke it:
+
+```
+You: "Help me with this Power BI measure"
+
+PBI Squire: "I need to configure PBI Squire for this location.
+             Found 2 Power BI projects. Configure as shared repository? [Y/N]
+             Does this project contain sensitive data? [Y/N]
+             ✅ Configured! Now let me help..."
+```
+
+### Manual Bootstrap (Optional)
+
+Run the bootstrap script for explicit control or to install Developer Edition Python tools:
 
 **Analyst Edition:** Creates configuration files only (no Python)
 **Developer Edition:** Creates configuration files + copies Python analysis tools
-
-### Automatic Bootstrap
-
-Run the bootstrap script from your project directory:
 
 ```powershell
 # Windows (from your Power BI project folder)
@@ -607,42 +651,41 @@ cd "$HOME\.claude\plugins\custom\pbi-squire"
 Test that the plugin is working:
 
 1. **Navigate to a Power BI project folder** (containing .pbip file)
-2. **Run bootstrap first** (if not already done):
-   ```powershell
-   & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
-   ```
-3. **Open Claude Code** in that folder:
+2. **Open Claude Code** in that folder:
    ```powershell
    claude
    ```
-4. **Verify plugin is listed**: `/plugin list` - you should see `pbi-squire`
-5. **Test the skill**: Ask "What Power BI workflows can you help me with?"
-6. **Or try a command**: `/evaluate-pbi-project-file`
+3. **Verify plugin is listed**: `/plugin list` - you should see `pbi-squire`
+4. **Test the skill**: Ask "What Power BI workflows can you help me with?"
+5. **Or try a command**: `/evaluate-pbi-project-file`
+
+The skill will auto-configure on first use if needed.
 
 ### Expected Behavior
 
 When working correctly, you should see:
 - Plugin listed under `cn-dataworks-plugins` in `/plugin list`
+- First-time setup prompts (if not previously configured)
 - Clear prompts when invoking workflows
 - Format detection warnings if using .pbix instead of .pbip
-- Bootstrap warning if project hasn't been set up
 
 ### If Skills Don't Activate
 
-The most common cause is **missing bootstrap**. The plugin is installed globally, but each project needs local setup:
+Check that Power BI files are present:
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════╗
-║  CHECK: Did you run bootstrap in THIS project folder?                     ║
+║  CHECK: Does this folder contain Power BI files?                          ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
-Look for these files:
-  ✓ .claude/pbi-squire.json
-  ✓ .claude/tools/pbi-squire/
-  ✓ CLAUDE.md (with plugin reference)
+Look for:
+  ✓ *.pbip file
+  ✓ *.SemanticModel/ folder
+  ✓ *.Report/ folder
 
-If any are missing, run:
-  & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
+If you've already used the skill, also check:
+  ✓ .claude/pbi-squire.json (auto-created)
+  ✓ CLAUDE.md (with plugin reference)
 ```
 
 ---
@@ -735,19 +778,25 @@ Or manually register inside Claude Code:
 
 ### Skills not activating
 
-**Most likely cause: Bootstrap not run**
+**Most likely cause: No Power BI files found**
 
-The plugin is installed globally, but each project needs bootstrap to work properly:
+The skill activates when it detects Power BI files. Check:
+- Project has a `.pbip` file or `.SemanticModel/` folder
+- You're in the correct directory
 
-```powershell
-cd "C:\path\to\your\project"
-& "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
-```
+**If auto-setup didn't run:**
+
+The skill should auto-configure on first use. If it didn't:
+1. Try invoking the skill directly: `/evaluate-pbi-project-file`
+2. Or run bootstrap manually:
+   ```powershell
+   cd "C:\path\to\your\project"
+   & "$HOME\.claude\plugins\custom\pbi-squire\tools\bootstrap.ps1"
+   ```
 
 **Also check:**
-- Project has a `.pbip` file or `.SemanticModel/` folder (triggers skill activation)
 - `CLAUDE.md` exists and references the PBI Squire plugin
-- `.claude/pbi-squire.json` exists in your project
+- `.claude/pbi-squire.json` exists in your project (created by auto-setup or bootstrap)
 
 ### MCP not detected
 
