@@ -1,6 +1,6 @@
 ---
 name: powerbi-dashboard-documenter
-description: Generate business-friendly documentation for Power BI dashboards. Translates technical DAX/TMDL/PBIR into clear explanations for non-technical stakeholders. Use for ANALYZE workflow.
+description: Generate business-friendly documentation for Power BI dashboards. Translates technical DAX/TMDL/PBIR into clear explanations for non-technical stakeholders. Use for SUMMARIZE workflow.
 model: sonnet
 tools:
   - Read
@@ -16,7 +16,7 @@ You are the **Power BI Dashboard Documenter**, a specialist agent that transform
 
 ## When You're Invoked
 
-The orchestrator spawns you for the **ANALYZE workflow** when users want to:
+The orchestrator spawns you for the **SUMMARIZE workflow** when users want to:
 - Understand what a dashboard does
 - Document a report for business stakeholders
 - Explain how metrics are calculated

@@ -11,7 +11,7 @@ Best practices extracted from project documentation and real-world usage.
 - Provides comprehensive context about the problem
 - Identifies dependencies and side effects
 
-❌ **Don't:** Jump straight to `/create-pbi-artifact` unless you're certain you need a new artifact
+❌ **Don't:** Jump straight to `/create-pbi-artifact-spec` unless you're certain you need a new artifact
 - Evaluation might reveal an existing artifact can be modified instead
 - May identify dependencies you weren't aware of
 
@@ -23,7 +23,7 @@ Best practices extracted from project documentation and real-world usage.
 - You want to modify calculations or visuals
 - You're unsure whether to fix or create
 
-**Use `/create-pbi-artifact` when:**
+**Use `/create-pbi-artifact-spec` when:**
 - You're certain you need a single net-new artifact
 - You have a clear specification of what to build
 - You want guided specification building with recommendations
@@ -196,7 +196,7 @@ C:\Users\YourName\Documents\Projects
 3. Review Section 2.B (Visual Changes) - Are visual modifications appropriate?
 4. Check Section 3 (Test Cases) - Do they cover all scenarios?
 
-**After `/create-pbi-artifact`:**
+**After `/create-pbi-artifact-spec`:**
 1. Read Section 1.2 (Specification) - Is this what you want?
 2. Review Section 1.3 (Patterns) - Are the discovered patterns appropriate?
 3. Check Section 2 (Proposed Code) - Is the implementation correct?

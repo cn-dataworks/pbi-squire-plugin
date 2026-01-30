@@ -56,35 +56,46 @@ This slash command creates comprehensive specifications for a complete Power BI 
 
 ## Workflow Overview
 
-### Agents Involved
+### Agents & Workflows Involved
 
+**Agents (directly invoked):**
 1. `powerbi-verify-pbiproject-folder-setup` - Validate project format and .Report folder
 2. `powerbi-page-question-analyzer` - Analyze business question for page requirements
 3. `powerbi-data-model-analyzer` - Extract data model schema
 4. `powerbi-artifact-decomposer` - Break down page into measures + visuals + interactions (page mode)
-5. `powerbi-data-understanding-agent` - Specify measures (measure mode) and visuals (visual mode)
-6. `powerbi-pattern-discovery` - Find existing patterns for measures
-7. `powerbi-artifact-designer` - Generate DAX code for measures
-8. `powerbi-visual-type-recommender` - Recommend visual types with pros/cons
-9. `powerbi-page-layout-designer` - Generate optimal coordinates and layout
-10. `powerbi-interaction-designer` - Design cross-filtering and drill-through
-11. `powerbi-pbir-page-generator` - Generate complete PBIR page files
-12. `power-bi-verification` - Validate DAX measures
-13. `powerbi-pbir-validator` - Validate PBIR files
+5. `powerbi-visual-type-recommender` - Recommend visual types with pros/cons
+6. `powerbi-data-understanding-agent` - Specify visuals (visual mode only - measures handled by artifact-spec)
+7. `powerbi-page-layout-designer` - Generate optimal coordinates and layout
+8. `powerbi-interaction-designer` - Design cross-filtering and drill-through
+9. `powerbi-pbir-page-generator` - Generate complete PBIR page files
+10. `power-bi-verification` - Validate DAX measures
+11. `powerbi-pbir-validator` - Validate PBIR files
+
+**Workflows (delegated for measures):**
+- `/create-pbi-artifact-spec` (embedded mode) - For each new measure, handles data understanding, pattern discovery, and DAX code generation
+
+**Architecture Note:** Measure specification is delegated to artifact-spec workflow to maintain single source of truth for DAX generation logic. This ensures consistency between standalone measure creation and page-based measure creation.
 
 ### Execution Pattern
 
 **Hybrid:** Sequential phases with parallel measure + visual specification branches
 
 ```
-Phases 1-4: Sequential (validation → question analysis → schema → decomposition)
+Phases 1-5: Sequential (validation → scratchpad → question analysis → schema → decomposition)
    ↓
-Phase 5: PARALLEL BRANCHES
-   ├─ Branch A: Measure specifications (per measure)
-   └─ Branch B: Visual specifications (per visual)
+Phase 6: PARALLEL BRANCHES
+   ├─ Branch A: Measure specifications (via /create-pbi-artifact-spec embedded mode)
+   │   └─ Each measure: data understanding → pattern discovery → DAX generation
+   └─ Branch B: Visual specifications (direct agents)
+       └─ Each visual: type recommendation → field specification
    ↓
-Phases 6-11: Sequential (layout → interactions → PBIR generation → validation → summary)
+Phases 7-12: Sequential (layout → interactions → PBIR generation → helper pages → validation → summary)
 ```
+
+**Key Architecture:**
+- Measures delegate to artifact-spec workflow (embedded mode) for DRY principle
+- Visuals stay in page-specs (require layout, PBIR generation)
+- Both branches write to different sections, can run in parallel
 
 ### Coordination File
 
@@ -241,67 +252,61 @@ Phases 6-11: Sequential (layout → interactions → PBIR generation → validat
 
 ### Branch A: Measure Specification (per NEW measure from Section 1.2)
 
-**For each NEW measure identified:**
+**Architecture:** Page-specs delegates measure creation to artifact-spec workflow (embedded mode)
 
-#### Step A1: Data Understanding & Specification
+This ensures:
+- Measure creation logic is maintained in one place (DRY principle)
+- Consistency between standalone measure creation and page-based measure creation
+- All measure best practices (pattern discovery, validation) automatically applied
 
-**Execute:** `powerbi-data-understanding-agent` (in measure mode)
+**For each NEW measure identified in Section 1.2:**
 
-**Input:**
-- Measure name and purpose (from Section 1.2)
-- Section 1.1 (schema)
-- Workspace/dataset (if provided for data sampling)
+**INVOKE** `create-pbi-artifact-spec` workflow in embedded mode:
 
-**Agent Actions:**
-- Interactive Q&A for measure specifications
-- Recommend column selections, aggregations, filters
-- Sample data if workspace/dataset available
-- Handle time intelligence requirements
+```
+create-pbi-artifact-spec
+  --embedded-mode
+  --parent-findings "<scratchpad>/findings.md"
+  --section "2.A.{N}"                    # N = measure index (1, 2, 3...)
+  --schema-section "1.1"                 # Read schema from parent's Section 1.1
+  --type measure
+  --description "<measure purpose from Section 1.2>"
+```
 
-**Output:** Measure specification in Section 2.A subsection
+**Embedded artifact-spec execution:**
+1. **Skip Phase 1-2:** Project already validated, scratchpad exists
+2. **Phase 3:** Read schema from Section 1.1 of parent findings.md
+3. **Phase 4:** Interactive data understanding Q&A (measure mode)
+4. **Phase 5:** Pattern discovery in existing TMDL
+5. **Phase 6:** DAX code generation with styling
+6. **Skip Phase 7:** No completion messaging
 
-#### Step A2: Pattern Discovery
+**Output:** Each measure writes to its own subsection in Section 2.A
 
-**Execute:** `powerbi-pattern-discovery` agent
+**Parallel Execution:** Multiple measures can be processed in parallel since they write to different sections (2.A.1, 2.A.2, etc.)
 
-**Input:**
-- Project path
-- Measure specification from Step A1
-- Findings file path
-
-**Agent Actions:**
-- Find similar measures in existing model
-- Extract naming conventions, format strings, display folders
-- Identify calculation patterns
-
-**Output:** Appends patterns to Section 2.A subsection
-
-#### Step A3: Code Generation
-
-**Execute:** `powerbi-artifact-designer` agent
-
-**Input:**
-- Measure specification
-- Discovered patterns
-- Findings file path
-
-**Agent Actions:**
-- Generate complete DAX code
-- Apply styling (format string, display folder, description)
-- Include error handling
-
-**Output:** Appends DAX code to Section 2.A subsection
+**Example:** For a page requiring 3 new measures:
+```
+├── create-pbi-artifact-spec --embedded-mode --section "2.A.1" ... (Total Q4 Sales)
+├── create-pbi-artifact-spec --embedded-mode --section "2.A.2" ... (YoY Growth %)
+└── create-pbi-artifact-spec --embedded-mode --section "2.A.3" ... (Prior Year Sales)
+```
 
 **Final Section 2.A Structure:**
 ```markdown
 ## Section 2.A: Calculation Changes (Measures)
 
-### Measure 1: Total Q4 Sales
+### 2.A.1: Total Q4 Sales
 **Change Type:** CREATE
 **Proposed Code:** [DAX with formatString, displayFolder, description]
+**Change Rationale:** [Details from artifact-spec]
+
+### 2.A.2: YoY Revenue Growth %
+**Change Type:** CREATE
+**Proposed Code:** [DAX code]
 **Change Rationale:** [Details]
 
-### Measure 2: Q4 QoQ Growth %
+### 2.A.3: Prior Year Sales
 [Similar structure]
 ```
 

@@ -83,8 +83,8 @@ python pbi_project_validator.py "C:\Projects\SalesReport" --json
 **Used By:**
 - `powerbi-verify-pbiproject-folder-setup` agent
 - `/evaluate-pbi-project-file` command
-- `/create-pbi-artifact` command
-- `/analyze-pbi-dashboard` command
+- `/create-pbi-artifact-spec` command
+- `/summarize-pbi-dashboard` command
 
 **Efficiency Note:**
 This script reduces token usage by 75-80% compared to LLM-based file existence checks. A single Python execution replaces 5-8 sequential bash commands with LLM reasoning.

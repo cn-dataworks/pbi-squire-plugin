@@ -5,6 +5,197 @@ Used by the `powerbi-anonymization-setup` agent for Claude-native anonymization 
 
 ---
 
+## Quick Reference
+
+| Edition | Detection Method |
+|---------|-----------------|
+| **Pro** | Run `sensitive_column_detector.py` → structured JSON report |
+| **Core** | Use Grep/Read tools → apply detection rules below |
+
+---
+
+## Part 1: Sensitive Column Detection (Claude-Native)
+
+When Python tool is not available, use these instructions to detect sensitive columns by scanning TMDL files directly.
+
+### Step 1: Find Column Definitions
+
+**Locate all table TMDL files:**
+
+```
+Glob pattern: **/*.tmdl
+Path: <project>/.SemanticModel/definition/tables/
+```
+
+**For each table file, extract columns using:**
+
+```
+Grep pattern: ^\s*column\s+['"]?([^'"\s]+)['"]?
+```
+
+### Step 2: Extract Table and Column Names
+
+**Read each TMDL file and extract:**
+
+1. **Table name:** Match `^table\s+['"]?(\w+)['"]?`
+2. **Column definitions:** Match `^\s*column\s+['"]?([^\s'"]+)['"]?`
+3. **Data type (if present):** Match `dataType:\s*(\w+)`
+
+**Example extraction from TMDL:**
+```tmdl
+table Customers
+
+    column CustomerName
+        dataType: String
+
+    column Email
+        dataType: String
+
+    column PhoneNumber
+        dataType: String
+```
+
+→ Extracted: `Customers.CustomerName`, `Customers.Email`, `Customers.PhoneNumber`
+
+### Step 3: Match Against Sensitive Patterns
+
+**For each column name, check against patterns in order (first match wins):**
+
+**HIGH Confidence patterns (case-insensitive):**
+
+| Category | Pattern | Example Matches |
+|----------|---------|-----------------|
+| Names | `^(customer\|client\|employee\|user\|person\|contact\|member)_?name$` | CustomerName, client_name |
+| Names | `^(first\|last\|full\|given\|family\|middle)_?name$` | FirstName, last_name |
+| Emails | `^e?mail(_?address)?$` | Email, email_address |
+| Emails | `^(customer\|client\|user\|contact)_?e?mail$` | CustomerEmail |
+| SSN/ID | `^ssn$` | SSN |
+| SSN/ID | `^social_?security(_?number)?$` | SocialSecurityNumber |
+| SSN/ID | `^tax_?id$` | TaxID |
+| SSN/ID | `^national_?id$` | NationalID |
+| SSN/ID | `^(driver_?)?license(_?number)?$` | DriverLicense |
+| SSN/ID | `^passport(_?number)?$` | PassportNumber |
+| Phone | `^phone(_?number)?$` | Phone, PhoneNumber |
+| Phone | `^(mobile\|cell\|home\|work\|office)_?(phone\|number)?$` | MobilePhone |
+| Phone | `^tel(ephone)?$` | Telephone |
+| Address | `^(street\|home\|mailing\|billing\|shipping)_?address$` | StreetAddress |
+| Address | `^address(_?line)?[_\d]*$` | Address, Address1 |
+| Financial | `^(salary\|wage\|income\|compensation)$` | Salary |
+| Financial | `^(account\|card)_?number$` | AccountNumber |
+| Financial | `^(credit\|debit)_?card$` | CreditCard |
+| Financial | `^bank_?account$` | BankAccount |
+| Dates | `^(date_?of_?birth\|dob\|birth_?date)$` | DateOfBirth, DOB |
+
+**MEDIUM Confidence patterns:**
+
+| Category | Pattern | Example Matches |
+|----------|---------|-----------------|
+| Names | `^name$` | Name |
+| Names | `^(customer\|client\|employee\|user\|person)$` | Customer |
+| Emails | `email` (anywhere in name) | PrimaryEmail, WorkEmail |
+| Phone | `^fax$` | Fax |
+| Address | `^(city\|town\|municipality)$` | City |
+| Address | `^(state\|province\|region)$` | State |
+| Address | `^(zip\|postal)_?(code)?$` | ZipCode |
+| Financial | `^(price\|cost\|amount\|total\|balance\|payment)$` | Amount |
+| Financial | `^(revenue\|profit\|margin)$` | Revenue |
+| Dates | `^(hire\|start\|end\|termination)_?date$` | HireDate |
+
+**LOW Confidence patterns:**
+
+| Category | Pattern | Example Matches |
+|----------|---------|-----------------|
+| Address | `^country$` | Country |
+| Freetext | `^(notes?\|comments?\|description\|remarks?)$` | Notes |
+| Freetext | `^(feedback\|review\|message)$` | Feedback |
+
+### Step 4: Assign Masking Strategy
+
+**Based on matched category:**
+
+| Category | Masking Strategy | Description |
+|----------|------------------|-------------|
+| Names | `sequential_numbering` | "Customer 1", "Customer 2", etc. |
+| Emails | `fake_domain` | user123@example.com format |
+| SSN/ID | `partial_mask` | Show only last 4 chars (XXX-XX-1234) |
+| Phone | `fake_prefix` | (555) 555-XXXX format |
+| Address | `generic_format` | "123 Main St, Anytown, ST 00000" |
+| Financial | `scale_factor` | Multiply by random 0.8-1.2 |
+| Dates | `date_offset` | Shift by random +/- 30 days |
+| Freetext | `placeholder_text` | "[Content redacted for privacy]" |
+
+### Step 5: Generate Detection Report
+
+**Report format:**
+
+```
+================================================================================
+SENSITIVE COLUMN DETECTION REPORT
+================================================================================
+Project: <project_path>
+Tables Scanned: N
+Columns Scanned: M
+
+SENSITIVE COLUMNS FOUND: X
+  - High Confidence: H
+  - Medium Confidence: M
+  - Low Confidence: L
+
+================================================================================
+HIGH CONFIDENCE - Likely Sensitive
+================================================================================
+
+  Customers.CustomerName
+    Category: names
+    Suggested Masking: Replace with "Customer 1", "Customer 2", etc.
+
+  Customers.Email
+    Category: emails
+    Suggested Masking: Replace with user123@example.com format
+
+================================================================================
+MEDIUM CONFIDENCE - Possibly Sensitive
+================================================================================
+
+  [Similar format]
+
+================================================================================
+LOW CONFIDENCE - Review Recommended
+================================================================================
+
+  [Similar format]
+
+================================================================================
+SUMMARY BY TABLE
+================================================================================
+
+  Customers: 3 sensitive column(s)
+    - CustomerName (names, HIGH)
+    - Email (emails, HIGH)
+    - City (addresses, MEDIUM)
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Review the detected columns and confirm which need masking
+2. Run: /setup-data-anonymization to generate masking M code
+3. The workflow will create a DataMode parameter for toggling
+4. Switch to 'Anonymized' mode before using MCP on sensitive data
+================================================================================
+```
+
+### Step 6: Present to User for Confirmation
+
+**Before generating masking code:**
+
+1. Show detection report to user
+2. Ask for confirmation on which columns to mask
+3. Note any false positives (columns detected but not sensitive)
+4. Note any false negatives (user identifies additional columns)
+
+---
+
 ## Sensitive Column Detection Patterns
 
 Column names are matched case-insensitively against these regex patterns.

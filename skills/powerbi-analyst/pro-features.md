@@ -42,6 +42,11 @@ If your project has a customized version, agents will use that instead of the pl
 
 Add these to your workflow detection:
 
+**Page Creation:**
+- "Create a dashboard page" → CREATE_PAGE workflow
+- "Build a visual" / "Create a card" → CREATE_PAGE workflow
+- "Add a new report page" → CREATE_PAGE workflow
+
 **Template Harvesting:**
 - "Extract templates from this report" → HARVEST_TEMPLATES workflow
 - "Harvest visual templates" → HARVEST_TEMPLATES workflow
@@ -53,7 +58,7 @@ Add these to your workflow detection:
 - "Run the QA loop on this dashboard" → QA_LOOP workflow
 - "Validate and deploy my changes" → QA_LOOP workflow
 
-**Design Standards (NEW):**
+**Design Standards:**
 - "How do I ensure consistent design?" → SETUP_DESIGN_STANDARDS
 - "Set up design standards" → SETUP_DESIGN_STANDARDS
 - "Review dashboard for consistency" → QA_LOOP with `--design-critique`
@@ -113,6 +118,51 @@ Add these to your workflow detection:
 **Output:** Customized `.claude/powerbi-design-standards.md` file
 
 **Next step:** "Run the QA loop with design critique" to validate dashboards against standards
+
+---
+
+### CREATE_PAGE (Full Dashboard Page Creation)
+
+**Use when:** User wants to create a complete new report page with visuals, layout, and interactions.
+
+**Why Pro?** This workflow involves sophisticated design capabilities:
+- Visual type recommendation with data-driven analysis
+- Research-based layout design (8px grid, F-pattern hierarchy)
+- Cross-filtering and drill-through interaction design
+- PBIR file generation for visuals and pages
+
+**Trigger phrases:**
+- "Create a dashboard page showing..."
+- "Build a visual for..."
+- "Add a sales KPI card"
+- "Create a regional performance page"
+
+**Commands:** `/create-pbi-page-specs`
+
+**Process:**
+1. **Question Analysis** - Understand the business question being answered
+2. **Schema Extraction** - Analyze available tables, columns, measures
+3. **Artifact Decomposition** - Identify required measures and visuals
+4. **Measure Specification** - Delegates to CREATE_ARTIFACT (embedded mode) for each new measure
+5. **Visual Type Recommendation** - Data-driven selection with pros/cons
+6. **Layout Design** - Optimal positioning using research-based hierarchy
+7. **Interaction Design** - Cross-filtering matrix, drill-through targets
+8. **PBIR Generation** - Complete page.json and visual.json files
+9. **Validation** - DAX and PBIR structure validation
+
+**Output:** `findings.md` with:
+- Section 2.A: Calculation Changes (measures with DAX code)
+- Section 2.B: Visual Specifications (type, fields, formatting)
+- Section 3: Page Layout Plan (coordinates, zones)
+- Section 4: Interaction Design (cross-filtering, drill-through)
+- Section 5: PBIR Page Files (complete JSON)
+
+**Next step:** `/implement-deploy-test-pbi-project-file` to create the page
+
+**Core Edition Alternative:**
+Core users can create measures with `/create-pbi-artifact-spec`, then add visuals manually in Power BI Desktop.
+
+See `workflows/create-pbi-page-specs.md` for full documentation.
 
 ---
 
@@ -263,6 +313,7 @@ Additional examples for Pro users:
 - `resources/playwright-mcp-setup.md` - Playwright MCP installation for DOM inspection
 
 ### Workflows
+- `workflows/create-pbi-page-specs.md` - Full page creation with visuals and layout
 - `workflows/harvest-templates.md` - Template extraction workflow
 - `workflows/review-ux-pbi-dashboard.md` - UX review workflow
 - `workflows/qa-loop-pbi-dashboard.md` - Automated QA loop workflow

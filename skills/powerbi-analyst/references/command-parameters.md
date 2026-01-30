@@ -53,7 +53,7 @@ Detailed breakdown of parameters for each Power BI workflow command.
 
 ---
 
-## `/create-pbi-artifact`
+## `/create-pbi-artifact-spec`
 
 ### Required Parameters
 
@@ -95,7 +95,7 @@ Detailed breakdown of parameters for each Power BI workflow command.
 
 ### Full Example
 ```bash
-/create-pbi-artifact --project "/mnt/c/Projects/SalesReport.pbip" --type measure --description "YoY Revenue Growth % comparing current year to same period last year, formatted as percentage" --workspace "Analytics" --dataset "Sales Model"
+/create-pbi-artifact-spec --project "/mnt/c/Projects/SalesReport.pbip" --type measure --description "YoY Revenue Growth % comparing current year to same period last year, formatted as percentage" --workspace "Analytics" --dataset "Sales Model"
 ```
 
 ---
@@ -127,7 +127,7 @@ Detailed breakdown of parameters for each Power BI workflow command.
 ### Optional Parameters
 
 **`--workspace <name>`** and **`--dataset <name>`**
-- Same as `/create-pbi-artifact`
+- Same as `/create-pbi-artifact-spec`
 - **Benefits:** Enables data sampling for BOTH measure and visual recommendations
 - **Highly recommended** for page design
 

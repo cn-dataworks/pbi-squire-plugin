@@ -163,8 +163,31 @@ If `.gitignore` exists and doesn't already exclude cache files, append:
 
 **Goal**: Scan TMDL files to identify columns likely containing sensitive data.
 
-**Steps**:
-1. Run `sensitive_column_detector.py` against project
+**Tool Selection (Try Tool First, Fallback to Claude-Native):**
+
+1. **Check for Python detector:**
+   ```bash
+   test -f ".claude/tools/sensitive_column_detector.py" && echo "TOOL_AVAILABLE" || echo "TOOL_NOT_AVAILABLE"
+   ```
+
+2. **If tool available (Pro edition):**
+   - Run `sensitive_column_detector.py` against project
+   - Parse detection results
+   - Fast, comprehensive pattern matching with confidence scores
+
+3. **If tool NOT available (Core edition):**
+   - Load `references/anonymization-patterns.md` → **Part 1: Sensitive Column Detection (Claude-Native)**
+   - Follow the 6-step detection procedure:
+     1. Find all column definitions in TMDL files
+     2. Match against PII pattern tables (names, emails, identifiers, phones, addresses, amounts)
+     3. Calculate confidence based on pattern match strength
+     4. Classify columns by category
+     5. Suggest masking strategies
+     6. Generate detection report
+   - Use Grep/Read tools to scan column definitions
+
+**Steps (both modes)**:
+1. Execute column detection
 2. Parse detection results
 3. Group findings by confidence level (HIGH, MEDIUM, LOW)
 

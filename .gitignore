@@ -65,5 +65,8 @@ agent_scratchpads/
 # Pro-only agents (excluded on main branch, included on pro branch)
 agents/pro/
 
+# Pro-only workflows (excluded on main branch, included on pro branch)
+skills/powerbi-analyst/workflows/create-pbi-page-specs.md
+
 # Internal development documentation (not for users)
 CONTRIBUTING.md

@@ -6,7 +6,7 @@ This document describes the consolidation of four skills into one unified `power
 
 | Absorbed Skill | What It Becomes |
 |----------------|-----------------|
-| `powerbi-dashboard-analyzer` | **ANALYZE workflow** (enhanced) |
+| `powerbi-dashboard-analyzer` | **SUMMARIZE workflow** (enhanced) |
 | `powerbi-data-prep` | **DATA_PREP workflow** (new) + enhanced mcode-specialist agent |
 | `power-bi-assistant` | **Orchestrator behavior** + trigger patterns |
 
@@ -453,7 +453,7 @@ See `assets/analysis_report_template.md` for the full structure.
 
 ### Phase 3: Update SKILL.md
 - [ ] Add DATA_PREP workflow section
-- [ ] Enhance ANALYZE workflow section
+- [ ] Enhance SUMMARIZE workflow section
 - [ ] Add Quick Start section (routing)
 - [ ] Add orchestrator behavior section
 - [ ] Update trigger patterns
@@ -472,7 +472,7 @@ See `assets/analysis_report_template.md` for the full structure.
 - [ ] Test EVALUATE workflow
 - [ ] Test CREATE_ARTIFACT workflow
 - [ ] Test DATA_PREP workflow (new)
-- [ ] Test ANALYZE workflow (enhanced)
+- [ ] Test SUMMARIZE workflow (enhanced)
 - [ ] Test unclear request → clarification flow
 - [ ] Test PBIX detection still works
 
@@ -504,7 +504,7 @@ User: "I want to filter a table"
 Claude: → DATA_PREP workflow (automatic routing)
 
 User: "Explain this dashboard"
-Claude: → ANALYZE workflow (automatic routing)
+Claude: → SUMMARIZE workflow (automatic routing)
 ```
 
 ---

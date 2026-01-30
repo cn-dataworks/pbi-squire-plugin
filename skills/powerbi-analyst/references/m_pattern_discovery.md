@@ -1,41 +1,175 @@
-# M Code Pattern Discovery - Interpretation Guide
+# M Code Pattern Discovery
 
-How to interpret output from `m_pattern_analyzer.py` and apply discovered patterns to new transformations.
+Complete guide for discovering and applying M code patterns in Power BI projects. Supports both Pro edition (Python tool) and Core edition (Claude-native analysis).
 
-## Pattern Analyzer Output Structure
+---
 
-The analyzer scans all partition M code in the project and reports:
+## Quick Reference
 
-1. **Naming Conventions** - How steps, tables, and columns are named
-2. **Transformation Patterns** - Common M code structures and approaches
-3. **Code Organization** - How M code is structured and commented
-4. **Error Handling** - Whether try-otherwise is used and where
-5. **Parameter Usage** - If and how parameters are used
+| Edition | Pattern Discovery Method |
+|---------|-------------------------|
+| **Pro** | Run `m_pattern_analyzer.py` → structured JSON output |
+| **Core** | Use Grep/Read tools → apply detection rules below |
 
-## Section 1: Naming Conventions
+---
 
-### Example Output
+## Part 1: Pattern Detection (Claude-Native)
+
+When Python tool is not available, use these instructions to discover patterns by scanning TMDL files directly.
+
+### Step 1: Find M Code Partitions
+
+**Locate all partition definitions:**
 
 ```
-=== NAMING CONVENTIONS ===
-
-Step Names:
-- Style: PascalCase (87% of steps)
-- Examples: "FilterActiveCustomers", "RemoveInternalColumns", "SetDataTypes"
-- Anti-pattern: 23% still use default names like "#"Filtered Rows""
-
-Table Names:
-- Style: PascalCase
-- Examples: "Sales", "Customer", "Product", "OrderDetails"
-- Pattern: Singular names (not plural)
-
-Column Names:
-- Style: PascalCase
-- Examples: "CustomerID", "OrderDate", "TotalAmount"
-- Pattern: Abbreviations: "ID" (not "Id"), "Qty" (not "Quantity")
+Grep pattern: partition\s+'[^']+'\s*=\s*m
+Path: <project>/.SemanticModel/definition/tables/
 ```
 
-### How to Apply
+**For each partition found, extract:**
+1. Partition name (in single quotes)
+2. M code block (after `source =` until next `partition` or `table` keyword)
+
+### Step 2: Analyze Naming Conventions
+
+**Scan step names (lines matching `StepName = ...`):**
+
+| Pattern | Regex | Example |
+|---------|-------|---------|
+| PascalCase | `^[A-Z][a-z]+(?:[A-Z][a-z]+)*$` | `FilterActiveCustomers` |
+| camelCase | `^[a-z]+(?:[A-Z][a-z]+)*$` | `filterActiveCustomers` |
+| snake_case | `^[a-z]+(?:_[a-z]+)*$` | `filter_active_customers` |
+| Default (Power Query) | `^#".*"$` | `#"Filtered Rows"` |
+
+**Count occurrences of each style and calculate percentages.**
+
+**Skip M keywords:** `let`, `in`, `each`, `and`, `or`, `not`, `true`, `false`, `null`
+
+**Report:**
+```
+Naming Style Analysis:
+- PascalCase: X% (N occurrences) ← dominant if >50%
+- snake_case: Y% (M occurrences)
+- Default names: Z% (K occurrences) ← anti-pattern
+```
+
+### Step 3: Analyze Transformation Patterns
+
+**Search for these function patterns in M code:**
+
+| Function | What It Indicates | Search Pattern |
+|----------|-------------------|----------------|
+| `Sql.Database(` | SQL connection style | Note server format (FQDN vs short name) |
+| `Table.SelectRows(` | Row filtering | Check single-line vs multi-line format |
+| `Table.SelectColumns(` | Column selection | Check position in pipeline (early vs late) |
+| `Table.RemoveColumns(` | Column removal | Alternative to SelectColumns |
+| `Table.AddColumn(` | Custom columns | Note naming pattern for new columns |
+| `Table.TransformColumnTypes(` | Type setting | Check inline vs list format |
+| `Table.NestedJoin(` or `Table.Join(` | Merge operations | Note join type preferences |
+| `Table.Group(` | Aggregations | Note aggregation patterns |
+| `#date(` | Date literals | Indicates hardcoded vs parameterized dates |
+
+**Report:**
+```
+Transformation Patterns Found:
+- SQL Connections: N partitions (server format: FQDN/short)
+- Row Filtering: N partitions (single-line/multi-line: X%/Y%)
+- Column Selection: N partitions (early/late in pipeline: X%/Y%)
+- Date Literals: N partitions (hardcoded dates present)
+```
+
+### Step 4: Analyze Code Organization
+
+**Check for comments:**
+
+| Comment Style | Pattern |
+|---------------|---------|
+| Single-line | `//` at start of line or after code |
+| Multi-line | `/* ... */` blocks |
+
+**Check for logical grouping:**
+- Blank lines between step groups
+- Section comments (e.g., `// Connection`, `// Filtering`)
+
+**Report:**
+```
+Code Organization:
+- Comments: X% of partitions have comments
+  - Style: Single-line (//): N occurrences
+  - Style: Multi-line (/* */): M occurrences
+- Blank line grouping: X% of partitions use blank lines between sections
+```
+
+### Step 5: Analyze Error Handling
+
+**Search for try-otherwise patterns:**
+
+```
+Pattern: try\s+.*\s+otherwise\s+(\w+|null|0|"")
+```
+
+**Count fallback value usage:**
+
+| Fallback | Meaning |
+|----------|---------|
+| `null` | Returns blank for errors |
+| `0` | Returns zero for errors |
+| `""` | Returns empty string |
+| Other | Custom default value |
+
+**Report:**
+```
+Error Handling:
+- try-otherwise usage: X% of partitions
+- Common fallback values:
+  - null: N occurrences
+  - 0: M occurrences
+```
+
+### Step 6: Analyze Parameter Usage
+
+**Search for parameter-like names:**
+
+```
+Pattern: \b([A-Z][a-zA-Z]+(?:Date|Name|Path|Server|Database|URL|Key|Value))\b
+```
+
+**Common parameters to detect:**
+- `ServerName`, `DatabaseName` - connection parameters
+- `StartDate`, `EndDate` - date range parameters
+- `FilePath`, `FolderPath` - file source parameters
+
+**Report:**
+```
+Parameter Usage:
+- Likely parameters found: N
+- Examples: ServerName, StartDate, EndDate
+- Usage: Direct reference (vs intermediate variable)
+```
+
+### Step 7: Generate Recommendations
+
+Based on analysis, provide recommendations:
+
+**Naming:**
+- If one style >50%: "Use [style] for new step names (dominant pattern)"
+- If mixed: "Mixed naming styles detected - recommend standardizing on [majority]"
+
+**Organization:**
+- If comments >30%: "Comments are commonly used - add comments for complex logic"
+- If comments <30%: "Low comment usage - consider adding comments for maintainability"
+
+**Error Handling:**
+- If try-otherwise >20%: "Error handling is used - apply try-otherwise for risky operations"
+- If try-otherwise <20%: "Limited error handling - consider adding try-otherwise where needed"
+
+---
+
+## Part 2: Pattern Application
+
+Once patterns are discovered (via Python tool or Claude-native analysis), apply them consistently.
+
+### Naming Conventions
 
 **When adding new steps:**
 ```m
@@ -67,59 +201,18 @@ Table.AddColumn(..., "CustomerId", ...)
 Table.AddColumn(..., "customer_id", ...)
 ```
 
-## Section 2: Transformation Patterns
+### Transformation Patterns
 
-### Example Output
-
-```
-=== TRANSFORMATION PATTERNS ===
-
-SQL Database Connections:
-- Pattern: Sql.Database("server", "database") (100% of connections)
-- Server format: Fully qualified domain names
-- Example: Sql.Database("prod-sql.company.com", "SalesDB")
-
-Filtering:
-- Pattern: Table.SelectRows with simple conditions (93%)
-- Complex conditions: Multi-line format (72%)
-Example:
-	Filtered = Table.SelectRows(Source, each
-		[Amount] > 1000
-		and [Status] = "Active"
-	)
-
-Column Selection:
-- Pattern: Table.SelectColumns early in pipeline (85%)
-- Typically after navigation, before filtering
-Example:
-	Selected = Table.SelectColumns(Source, {
-		"CustomerID",
-		"OrderDate",
-		"Amount",
-		"Status"
-	})
-
-Date Filtering:
-- Pattern: Hardcoded date literals (67%)
-- Format: #date(YYYY, M, D)
-Example:
-	Filtered = Table.SelectRows(Source, each
-		[OrderDate] >= #date(2024, 1, 1)
-	)
-```
-
-### How to Apply
-
-**For SQL connections:**
+**SQL connections - match server format:**
 ```m
 // Project pattern uses fully qualified server names
 Source = Sql.Database("prod-sql.company.com", "SalesDB")
 
-// NOT (if pattern says otherwise):
+// NOT (if FQDN is the pattern):
 Source = Sql.Database("PROD-SQL", "SalesDB")
 ```
 
-**For filtering:**
+**Filtering - match line format:**
 ```m
 // Project uses multi-line format for complex conditions
 Filtered = Table.SelectRows(Source, each
@@ -132,13 +225,13 @@ Filtered = Table.SelectRows(Source, each
 Filtered = Table.SelectRows(Source, each [Amount] > 1000 and [Status] = "Active" and [Region] = "North")
 ```
 
-**For column selection:**
+**Column selection - match pipeline position:**
 ```m
 // Project pattern: select columns early, after navigation
 let
 	Source = Sql.Database(...),
 	Navigation = Source{[Schema="dbo",Item="Sales"]}[Data],
-	SelectedColumns = Table.SelectColumns(Navigation, {"ID", "Amount", "Date"}),  ← Early
+	SelectedColumns = Table.SelectColumns(Navigation, {"ID", "Amount", "Date"}),  // ← Early
 	Filtered = Table.SelectRows(SelectedColumns, each [Amount] > 1000)
 in
 	Filtered
@@ -148,46 +241,12 @@ let
 	Source = Sql.Database(...),
 	Navigation = Source{[Schema="dbo",Item="Sales"]}[Data],
 	Filtered = Table.SelectRows(Navigation, each [Amount] > 1000),
-	SelectedColumns = Table.SelectColumns(Filtered, {"ID", "Amount", "Date"})  ← Late
+	SelectedColumns = Table.SelectColumns(Filtered, {"ID", "Amount", "Date"})  // ← Late
 in
 	SelectedColumns
 ```
 
-## Section 3: Code Organization
-
-### Example Output
-
-```
-=== CODE ORGANIZATION ===
-
-Step Grouping:
-- Pattern: Logical sections with blank lines between groups
-Example:
-	let
-		// Connection
-		Source = Sql.Database(...),
-
-		// Navigation
-		RawData = Source{[Schema="dbo",Item="Sales"]}[Data],
-
-		// Filtering
-		FilteredData = Table.SelectRows(RawData, ...),
-
-		// Type conversion
-		TypedData = Table.TransformColumnTypes(FilteredData, ...)
-	in
-		TypedData
-
-Comments:
-- Frequency: 45% of partitions have comments
-- Style: Single-line comments with "//"
-- Location: Above step (not inline)
-Example:
-	// Filter for active customers only (business requirement)
-	ActiveOnly = Table.SelectRows(...)
-```
-
-### How to Apply
+### Code Organization
 
 **Use blank lines to separate logical groups:**
 ```m
@@ -207,9 +266,9 @@ in
 	WithCategory
 ```
 
-**Add comments above steps (not inline):**
+**Match comment style:**
 ```m
-// Project pattern: comments above step
+// Project pattern: comments above step (not inline)
 
 // Filter for active customers per business requirement SR-2024-015
 ActiveOnly = Table.SelectRows(...)
@@ -218,33 +277,9 @@ ActiveOnly = Table.SelectRows(...)
 ActiveOnly = Table.SelectRows(...)  // Filter active customers
 ```
 
-## Section 4: Error Handling
+### Error Handling
 
-### Example Output
-
-```
-=== ERROR HANDLING ===
-
-Try-Otherwise Usage:
-- Frequency: 34% of partitions
-- Pattern: Used for division and date parsing
-- Fallback: null (78%), 0 (15%), default value (7%)
-
-Examples:
-	// Division with null fallback
-	SafeDivision = Table.AddColumn(Source, "Ratio", each
-		try [Revenue] / [Quantity] otherwise null
-	)
-
-	// Date parsing with null fallback
-	SafeDate = Table.AddColumn(Source, "ParsedDate", each
-		try Date.From([DateText]) otherwise null
-	)
-```
-
-### How to Apply
-
-**For division:**
+**Match fallback value pattern:**
 ```m
 // Project pattern: try-otherwise with null fallback
 WithRatio = Table.AddColumn(Source, "UnitPrice", each
@@ -265,28 +300,7 @@ WithDate = Table.AddColumn(Source, "OrderDate", each
 )
 ```
 
-## Section 5: Parameter Usage
-
-### Example Output
-
-```
-=== PARAMETER USAGE ===
-
-Parameters Found: 3
-- ServerName (type text): Used in all SQL connections
-- StartDate (type date): Used in date filtering (5 partitions)
-- EndDate (type date): Used in date filtering (5 partitions)
-
-Pattern: Parameters referenced directly (no intermediate variables)
-Example:
-	Source = Sql.Database(ServerName, "SalesDB")
-	Filtered = Table.SelectRows(Source, each
-		[OrderDate] >= StartDate
-		and [OrderDate] <= EndDate
-	)
-```
-
-### How to Apply
+### Parameter Usage
 
 **Use parameters for values that change:**
 ```m
@@ -300,7 +314,7 @@ let
 ...
 ```
 
-**For date filtering:**
+**For date filtering with parameters:**
 ```m
 // Project pattern: use StartDate/EndDate parameters
 Filtered = Table.SelectRows(Source, each
@@ -315,7 +329,9 @@ Filtered = Table.SelectRows(Source, each
 )
 ```
 
-## Pattern Priority
+---
+
+## Part 3: Pattern Priority
 
 When multiple patterns exist, prioritize:
 
@@ -324,13 +340,32 @@ When multiple patterns exist, prioritize:
 3. **Best practices** - If no clear pattern, follow M best practices guide
 4. **User preference** - If patterns conflict or unclear, ask user
 
-## Example: Applying All Patterns
+### Pattern Confidence Levels
+
+| Confidence | Threshold | Action |
+|------------|-----------|--------|
+| High | >80% | Follow pattern strictly |
+| Medium | 50-80% | Follow pattern, note alternatives |
+| Low | <50% | Ask user or use best practices |
+
+### Handling Pattern Conflicts
+
+**Scenario:** Pattern analyzer shows 55% PascalCase, 45% snake_case
+
+**Resolution:**
+1. Check which pattern is used in the table being edited (if editing)
+2. If creating new, ask user: "I notice the project uses both PascalCase (55%) and snake_case (45%). Which would you prefer for new code?"
+3. Document chosen pattern for future consistency
+
+---
+
+## Part 4: Complete Example
 
 **Pattern Discovery Output Summary:**
-- Naming: PascalCase for steps, tables, columns
-- Filtering: Multi-line format for complex conditions
-- Organization: Logical groups with blank lines, comments above steps
-- Error Handling: try-otherwise with null for division
+- Naming: PascalCase for steps, tables, columns (87%)
+- Filtering: Multi-line format for complex conditions (72%)
+- Organization: Logical groups with blank lines, comments above steps (45%)
+- Error Handling: try-otherwise with null for division (34%)
 - Parameters: StartDate/EndDate used for date filtering
 
 **New Transformation Request:** "Filter sales for active customers in 2024 with revenue > $1000"
@@ -372,7 +407,6 @@ in
 **Inconsistent (violates discovered patterns):**
 ```m
 let
-	// Single-line connection
 	source = Sql.Database("PROD-SQL", "SalesDB"),  // ❌ lowercase, short server name
 	raw_data = source{[Schema="dbo",Item="Sales"]}[Data],  // ❌ snake_case
 	#"Filtered Rows" = Table.SelectRows(raw_data, each [OrderDate] >= #date(2024,1,1) and [OrderDate] <= #date(2024,12,31) and [Status] = "Active" and [Revenue] > 1000),  // ❌ default name, single-line, hardcoded dates
@@ -381,41 +415,25 @@ in
 	selected
 ```
 
-## Handling Pattern Conflicts
+---
 
-**Scenario:** Pattern analyzer shows 55% PascalCase, 45% snake_case
-
-**Resolution:**
-1. Check which pattern is used in the table being edited (if editing)
-2. If creating new, ask user: "I notice the project uses both PascalCase (55%) and snake_case (45%). Which would you prefer for new code?"
-3. Document chosen pattern for future consistency
-
-## Pattern Confidence Levels
-
-Analyzer reports confidence based on consistency:
-
-- **High confidence (>80%)**: Follow pattern strictly
-- **Medium confidence (50-80%)**: Follow pattern but note alternatives
-- **Low confidence (<50%)**: Patterns inconsistent, ask user or use best practices
-
-**Example:**
-```
-Step naming: PascalCase (87% - High Confidence)
-→ Use PascalCase for all new steps
-
-Column alignment: Varied (42% aligned, 58% not - Low Confidence)
-→ Ask user preference or default to aligned (best practice)
-```
-
-## Summary Checklist
+## Checklist
 
 Before applying M code changes:
 
-- ✅ Ran `m_pattern_analyzer.py` to discover project patterns
-- ✅ Matched naming convention (PascalCase, snake_case, etc.)
-- ✅ Followed transformation patterns (multi-line filtering, column selection timing, etc.)
-- ✅ Used code organization pattern (blank lines, comment style, etc.)
-- ✅ Applied error handling pattern (try-otherwise usage and fallback values)
-- ✅ Used parameters if project pattern indicates
-- ✅ Resolved any pattern conflicts with user
-- ✅ Documented any deviations from patterns with rationale
+- [ ] Discovered patterns using Python tool OR Claude-native analysis
+- [ ] Matched naming convention (PascalCase, snake_case, etc.)
+- [ ] Followed transformation patterns (multi-line filtering, column selection timing)
+- [ ] Used code organization pattern (blank lines, comment style)
+- [ ] Applied error handling pattern (try-otherwise usage and fallback values)
+- [ ] Used parameters if project pattern indicates
+- [ ] Resolved any pattern conflicts with user
+- [ ] Documented any deviations from patterns with rationale
+
+---
+
+## See Also
+
+- [M Best Practices](m_best_practices.md) - Default patterns when project has none
+- [Query Folding Guide](query_folding_guide.md) - Performance-aware transformations
+- [Tool Fallback Pattern](tool-fallback-pattern.md) - Pro vs Core tool usage

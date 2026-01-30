@@ -1,6 +1,6 @@
 ---
 name: powerbi-dashboard-update-planner
-description: Design and propose fixes for Power BI projects, handling calculation changes (DAX/M/TMDL), visual changes (PBIR), or hybrid coordination. Use after investigation phase completes.
+description: Design and propose fixes for Power BI projects, handling calculation changes (DAX/M/TMDL), visual changes (PBIR), or hybrid coordination. Use after investigation phase completes. Writes specialist work specifications to findings.md for main thread to execute.
 model: sonnet
 tools:
   - Read
@@ -9,7 +9,6 @@ tools:
   - Glob
   - Grep
   - WebSearch
-  - Task
 skills:
   - powerbi-analyst
 color: blue
@@ -290,33 +289,80 @@ Create precise, atomic `<step>` elements:
 
 ---
 
-## Specialist Agent Invocation
+## Specialist Work Specification (No Nested Task() Calls)
 
-When DAX or M code generation is needed, invoke specialist agents:
+**CRITICAL ARCHITECTURE CONSTRAINT**: Subagents cannot spawn other subagents. This planner is a subagent, so it **MUST NOT** invoke `Task()`.
 
-**For DAX:**
+When DAX or M code generation is needed, this planner documents **specifications** that the **main thread** will use to invoke specialists.
+
+### How to Document Specialist Work
+
+**For DAX work needed**, write to **Section 2.A.spec**:
+
+```markdown
+### Section 2.A.spec: DAX Specialist Work Specification
+
+**Status**: PENDING_SPECIALIST_EXECUTION
+**Specialist Agent**: powerbi-dax-specialist
+
+**Requirements**:
+- [Specific DAX requirements from planning analysis]
+- [Business logic to implement]
+- [Columns/tables to reference]
+
+**Context from Section 1.A**:
+- [Relevant code patterns discovered]
+- [Existing measures to reference]
+
+**Expected Output**:
+- Write: Section 2.A (Calculation Changes)
+- Format: Complete DAX code with rationale
+
+**Constraints**:
+- [Performance considerations]
+- [Naming conventions to follow]
+- [Error handling requirements]
 ```
-Task(powerbi-dax-specialist):
-  "Generate DAX measure for [requirement].
 
-   Findings file: [path]
-   Read: Section 1.A for context
-   Write: Section 2.A
+**For M Code work needed**, write to **Section 2.B.spec**:
 
-   Requirements: [specific requirements]"
+```markdown
+### Section 2.B.spec: M Code Specialist Work Specification
+
+**Status**: PENDING_SPECIALIST_EXECUTION
+**Specialist Agent**: powerbi-mcode-specialist
+
+**Requirements**:
+- [Specific M code requirements]
+- [Transformation logic needed]
+
+**Context from Section 1.A**:
+- [Relevant partition patterns]
+- [Query folding considerations]
+
+**Expected Output**:
+- Write: Section 2.A (under M Code Changes subsection)
+- Format: Complete M code with query folding analysis
+
+**Constraints**:
+- [Data source compatibility]
+- [Performance requirements]
 ```
 
-**For M Code:**
-```
-Task(powerbi-mcode-specialist):
-  "Generate M code for [requirement].
+### What Happens Next
 
-   Findings file: [path]
-   Read: Section 1.A for context
-   Write: Section 2.A
+After this planner writes specs to findings.md:
 
-   Requirements: [specific requirements]"
-```
+1. **Planner returns** to main thread with completion status
+2. **Main thread reads** Section 2.A.spec and/or Section 2.B.spec
+3. **Main thread spawns** `Task(powerbi-dax-specialist)` and/or `Task(powerbi-mcode-specialist)`
+4. **Specialists read** their specs and write final code to Section 2.A/2.B
+
+This pattern ensures:
+- ✅ No nested subagent calls
+- ✅ Clear separation of planning vs code generation
+- ✅ Main thread controls specialist invocation
+- ✅ Specs provide complete context for specialists
 
 ## Quality Standards
 

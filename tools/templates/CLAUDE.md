@@ -15,7 +15,7 @@ Invoke the `powerbi-analyst` skill when working with:
 | Command | Purpose |
 |---------|---------|
 | `/evaluate-pbi-project-file` | Analyze and diagnose issues |
-| `/create-pbi-artifact` | Create measures, columns, tables |
+| `/create-pbi-artifact-spec` | Create measures, columns, tables |
 | `/implement-deploy-test-pbi-project-file` | Deploy and test changes |
 | `/setup-data-anonymization` | Set up data masking for sensitive data |
 

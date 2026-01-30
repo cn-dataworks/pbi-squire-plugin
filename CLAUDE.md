@@ -11,7 +11,7 @@ One comprehensive skill: **`powerbi-analyst`**
 | EVALUATE | Diagnose and fix issues | "Fix this measure" |
 | CREATE_ARTIFACT | Create new DAX measures/columns | "Create a YoY measure" |
 | DATA_PREP | M code / Power Query transformations | "Filter this table" |
-| ANALYZE | Document dashboards in business language | "Explain this dashboard" |
+| SUMMARIZE | Document dashboards in business language | "Explain this dashboard" |
 | IMPLEMENT | Apply planned changes | "Apply the changes" |
 | MERGE | Compare and merge projects | "Merge these projects" |
 
@@ -22,7 +22,7 @@ The skill automatically routes requests to the appropriate workflow.
 | Command | Purpose |
 |---------|---------|
 | `/evaluate-pbi-project-file` | Analyze and diagnose issues |
-| `/create-pbi-artifact` | Create measures, columns, tables, visuals |
+| `/create-pbi-artifact-spec` | Create measures, columns, tables, visuals |
 | `/implement-deploy-test-pbi-project-file` | Deploy and test changes |
 | `/merge-powerbi-projects` | Compare and merge projects |
 
@@ -134,7 +134,7 @@ When modifying this plugin, **all affected documentation must be updated togethe
 | `skills/powerbi-analyst/workflows/<name>.md` | Create workflow documentation | Yes |
 | `skills/powerbi-analyst/SKILL.md` | Add to "Trigger Actions" section | Yes |
 | `skills/powerbi-analyst/SKILL.md` | Add to "Example Prompts" table | Yes |
-| `agents/core/powerbi-orchestrator.md` | Add to routing decision tree | Yes |
+| `skills/powerbi-analyst/references/orchestration-pattern.md` | Add to routing decision tree | Yes |
 | `skills/powerbi-analyst/pro-features.md` | Add trigger + workflow section | If Pro |
 | `CONTRIBUTING.md` | Add to "Pro-Only Features" table | If Pro |
 | `.gitignore` (on `main` branch) | Add workflow path | If Pro |
@@ -143,9 +143,11 @@ When modifying this plugin, **all affected documentation must be updated togethe
 
 | File | Action | Required |
 |------|--------|----------|
-| `skills/powerbi-analyst/agents/<name>.md` | Create agent documentation | Yes |
+| `agents/core/<name>.md` | Create agent (Core features) | If Core |
+| `agents/pro/<name>.md` | Create agent (Pro features) | If Pro |
 | `skills/powerbi-analyst/SKILL.md` | Add to "Specialist Agents" section | If orchestrated |
 | `skills/powerbi-analyst/pro-features.md` | Add to "Pro Specialist Agents" | If Pro |
+| `.claude-plugin/plugin.json` | Add to `agents` array | Yes |
 | Workflow that invokes it | Reference the agent | Yes |
 | `CONTRIBUTING.md` | Add to "Pro-Only Features" table | If Pro |
 | `.gitignore` (on `main` branch) | Add agent path | If Pro |
@@ -186,7 +188,7 @@ When modifying this plugin, **all affected documentation must be updated togethe
 | File | Action | Required |
 |------|--------|----------|
 | `skills/powerbi-analyst/SKILL.md` | Update "Trigger Actions" | Yes |
-| `agents/core/powerbi-orchestrator.md` | Update routing decision tree | Yes |
+| `skills/powerbi-analyst/references/orchestration-pattern.md` | Update routing decision tree | Yes |
 | `skills/powerbi-analyst/pro-features.md` | Update "Pro Trigger Actions" | If Pro |
 
 ### Modifying a Skill's Capabilities
@@ -229,9 +231,9 @@ When modifying this plugin, **all affected documentation must be updated togethe
 |------|---------|-------------|
 | `ux-review-guidelines.md` | UX evaluation criteria | UX review process changes |
 | `powerbi-design-standards.md` | Design constitution & critique rubric | Design standards change |
-| `translation-guidelines.md` | Technical to business language | ANALYZE workflow changes |
+| `translation-guidelines.md` | Technical to business language | SUMMARIZE workflow changes |
 | `query_folding_guide.md` | M code query folding rules | DATA_PREP workflow changes |
-| `workflow-decision-tree.md` | Routing logic | New workflows added |
+| `orchestration-pattern.md` | Routing logic | New workflows added |
 | `command-parameters.md` | Parameter documentation | Command signatures change |
 
 ---
@@ -240,7 +242,7 @@ When modifying this plugin, **all affected documentation must be updated togethe
 
 Before committing, verify:
 
-- [ ] Trigger patterns in `SKILL.md` match routing in `powerbi-orchestrator.md`
+- [ ] Trigger patterns in `SKILL.md` match routing in `references/orchestration-pattern.md`
 - [ ] New Pro files are listed in `CONTRIBUTING.md` Pro features table
 - [ ] New Pro files are added to `.gitignore` on `main` branch
 - [ ] Bootstrap scripts updated if new tools/templates added

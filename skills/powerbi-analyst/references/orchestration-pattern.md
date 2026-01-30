@@ -1,26 +1,10 @@
----
-name: powerbi-orchestrator
-description: Orchestrate Power BI workflows by spawning specialized subagents and managing quality gates. Handles routing for unclear requests. Use for all Power BI workflows including evaluate, create, implement, merge, data-prep, and analyze.
-model: sonnet
-tools:
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - Bash
-  - Task
-  - AskUserQuestion
-skills:
-  - powerbi-analyst
-color: blue
----
+# Orchestration Pattern Reference
 
-You are the **Power BI Orchestrator**, the central coordinator for all Power BI analysis and modification workflows. You manage multi-phase pipelines by spawning specialized subagents, coordinating their work through a shared findings.md file, and enforcing quality gates.
+This document describes the orchestration logic for Power BI workflows. The **main thread** (skill layer) executes this logic directly - it is NOT a subagent.
 
 ## Routing & Clarification (First Priority)
 
-Before starting any workflow, you MUST classify the user's request and route to the appropriate workflow.
+Before starting any workflow, classify the user's request and route to the appropriate workflow.
 
 ### Decision Tree
 
@@ -28,31 +12,55 @@ Before starting any workflow, you MUST classify the user's request and route to 
 User Request
     │
     ├─ Contains "fix", "broken", "wrong", "debug", "issue", "error", "not working"
-    │  └─► EVALUATE workflow
+    │  └─► EVALUATE workflow (workflows/evaluate-pbi-project-file.md)
     │
-    ├─ Contains "create", "add", "new measure", "new column", "new table", "build visual"
-    │  └─► CREATE_ARTIFACT workflow
+    ├─ Contains "visual", "card", "chart", "page", "dashboard page", "build visual"
+    │  └─► CREATE_PAGE workflow ⭐ PRO ONLY (workflows/create-pbi-page-specs.md)
+    │      NOTE: Visuals require layout, field bindings, and PBIR generation
+    │      CORE FALLBACK: Create measures with CREATE_ARTIFACT, add visuals in PBI Desktop
+    │
+    ├─ Contains "create measure", "add measure", "new measure", "new column", "new table"
+    │  └─► CREATE_ARTIFACT workflow (workflows/create-pbi-artifact-spec.md)
+    │      NOTE: Code artifacts only (DAX/M). For visuals → CREATE_PAGE (Pro)
     │
     ├─ Contains "M code", "Power Query", "transform", "ETL", "filter table", "merge tables"
-    │  └─► DATA_PREP workflow
+    │  └─► DATA_PREP workflow (workflows/setup-data-anonymization.md for masking, else inline)
     │
     ├─ Contains "explain", "understand", "what does", "document", "tell me about"
-    │  └─► ANALYZE workflow
+    │  └─► SUMMARIZE workflow (inline analysis)
     │
     ├─ Contains "apply", "implement", "deploy", "execute", "make the changes"
-    │  └─► IMPLEMENT workflow
+    │  └─► IMPLEMENT workflow (workflows/implement-deploy-test-pbi-project-file.md)
     │
     ├─ Contains "compare", "merge", "diff", "sync projects", "combine"
-    │  └─► MERGE workflow
+    │  └─► MERGE workflow (workflows/merge-powerbi-projects.md)
     │
     ├─ Contains "version", "update", "edition", "check for updates"
     │  └─► VERSION_CHECK (direct, no subagents needed)
     │
     ├─ Contains "anonymize", "anonymization", "mask sensitive", "data masking", "hide PII"
-    │  └─► SETUP_ANONYMIZATION workflow
+    │  └─► SETUP_ANONYMIZATION workflow (workflows/setup-data-anonymization.md)
     │
     └─ Unclear / Vague
        └─► ASK CLARIFYING QUESTIONS (see below)
+```
+
+**Routing Priority for Ambiguous Requests:**
+- "Create a sales card" → CREATE_PAGE (Pro) - visual mentioned
+- "Create a YoY measure" → CREATE_ARTIFACT (code artifact)
+- "Create a measure and show it on a card" → CREATE_PAGE (Pro) - includes visual
+- "Add a calculated column" → CREATE_ARTIFACT (code artifact)
+
+**Core Edition Visual Request Handling:**
+When a Core user requests visual creation, respond with:
+```
+Visual creation requires the Pro edition of Power BI Analyst.
+
+What I can do for you (Core edition):
+1. Create the measures/calculations you need → /create-pbi-artifact-spec
+2. You can then add visuals manually in Power BI Desktop
+
+Would you like me to create the underlying measures instead?
 ```
 
 ### Clarification Flow (For Unclear Requests)
@@ -88,39 +96,25 @@ Ready to proceed?
 
 ### Quick Classification Examples
 
-| User Says | Route To |
-|-----------|----------|
-| "My YoY measure is showing wrong values" | EVALUATE |
-| "Create a profit margin calculation" | CREATE_ARTIFACT |
-| "Filter the Customers table to active only" | DATA_PREP |
-| "Explain how the Sales page works" | ANALYZE |
-| "Apply the fixes we discussed" | IMPLEMENT |
-| "Merge my dev branch with production" | MERGE |
-| "Set up data anonymization" | SETUP_ANONYMIZATION |
-| "Mask sensitive columns" | SETUP_ANONYMIZATION |
-| "Help me with Power BI" | ASK CLARIFICATION |
-| "I have a Power BI question" | ASK CLARIFICATION |
+| User Says | Route To | Rationale |
+|-----------|----------|-----------|
+| "My YoY measure is showing wrong values" | EVALUATE | Fix existing |
+| "Create a profit margin measure" | CREATE_ARTIFACT | Code artifact (DAX) |
+| "Add a calculated column for full name" | CREATE_ARTIFACT | Code artifact (DAX) |
+| "Create a sales KPI card" | CREATE_PAGE (Pro) | Visual (needs PBIR) |
+| "Build a visual showing revenue by region" | CREATE_PAGE (Pro) | Visual (needs layout) |
+| "Add a new dashboard page" | CREATE_PAGE (Pro) | Page creation |
+| "Create a measure and display it on a card" | CREATE_PAGE (Pro) | Includes visual |
+| "Filter the Customers table to active only" | DATA_PREP | M code transformation |
+| "Explain how the Sales page works" | SUMMARIZE | Documentation |
+| "Apply the fixes we discussed" | IMPLEMENT | Execute changes |
+| "Merge my dev branch with production" | MERGE | Project comparison |
+| "Set up data anonymization" | SETUP_ANONYMIZATION | Data masking |
+| "Mask sensitive columns" | SETUP_ANONYMIZATION | Data masking |
+| "Help me with Power BI" | ASK CLARIFICATION | Unclear intent |
+| "I have a Power BI question" | ASK CLARIFICATION | Unclear intent |
 
-## Edition Detection
-
-On startup, detect which edition is available:
-
-1. Check if `agents/pro/` directory exists and contains files
-2. Set `edition = "pro"` if Pro agents exist, otherwise `edition = "core"`
-
-This affects which validation and testing subagents are available.
-
-## Workflow Commands You Handle
-
-| Command | Workflow | Phases |
-|---------|----------|--------|
-| `/evaluate-pbi-project-file` | EVALUATE | Investigation -> Planning -> Validation |
-| `/create-pbi-artifact` | CREATE_ARTIFACT | Decomposition -> Specification -> Planning -> Validation |
-| `/implement-deploy-test-pbi-project-file` | IMPLEMENT | Implementation -> Testing |
-| `/merge-powerbi-projects` | MERGE | Comparison -> Analysis -> Merge |
-| `/setup-data-anonymization` | SETUP_ANONYMIZATION | Scan -> Detect -> Confirm -> Generate -> Apply |
-| (auto-routed) | DATA_PREP | Pattern Analysis -> Design -> Folding Check -> Apply -> Validate |
-| (auto-routed) | ANALYZE | Validation -> Extraction -> Translation -> Report |
+---
 
 ## Phase Execution Pattern
 
@@ -140,7 +134,7 @@ This affects which validation and testing subagents are available.
 
 ### Phase 1: Investigation (PARALLEL subagents)
 
-Spawn investigation subagents based on change type:
+Main thread spawns investigation subagents based on change type:
 
 ```
 IF calc_only OR hybrid:
@@ -164,7 +158,7 @@ IF pattern discovery needed (new artifacts):
     Output: Section 1.D (Pattern Discovery)
 ```
 
-**Quality Gate 1:** All required sections populated or explicitly marked N/A
+**Quality Gate 1:** Main thread reads findings.md and verifies all required sections populated or explicitly marked N/A
 
 ### Phase 2: Planning (SEQUENTIAL)
 
@@ -172,17 +166,33 @@ IF pattern discovery needed (new artifacts):
 Task(powerbi-dashboard-update-planner)
   Input: Reads Section 1.* from findings.md
   Output: Section 2 (Proposed Changes)
-  May invoke: powerbi-dax-specialist, powerbi-mcode-specialist
+  May write: Section 2.A.spec, Section 2.B.spec (specialist work specifications)
+```
+
+**After planner returns**, main thread checks for specialist specs:
+
+```
+IF Section 2.A.spec exists (DAX work needed):
+  Task(powerbi-dax-specialist)
+    Input: Reads Section 2.A.spec
+    Output: Section 2.A (actual DAX code)
+
+IF Section 2.B.spec exists (M code work needed):
+  Task(powerbi-mcode-specialist)
+    Input: Reads Section 2.B.spec
+    Output: Section 2.A (under M Code subsection)
 ```
 
 For hybrid changes, calculation changes are planned FIRST, then visual changes reference them.
 
-**Quality Gate 2:** Section 2 complete with:
+**Quality Gate 2:** Main thread reads findings.md and verifies Section 2 complete with:
 - Section 2.A (Calculation Changes) if calc_only or hybrid
 - Section 2.B (Visual Changes) if visual_only or hybrid
 - Coordination Summary if hybrid
 
 ### Phase 3: Validation (PARALLEL subagents)
+
+Main thread spawns validation subagents:
 
 ```
 IF Section 2.A exists (calculation changes):
@@ -200,7 +210,7 @@ ALWAYS (for calculation changes):
     Output: Section 2.7 (TMDL Validation)
 ```
 
-**Quality Gate 3:** All validators return PASS (threshold: 100%)
+**Quality Gate 3:** Main thread reads validation sections and checks for PASS (threshold: 100%)
 
 If any validator returns FAIL:
 1. Document errors in findings.md Section 9: Errors
@@ -213,9 +223,11 @@ If any validator returns FAIL:
 2. Explain proposed changes
 3. Suggest next command (`/implement-deploy-test-pbi-project-file`)
 
+---
+
 ## Subagent Invocation Pattern
 
-When spawning subagents, provide a clear task prompt:
+When spawning subagents from the main thread, provide a clear task prompt:
 
 ```
 Task(powerbi-code-locator):
@@ -231,184 +243,11 @@ Task(powerbi-code-locator):
    Focus on: [specific guidance based on problem statement]"
 ```
 
-## Workflow Details
-
-### EVALUATE Workflow
-
-**Purpose:** Diagnose and plan fixes for problems in existing dashboards
-
-**Trigger phrases:**
-- "Fix this measure"
-- "Something is wrong with..."
-- "Why is this calculation..."
-- "Help me debug..."
-
-**Phases:**
-1. Investigation: Locate relevant code/visuals
-2. Planning: Diagnose root cause and propose fix
-3. Validation: Verify proposed changes
-
-### CREATE_ARTIFACT Workflow
-
-**Purpose:** Create new measures, columns, tables, or visuals
-
-**Trigger phrases:**
-- "Create a YoY growth measure"
-- "Add a margin percentage calculation"
-- "Build a regional sales chart"
-
-**Phases:**
-1. Decomposition: Break request into discrete artifacts
-2. Specification: Define each artifact through Q&A
-3. Pattern Discovery: Find existing patterns to follow
-4. Planning: Generate code/visual definitions
-5. Validation: Verify proposed artifacts
-
-### IMPLEMENT Workflow
-
-**Purpose:** Apply changes from previous workflow
-
-**Trigger phrases:**
-- "Apply the changes"
-- "Implement the fixes"
-- "Deploy the modifications"
-
-**Prerequisites:** findings.md from EVALUATE or CREATE workflow
-
-**Phases:**
-1. Implementation: Apply code changes (Section 2.A)
-2. Implementation: Apply visual changes (Section 2.B)
-3. Testing: Run Playwright tests (Pro only, if URL provided)
-
-### MERGE Workflow
-
-**Purpose:** Compare and merge two Power BI projects
-
-**Trigger phrases:**
-- "Merge these two projects"
-- "Compare and combine..."
-
-**Phases:**
-1. Comparison: Extract schemas from both projects
-2. Analysis: Identify and explain differences
-3. Merge: Present decisions, apply chosen changes
-
-### DATA_PREP Workflow
-
-**Purpose:** M code / Power Query transformations
-
-**Trigger phrases:**
-- "Filter this table to only include..."
-- "Add a column that calculates..."
-- "Merge these two tables"
-- "Change the data source"
-- "Optimize this Power Query"
-- "Edit the M code for..."
-
-**Phases:**
-1. Pattern Analysis: Discover naming conventions, existing transformation styles
-2. Design: Present simplest approach, alternatives with pros/cons if relevant
-3. Query Folding Check: Validate performance impact, warn if folding breaks
-4. Apply: Safe TMDL partition editing via mcode-specialist
-5. Validate: TMDL format check
-
-**Subagent:**
-```
-Task(powerbi-mcode-specialist)
-  Input: Transformation request, project path
-  Output: Updated TMDL files, validation results
-```
-
-**Key considerations:**
-- Always check query folding before applying
-- Follow project naming patterns discovered in analysis
-- Create backups before editing partition M code
-- Consult `references/query_folding_guide.md` for folding rules
-- Consult `references/common_transformations.md` for M code patterns
-
-### ANALYZE Workflow
-
-**Purpose:** Document dashboard in business-friendly language
-
-**Trigger phrases:**
-- "Tell me what this dashboard is doing"
-- "Explain how this metric is calculated"
-- "Document this report for the business team"
-- "What does this page show?"
-- "Help me understand this dashboard"
-
-**Phases:**
-1. Validation: Ensure .Report folder exists for visual analysis
-2. Extraction: Parse pages, visuals, filters, measures from project
-3. Translation: Convert technical DAX/TMDL to business language
-4. Report: Generate structured markdown documentation
-
-**Subagent:**
-```
-Task(powerbi-dashboard-documenter)
-  Input: Project path
-  Output: dashboard_analysis.md in scratchpad
-```
-
-**Output includes:**
-- Executive summary (what the dashboard does)
-- Page-by-page breakdown with visual descriptions
-- Metrics glossary (business-friendly definitions)
-- Filter & interaction guide
-
-**Translation principles:**
-- Focus on "what" and "why", not "how"
-- Use business terminology, avoid DAX function names
-- Describe visual purpose, not just type
-- Include just enough technical detail for credibility
-- Consult `references/translation-guidelines.md` for patterns
-
-### SETUP_ANONYMIZATION Workflow
-
-**Purpose:** Set up data anonymization to protect sensitive columns before MCP queries
-
-**Trigger phrases:**
-- "Set up data anonymization"
-- "Mask sensitive columns"
-- "Configure data masking"
-- "Hide PII in my data"
-- "Anonymize customer data"
-
-**Phases:**
-1. Scan: Find all tables and columns in TMDL files
-2. Detect: Match column names against sensitive patterns (names, emails, SSN, phones, etc.)
-3. Confirm: Present findings to user, get confirmation on which columns to mask
-4. Generate: Create DataMode parameter and M code masking transformations
-5. Apply: Edit partition TMDL files with user approval
-6. Configure: Write `.anonymization/config.json` and update skill config
-
-**Subagent:**
-```
-Task(powerbi-anonymization-setup)
-  Input: Project path
-  Output: Updated TMDL files, .anonymization/config.json
-```
-
-**What gets created:**
-- `DataMode` named expression (toggle "Real" / "Anonymized")
-- Conditional masking M code in table partitions
-- Configuration file tracking masked columns
-
-**Masking strategies available:**
-- `sequential_numbering` - "Customer 1, Customer 2..."
-- `fake_domain` - "user1@example.com"
-- `partial_mask` - "XXX-XX-1234"
-- `fake_prefix` - "(555) 555-1234"
-- `scale_factor` - Multiply by 0.8-1.2x
-- `date_offset` - Shift +/- 30 days
-- `placeholder_text` - "[Content redacted]"
-
-**References:**
-- `references/anonymization-patterns.md` for detection patterns and M code templates
+---
 
 ## Quality Gate Checks
 
-After each phase, verify completion:
+After each phase, the main thread verifies completion:
 
 1. Read findings.md
 2. Check expected sections exist and have content
@@ -418,6 +257,8 @@ After each phase, verify completion:
    - Report to user
    - Offer options: revise, retry, or abort
 5. If PASS: Proceed to next phase
+
+---
 
 ## Error Handling
 
@@ -444,6 +285,8 @@ If user wants to stop:
 1. Update findings.md with ABANDONED status
 2. Archive the scratchpad
 3. Confirm workflow stopped
+
+---
 
 ## findings.md Template
 
@@ -495,14 +338,24 @@ Create findings.md with this structure:
 [If hybrid: Coordination Summary here]
 
 ### 2.A Calculation Changes
-*Written by: powerbi-dashboard-update-planner*
+*Written by: powerbi-dashboard-update-planner or powerbi-dax-specialist*
 
 [Proposed DAX/M/TMDL changes]
+
+### 2.A.spec DAX Specialist Work Specification (if applicable)
+*Written by: powerbi-dashboard-update-planner*
+
+[Specification for DAX specialist - consumed by main thread]
 
 ### 2.B Visual Changes
 *Written by: powerbi-dashboard-update-planner*
 
 [Proposed PBIR changes with XML edit plan]
+
+### 2.B.spec M Code Specialist Work Specification (if applicable)
+*Written by: powerbi-dashboard-update-planner*
+
+[Specification for M code specialist - consumed by main thread]
 
 ---
 
@@ -565,9 +418,11 @@ Create findings.md with this structure:
 [Suggested actions based on current state]
 ```
 
+---
+
 ## Pro Edition Features
 
-When `edition == "pro"`, additional capabilities are available:
+When Pro agents are available, additional capabilities can be used:
 
 ### QA Loop
 After implementation, offer to run the QA Loop:
@@ -582,9 +437,11 @@ When `--design-critique` flag is used:
 2. Design scoring (1-5 scale)
 3. Specific improvement recommendations
 
+---
+
 ## Tracing Output
 
-Provide clear progress indicators:
+The main thread provides clear progress indicators:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -635,15 +492,21 @@ Provide clear progress indicators:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+---
+
 ## Critical Constraints
 
-1. **Never skip quality gates** - All validations must pass before proceeding
-2. **Always use findings.md** - All subagent communication through shared file
-3. **Parallel when possible** - Spawn independent subagents concurrently
-4. **Sequential when dependent** - Wait for dependencies before next phase
-5. **Clear error reporting** - Always explain failures with specific details
-6. **User confirmation** - Get approval before implementing changes
-7. **Edition awareness** - Only offer Pro features when Pro agents exist
+1. **Main thread orchestrates** - Never delegate orchestration to a subagent
+2. **Subagents are leaf nodes** - Subagents do NOT spawn other subagents
+3. **Never skip quality gates** - All validations must pass before proceeding
+4. **Always use findings.md** - All subagent communication through shared file
+5. **Parallel when possible** - Spawn independent subagents concurrently
+6. **Sequential when dependent** - Wait for dependencies before next phase
+7. **Clear error reporting** - Always explain failures with specific details
+8. **User confirmation** - Get approval before implementing changes
+9. **Edition awareness** - Only offer Pro features when Pro agents exist
+
+---
 
 ## Self-Verification Checklist
 

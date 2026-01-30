@@ -1,17 +1,23 @@
 ---
-name: create-pbi-artifact
-description: Create new Power BI artifacts (measures, calculated columns, tables, visuals) through an interactive specification process that analyzes the data model, samples data, discovers patterns, and generates implementation-ready code with styling
-pattern: ^/create-pbi-artifact\s+(.+)$
+name: create-pbi-artifact-spec
+description: Create new Power BI code artifacts (measures, calculated columns, tables) through an interactive specification process that analyzes the data model, samples data, discovers patterns, and generates implementation-ready DAX/M code with styling
+pattern: ^/create-pbi-artifact-spec\s+(.+)$
 ---
 
-# Create Power BI Artifact
+# Create Power BI Artifact Specification
 
-This slash command creates comprehensive specifications for new Power BI artifacts through an interactive, human-in-the-loop process that:
+> **MAIN THREAD EXECUTION**: This workflow executes in the MAIN THREAD, not a subagent.
+> The main thread spawns leaf subagents via `Task()` and coordinates their work through findings.md.
+> Subagents do NOT spawn other subagents.
+
+This slash command creates comprehensive specifications for new Power BI **code artifacts** (measures, calculated columns, tables) through an interactive, human-in-the-loop process that:
 1. Analyzes the existing data model structure
 2. Iteratively clarifies requirements through intelligent Q&A with data sampling
 3. Discovers existing patterns and conventions to follow
 4. Designs complete DAX/M code with styling specifications
 5. Outputs findings.md ready for `/implement-deploy-test-pbi-project-file`
+
+> **NOTE:** This workflow handles **code-based artifacts** only. For visual creation (cards, charts, tables, slicers), use `/create-pbi-page-specs` which handles layout, field bindings, visual.json generation, and PBIR file creation.
 
 ## Tracing Output (Required)
 
@@ -20,7 +26,7 @@ This slash command creates comprehensive specifications for new Power BI artifac
 **On workflow start, output:**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚀 WORKFLOW: create-pbi-artifact
+🚀 WORKFLOW: create-pbi-artifact-spec
    └─ Type: [artifact-type or auto-detect]
    └─ Description: [brief description]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -48,7 +54,7 @@ This slash command creates comprehensive specifications for new Power BI artifac
 **On workflow complete, output:**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ WORKFLOW COMPLETE: create-pbi-artifact
+✅ WORKFLOW COMPLETE: create-pbi-artifact-spec
    └─ Artifacts: [list of artifacts created]
    └─ Output: [findings file path]
    └─ Next: Run /implement-deploy-test-pbi-project-file
@@ -57,54 +63,88 @@ This slash command creates comprehensive specifications for new Power BI artifac
 
 ## Usage
 
+### Standalone Mode (Default)
+
 ```bash
-/create-pbi-artifact --project <path-to-pbip-folder> --type <artifact-type> --description "<what to create>" [--workspace <workspace-name>] [--dataset <dataset-name>]
+/create-pbi-artifact-spec --project <path-to-pbip-folder> --type <artifact-type> --description "<what to create>" [--workspace <workspace-name>] [--dataset <dataset-name>]
+```
+
+### Embedded Mode (Called by page-specs)
+
+```bash
+# Internal use only - called by /create-pbi-page-specs workflow
+create-pbi-artifact-spec --embedded-mode \
+  --parent-findings "<path-to-parent-findings.md>" \
+  --section "<section-id>" \
+  --schema-section "<schema-section-id>" \
+  --type <artifact-type> \
+  --description "<what to create>"
 ```
 
 ### Parameters
 
-- `--project` (required): Path to the Power BI Project folder (the folder containing the .pbip file structure)
+#### Standard Parameters
+
+- `--project` (required in standalone mode): Path to the Power BI Project folder (the folder containing the .pbip file structure)
 - `--type` (optional): Type of artifact to create - if omitted, agent will analyze description and detect all needed artifacts
   - `measure`: Single DAX measure
   - `calculated-column`: Single DAX calculated column
   - `table`: Single new table (with M query or DAX)
-  - `visual`: Single new visual in report
   - `auto`: Auto-detect artifacts from description (default if omitted)
   - `multi`: Explicitly request multi-artifact analysis
-- `--description` (required): Description of what to create (e.g., "Year-over-Year Revenue Growth percentage measure" or "Sales performance card with YoY growth indicator")
+  - ~~`visual`~~: **Removed** - Use `/create-pbi-page-specs` for visual creation
+- `--description` (required): Description of what to create (e.g., "Year-over-Year Revenue Growth percentage measure")
 - `--workspace` (optional): Power BI workspace name for XMLA data sampling. If provided, enables data context retrieval for better recommendations
 - `--dataset` (optional): Power BI dataset/semantic model name for XMLA data sampling. Required if `--workspace` is provided
+
+#### Embedded Mode Parameters (Internal Use)
+
+These parameters are used when `/create-pbi-page-specs` calls this workflow as a sub-workflow:
+
+- `--embedded-mode` (boolean): Run as sub-workflow, skip setup phases
+- `--parent-findings` (path): Path to parent workflow's findings.md
+- `--section` (string): Section identifier to write output to (e.g., "2.A.1")
+- `--schema-section` (string): Section in parent findings to read schema from (e.g., "1.1")
+
+**Embedded Mode Behavior:**
+- **Skip Phase 1-2:** Project already validated, scratchpad already created by parent
+- **Phase 3:** Read schema from `--schema-section` in `--parent-findings` instead of extracting
+- **Phases 4-6:** Execute normally (data understanding, pattern discovery, code generation)
+- **Phase 7:** Skip completion messaging (parent handles workflow completion)
+- **Output:** Write to `--section` in `--parent-findings` instead of own findings.md
 
 ### Examples
 
 ```bash
 # Create a new measure (no data sampling)
-/create-pbi-artifact --project "C:\Projects\SalesReport" --type measure --description "Year-over-Year Revenue Growth percentage"
+/create-pbi-artifact-spec --project "C:\Projects\SalesReport" --type measure --description "Year-over-Year Revenue Growth percentage"
 
 # Create a new measure with data sampling for better recommendations
-/create-pbi-artifact --project "./MyReport" --type measure --description "YoY Growth %" --workspace "Sales Analytics" --dataset "Sales Report Model"
+/create-pbi-artifact-spec --project "./MyReport" --type measure --description "YoY Growth %" --workspace "Sales Analytics" --dataset "Sales Report Model"
 
 # Create a new calculated column
-/create-pbi-artifact --project "C:\Reports\FinanceDashboard.Report" --type calculated-column --description "Customer full name combining first and last name"
-
-# Create a new visual
-/create-pbi-artifact --project "./Dashboard" --type visual --description "Sales performance card showing total revenue with YoY comparison"
+/create-pbi-artifact-spec --project "C:\Reports\FinanceDashboard.Report" --type calculated-column --description "Customer full name combining first and last name"
 
 # Create a new table
-/create-pbi-artifact --project "C:\Projects\Analysis" --type table --description "Date dimension table with fiscal calendar"
+/create-pbi-artifact-spec --project "C:\Projects\Analysis" --type table --description "Date dimension table with fiscal calendar"
 
 # Multi-artifact creation (auto-detect from description)
-/create-pbi-artifact --project "./Dashboard" --description "Sales performance card showing total revenue with year-over-year growth percentage and trend indicator"
-# Agent will detect: visual + YoY measure + PY helper measure + trend measure
+/create-pbi-artifact-spec --project "./Dashboard" --description "Create YoY growth measure with prior year helper"
+# Agent will detect: YoY measure + PY helper measure
 
 # Explicitly request multi-artifact analysis
-/create-pbi-artifact --project "C:\Reports\KPI" --type multi --description "Revenue KPI dashboard with 3 cards showing revenue, profit margin, and customer count"
-# Agent will detect: 3 visuals + supporting measures
+/create-pbi-artifact-spec --project "C:\Reports\KPI" --type multi --description "Revenue, profit margin, and customer count measures"
+# Agent will detect: 3 measures with any shared dependencies
+
+# NOTE: For visuals, use /create-pbi-page-specs instead:
+# /create-pbi-page-specs --project "./Dashboard" --question "Show sales performance card with YoY comparison"
 ```
 
 ## Workflow
 
 ### Phase 1: Validation & Setup
+
+> **SKIP IF:** `--embedded-mode` is true (parent workflow already validated project)
 
 1. Parse command arguments to extract project path, artifact type, and description
 2. Validate that the Power BI project folder exists
@@ -113,6 +153,8 @@ This slash command creates comprehensive specifications for new Power BI artifac
 5. Create scratchpad workspace for this creation session
 
 ### Phase 2: Scratchpad Creation
+
+> **SKIP IF:** `--embedded-mode` is true (use parent's scratchpad and findings.md)
 
 1. Generate timestamp: `YYYYMMDD-HHMMSS` format
 2. Create distilled artifact name:
@@ -131,21 +173,36 @@ This slash command creates comprehensive specifications for new Power BI artifac
 
 ### Phase 3: Data Model Analysis
 
-**Execute:** `powerbi-data-model-analyzer` agent
+> **IF `--embedded-mode` is true:** Read schema from `--schema-section` in `--parent-findings` file instead of extracting. Skip to Phase 4.
+
+**Main thread spawns:** `Task(powerbi-data-model-analyzer)`
 
 **Purpose:** Extract and document the existing data model schema
 
-**Input:**
+**Standalone Mode Input:**
 - Project path
 - Findings file path
 - Artifact type and description (for context)
 
-**Agent Actions:**
+**Standalone Mode Actions:**
 1. Scan `.SemanticModel/definition/tables/*.tmdl` files
 2. Extract table definitions: names, columns, data types
 3. Parse `model.tmdl` for relationships and cardinality
 4. Identify fact vs dimension tables (naming patterns, relationships)
 5. Document table structures relevant to the creation request
+
+**Schema Extraction Pattern (for reference):**
+```
+# Main thread can extract schema using:
+1. Glob for TMDL files: **/*.SemanticModel/definition/tables/*.tmdl
+2. For each .tmdl file, extract:
+   - Table name (from file or content)
+   - Columns (names, data types)
+   - Measures (names, expressions)
+3. Read model.tmdl for relationships: **/*.SemanticModel/definition/model.tmdl
+4. Build schema documentation
+# Reference: TmdlParser in tools/core/pbi_merger_utils.py (Pro edition)
+```
 
 **Output:** Populates **Section 1.1: Data Model Schema** with:
 - List of relevant tables
@@ -161,7 +218,7 @@ This slash command creates comprehensive specifications for new Power BI artifac
 
 ### Phase 3.5: Artifact Decomposition ⭐ NEW PHASE
 
-**Execute:** `powerbi-artifact-decomposer` agent
+**Main thread spawns:** `Task(powerbi-artifact-decomposer)`
 
 **Purpose:** Analyze the creation request and break it down into discrete artifacts with dependency relationships
 
@@ -247,7 +304,7 @@ CREATION ORDER:
 
 **UPDATED:** Now iterates over each artifact from Section 1.0
 
-**Execute:** `powerbi-data-understanding-agent` agent
+**Main thread spawns:** `Task(powerbi-data-understanding-agent)`
 
 **Purpose:** Build complete artifact specification through iterative Q&A with intelligent recommendations and data sampling
 
@@ -356,7 +413,7 @@ EVALUATE {
 
 ### Phase 5: Pattern Discovery
 
-**Execute:** `powerbi-pattern-discovery` agent
+**Main thread spawns:** `Task(powerbi-pattern-discovery)`
 
 **Purpose:** Find existing similar artifacts and extract patterns to follow
 
@@ -397,7 +454,7 @@ EVALUATE {
 
 ### Phase 6: Artifact Design & Code Generation
 
-**Execute:** `powerbi-artifact-designer` agent
+**Main thread spawns:** `Task(powerbi-artifact-designer)`
 
 **Purpose:** Generate final DAX/M code and complete styling specifications
 
@@ -473,6 +530,10 @@ Based on existing patterns in your project, here are the styling recommendations
 
 ### Phase 7: Completion
 
+> **SKIP IF:** `--embedded-mode` is true (parent workflow handles completion messaging)
+
+**Standalone Mode Only:**
+
 1. Display summary of findings location
 2. Show specification completion status
 3. Provide clickable link to findings file
@@ -489,13 +550,20 @@ Based on existing patterns in your project, here are the styling recommendations
       /implement-deploy-test-pbi-project-file --findings "agent_scratchpads/20251020-163045-create-yoy-growth/findings.md"
    ```
 
+**Embedded Mode:**
+- Output is written to `--section` in `--parent-findings`
+- No completion message displayed
+- Return control to parent workflow
+
 ## Error Handling
 
 - **Project not found**: "Error: Power BI project folder not found at '<path>'. Please verify the path points to a valid .pbip project directory."
 - **Invalid project structure**: "Error: The specified folder does not appear to be a valid Power BI project (missing .SemanticModel or definition folders)."
-- **Invalid artifact type**: "Error: Unsupported artifact type '<type>'. Supported types: measure, calculated-column, table, visual."
+- **Invalid artifact type**: "Error: Unsupported artifact type '<type>'. Supported types: measure, calculated-column, table. For visuals, use /create-pbi-page-specs."
+- **Visual type requested**: "Note: Visual creation requires /create-pbi-page-specs which handles layout, field bindings, and PBIR file generation."
 - **Agent failure**: Report which agent failed and why, preserve partial findings file
 - **Data sampling unavailable**: Warn user but continue with schema-only recommendations
+- **Embedded mode missing parameters**: "Error: Embedded mode requires --parent-findings, --section, and --schema-section parameters."
 - **Authentication Required** (data sampling):
   - Use same pre-flight authentication check as evaluate-pbi-project-file
   - Prompt user for device code authentication
@@ -570,7 +638,7 @@ The generated findings file follows this structure:
 ## Original Command
 
 ```bash
-/create-pbi-artifact --project "<project-path>" --type <type> --description "<description>" [--workspace "<workspace>"] [--dataset "<dataset>"]
+/create-pbi-artifact-spec --project "<project-path>" --type <type> --description "<description>" [--workspace "<workspace>"] [--dataset "<dataset>"]
 ```
 
 This command can be modified and re-run for subsequent iterations.
@@ -646,7 +714,7 @@ This command is designed as the first step in a two-phase workflow:
 
 **Phase 1: Specification (this command)**
 ```bash
-/create-pbi-artifact --project "C:\path\to\project" --type measure \
+/create-pbi-artifact-spec --project "C:\path\to\project" --type measure \
   --description "YoY Revenue Growth %"
 ```
 → Creates findings.md with Section 2 (Proposed Changes) in CREATE format

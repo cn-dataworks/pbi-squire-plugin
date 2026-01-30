@@ -34,7 +34,7 @@ Tell me what you need help with. I'll route to the appropriate workflow:
 | "Fix this measure" / "Something is broken" | **EVALUATE** - diagnose and plan fixes |
 | "Create a YoY growth measure" | **CREATE_ARTIFACT** - design new DAX artifacts |
 | "Filter this table in Power Query" | **DATA_PREP** - M code transformations |
-| "Explain what this dashboard does" | **ANALYZE** - document in business language |
+| "Explain what this dashboard does" | **SUMMARIZE** - document in business language |
 | "Apply the changes" | **IMPLEMENT** - execute the planned changes |
 | "Compare these two projects" | **MERGE** - diff and merge projects |
 | "Set up data anonymization" | **SETUP_ANONYMIZATION** - mask sensitive columns |
@@ -60,15 +60,17 @@ Tell me what you need help with. I'll route to the appropriate workflow:
 
 **Trigger Actions:**
 - "Fix this measure" → EVALUATE workflow
-- "Create a YoY growth measure" → CREATE_ARTIFACT workflow
-- "Add a new dashboard page" → CREATE_PAGE workflow
+- "Create a YoY growth measure" → CREATE_ARTIFACT workflow (code artifacts)
+- "Create a new calculated column" → CREATE_ARTIFACT workflow
+- "Add a new dashboard page" → CREATE_PAGE workflow (Pro)
+- "Build a visual" / "Create a card" → CREATE_PAGE workflow (Pro - visuals require PBIR)
 - "Filter this table in Power Query" → DATA_PREP workflow
 - "Edit the M code for..." → DATA_PREP workflow
 - "Merge these two tables" → DATA_PREP workflow
 - "Apply the changes" → IMPLEMENT workflow
-- "What does this dashboard do?" → ANALYZE workflow
-- "Explain this metric" → ANALYZE workflow
-- "Document this dashboard" → ANALYZE workflow
+- "What does this dashboard do?" → SUMMARIZE workflow
+- "Explain this metric" → SUMMARIZE workflow
+- "Document this dashboard" → SUMMARIZE workflow
 - "Merge these two projects" → MERGE workflow
 - "Set up data anonymization" → SETUP_ANONYMIZATION workflow
 - "Mask sensitive columns" → SETUP_ANONYMIZATION workflow
@@ -131,7 +133,7 @@ Before executing any workflow, perform these checks in order:
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-**For read-only workflows (ANALYZE, VERSION_CHECK):** Proceed without warning since MCP is not needed.
+**For read-only workflows (SUMMARIZE, VERSION_CHECK):** Proceed without warning since MCP is not needed.
 
 **For write workflows (EVALUATE, CREATE_ARTIFACT, IMPLEMENT):** Show the warning above and let user decide.
 
@@ -375,32 +377,38 @@ These operations don't expose data and can proceed without anonymization:
 
 ---
 
-### CREATE_ARTIFACT (New Measure/Column/Table/Visual)
+### CREATE_ARTIFACT (New Measure/Column/Table)
 
-**Use when:** User wants to add something new that doesn't exist yet.
+**Use when:** User wants to add new **code-based artifacts** (DAX measures, calculated columns, tables).
+
+> **Note:** For visuals, use CREATE_PAGE workflow. Visuals require layout coordinates, field bindings, and PBIR file generation which this workflow doesn't handle.
 
 **Process:**
 1. Connect to project and analyze schema
-2. Decompose request into discrete artifacts
+2. Decompose request into discrete code artifacts
 3. Specify each artifact through interactive Q&A
 4. Discover existing patterns for consistency
-5. Generate code with validation
+5. Generate DAX/M code with validation
 
-**Output:** `findings.md` with new artifact specifications
+**Output:** `findings.md` with new artifact specifications (DAX/M code)
 
 **Next step:** "implement the changes" to create artifacts
 
+**Can also be called in embedded mode** by CREATE_PAGE workflow to generate measures as part of page creation.
+
 ---
 
-### CREATE_PAGE (New Dashboard Page)
+### CREATE_PAGE (New Dashboard Page) ⭐ Pro
 
 **Use when:** User wants a complete new report page with multiple visuals.
+
+> **Pro Feature:** This workflow requires the Pro edition. Core users can create individual measures with CREATE_ARTIFACT, then manually add visuals in Power BI Desktop.
 
 **Process:**
 1. Validate project has .Report folder (PBIR required)
 2. Analyze the business question being answered
 3. Decompose into required measures and visuals
-4. Specify measures (delegates to DAX Specialist)
+4. Specify measures (delegates to CREATE_ARTIFACT in embedded mode)
 5. Design layout using 8px grid system
 6. Design interactions (cross-filtering, drill-through)
 7. Generate PBIR files
@@ -478,7 +486,7 @@ These operations don't expose data and can proceed without anonymization:
 
 ---
 
-### ANALYZE (Document Existing)
+### SUMMARIZE (Document Existing)
 
 **Use when:** User wants to understand what an existing dashboard does, explain metrics to stakeholders, or create documentation.
 
@@ -681,23 +689,40 @@ To test, open Power BI Desktop → Transform Data → Manage Parameters → Chan
 
 ## Subagent Architecture
 
-This skill uses Claude Code's **subagent pattern** for context isolation and parallel execution. The central **orchestrator** spawns specialized subagents based on workflow phase.
+This skill uses Claude Code's **leaf subagent pattern** for context isolation and parallel execution. The **main thread** (skill layer) orchestrates workflows and spawns specialized subagents directly.
 
-### Central Orchestrator (`powerbi-orchestrator`)
+### Main Thread Orchestration (CRITICAL)
 
-The orchestrator manages multi-phase workflows by:
-1. Creating scratchpad with `findings.md`
-2. Spawning investigation subagents (parallel)
-3. Checking quality gates
-4. Spawning planning subagents
-5. Spawning validation subagents (parallel)
-6. Reporting completion
+**IMPORTANT**: Claude Code subagents cannot spawn other subagents. Therefore:
+- The **main thread** (skill layer) manages multi-phase workflows
+- The **main thread** spawns leaf subagents directly via `Task()`
+- Subagents perform their work and return results; they do NOT spawn other subagents
 
-**Invoke the orchestrator for these triggers:**
-- "Fix this measure" → `Task(powerbi-orchestrator)` with workflow=evaluate
-- "Create a YoY growth measure" → `Task(powerbi-orchestrator)` with workflow=create
-- "Apply the changes" → `Task(powerbi-orchestrator)` with workflow=implement
-- "Merge these two projects" → `Task(powerbi-orchestrator)` with workflow=merge
+### Workflow Execution Pattern
+
+**Execute workflows in the MAIN THREAD (do NOT delegate to an orchestrator subagent):**
+
+1. **Load the appropriate workflow file** based on trigger:
+   - "Fix this measure" → Load `workflows/evaluate-pbi-project-file.md`
+   - "Create a YoY growth measure" → Load `workflows/create-pbi-artifact-spec.md`
+   - "Apply the changes" → Load `workflows/implement-deploy-test-pbi-project-file.md`
+   - "Merge these two projects" → Load `workflows/merge-powerbi-projects.md`
+
+2. **Execute phases directly in main thread**:
+   - Create scratchpad with `findings.md`
+   - Spawn investigation subagents (parallel): `Task(powerbi-code-locator)`, `Task(powerbi-visual-locator)`
+   - Check quality gates (main thread reads findings.md)
+   - Spawn planning subagent: `Task(powerbi-dashboard-update-planner)`
+   - If planner wrote specialist specs → Spawn specialists: `Task(powerbi-dax-specialist)`, `Task(powerbi-mcode-specialist)`
+   - Spawn validation subagents (parallel): `Task(powerbi-dax-review-agent)`, `Task(powerbi-pbir-validator)`
+   - Report completion
+
+3. **Subagents communicate via findings.md**:
+   - Subagents read/write to designated sections
+   - Main thread coordinates and checks quality gates
+   - No subagent-to-subagent communication
+
+**Reference:** See `references/orchestration-pattern.md` for detailed routing logic and quality gates
 
 ### Specialist Agents
 
@@ -772,20 +797,27 @@ These agents are available only in the Pro edition:
 
 ### Agent Directory Structure
 
-Subagent definitions are located in:
+All agents are **leaf subagents** (they do not spawn other subagents):
+
 ```
 agents/
 ├── core/                    # Core agents (all editions)
-│   ├── powerbi-orchestrator.md
-│   ├── powerbi-code-locator.md
-│   ├── powerbi-dax-specialist.md
-│   └── ... (20 core agents)
+│   ├── powerbi-code-locator.md      # Investigation
+│   ├── powerbi-visual-locator.md    # Investigation
+│   ├── powerbi-dashboard-update-planner.md  # Planning (writes specs)
+│   ├── powerbi-dax-specialist.md    # Code generation
+│   ├── powerbi-mcode-specialist.md  # Code generation
+│   ├── powerbi-dax-review-agent.md  # Validation
+│   ├── powerbi-pbir-validator.md    # Validation
+│   └── ... (additional leaf agents)
 │
 └── pro/                     # Pro agents (Pro edition only)
     ├── powerbi-playwright-tester.md
     ├── powerbi-ux-reviewer.md
     └── powerbi-qa-inspector.md
 ```
+
+**Note**: Orchestration logic is in `references/orchestration-pattern.md` and executed by the main thread, not a subagent.
 
 ---
 
@@ -1071,12 +1103,14 @@ See `assets/visual-templates/README.md` for usage and contribution instructions.
 |------|----------------|----------|
 | Fix a problem | "Help me fix the YoY calculation in my Sales dashboard" | EVALUATE |
 | Create DAX measure | "Create a margin percentage measure" | CREATE_ARTIFACT |
-| Create a page | "Build a regional performance dashboard page" | CREATE_PAGE |
+| Create calculated column | "Add a full name column combining first and last" | CREATE_ARTIFACT |
+| Create a visual | "Add a sales KPI card with YoY comparison" | CREATE_PAGE (Pro) |
+| Create a page | "Build a regional performance dashboard page" | CREATE_PAGE (Pro) |
 | Transform data | "Filter the Customers table to active only" | DATA_PREP |
 | Edit M code | "Add a calculated column in Power Query" | DATA_PREP |
 | Apply changes | "Implement the changes from findings.md" | IMPLEMENT |
-| Understand dashboard | "Analyze this dashboard and explain what it does" | ANALYZE |
-| Document metrics | "Explain how the Total Sales metric works" | ANALYZE |
+| Understand dashboard | "Summarize this dashboard and explain what it does" | SUMMARIZE |
+| Document metrics | "Explain how the Total Sales metric works" | SUMMARIZE |
 | Compare projects | "Merge my dev and prod projects" | MERGE |
 | Check version | "What version of Power BI Analyst am I running?" | VERSION_CHECK |
 | Anonymize data | "Set up data anonymization for this project" | SETUP_ANONYMIZATION |

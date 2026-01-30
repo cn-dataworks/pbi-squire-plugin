@@ -307,7 +307,7 @@ Invoke the `powerbi-analyst` skill when working with:
 | Command | Purpose |
 |---------|---------|
 | `/evaluate-pbi-project-file` | Analyze and diagnose issues |
-| `/create-pbi-artifact` | Create measures, columns, tables |
+| `/create-pbi-artifact-spec` | Create measures, columns, tables |
 | `/implement-deploy-test-pbi-project-file` | Deploy and test changes |
 | `/setup-data-anonymization` | Set up data masking for sensitive data |
 
@@ -663,11 +663,11 @@ If any are missing, run:
 | Command | Purpose |
 |---------|---------|
 | `/evaluate-pbi-project-file` | Diagnose project issues |
-| `/create-pbi-artifact` | Create measures, columns, visuals |
+| `/create-pbi-artifact-spec` | Create measures, columns, visuals |
 | `/create-pbi-page-specs` | Design dashboard pages |
 | `/implement-deploy-test-pbi-project-file` | Apply and deploy changes |
 | `/merge-powerbi-projects` | Compare and merge projects |
-| `/analyze-pbi-dashboard` | Document existing dashboards |
+| `/summarize-pbi-dashboard` | Document existing dashboards |
 
 ### Agents (20+)
 

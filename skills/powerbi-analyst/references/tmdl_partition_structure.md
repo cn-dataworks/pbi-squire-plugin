@@ -1,6 +1,186 @@
 # TMDL Partition Structure
 
-Complete specification for M code partition formatting in TMDL files.
+Complete specification for M code partition formatting in TMDL files. Supports both Pro edition (Python validator) and Core edition (Claude-native validation).
+
+---
+
+## Quick Reference
+
+| Edition | Validation Method |
+|---------|-------------------|
+| **Pro** | Run `tmdl_format_validator.py` → structured errors with codes |
+| **Core** | Use Read tool → apply validation rules below |
+
+---
+
+## Part 1: Format Validation (Claude-Native)
+
+When Python validator is not available, use these instructions to validate TMDL files directly.
+
+### Step 1: Check Indentation Type
+
+**Determine if file uses tabs or spaces:**
+
+1. Read the TMDL file
+2. Count lines starting with `\t` (tab) vs lines starting with spaces
+3. Majority determines file's indentation type
+
+**Rule:** Power BI requires tabs (`\t`), NOT spaces.
+
+### Step 2: Validate Against TMDL Error Codes
+
+**Check each line for these error conditions:**
+
+| Code | Severity | Condition | Detection Pattern |
+|------|----------|-----------|-------------------|
+| **TMDL001** | ERROR | Inconsistent property indentation | Adjacent properties have different indent levels |
+| **TMDL002** | ERROR | Property has insufficient indentation | Property indent < expected (should be object + 1) |
+| **TMDL003** | WARNING | DAX line may have incorrect indentation | DAX line indent < expected (object + 2) |
+| **TMDL004** | ERROR | Property inside DAX expression block | Property after RETURN without matching indent |
+| **TMDL005** | ERROR | Partition source uses SPACES not TABS | Leading whitespace has spaces, file uses tabs |
+| **TMDL006** | ERROR | Mixed TABS and SPACES in line | Leading whitespace has both tabs and spaces |
+| **TMDL007** | ERROR | Partition source insufficient indentation | M code has fewer tabs than required |
+| **TMDL008** | WARNING | Partition source excessive indentation | M code has more tabs than required |
+| **TMDL009** | ERROR | Wrong property for field parameter | `source = {` in calculated partition (should be `expression :=`) |
+| **TMDL010** | ERROR | Multi-line field parameter | `expression := {` without `}` on same line |
+| **TMDL011** | ERROR | Mixed tabs/spaces at structural level | Tabs and spaces mixed in shallow indentation (0-3 tabs) |
+| **TMDL012** | ERROR | DAX at same level as properties | First DAX line has same indent as first property |
+| **TMDL013** | ERROR | Duplicate TMDL property | Same property (e.g., lineageTag) appears multiple times |
+
+### Step 3: Indentation Level Validation
+
+**Expected indentation levels (in tabs):**
+
+| Element | Tab Count | Example |
+|---------|-----------|---------|
+| `table` keyword | 0 | `table Sales` |
+| `partition` / `measure` / `column` | 1 | `	partition 'Name' = m` |
+| Properties (`mode:`, `formatString:`, `lineageTag:`) | 2 | `		mode: Import` |
+| DAX expressions (multi-line) | 3 | `			SWITCH(...)` |
+| M code (`let/in`) | 3 | `			let` |
+| M steps | 4 | `				Source = ...` |
+
+**Validation procedure:**
+
+1. Find object definitions (measure, column, partition)
+2. Record object indentation level
+3. Check that properties are at object + 1
+4. Check that DAX/M code is at object + 2 (or properties + 1)
+
+### Step 4: DAX/Property Separation Check (TMDL012)
+
+**Critical rule:** Multi-line DAX must be indented deeper than properties.
+
+**Detection procedure:**
+
+1. Find measure/column definition ending with `=`
+2. Scan forward to find first DAX line (non-property content)
+3. Scan forward to find first property line (`lineageTag:`, `formatString:`, etc.)
+4. Compare indentation levels:
+   - If DAX indent == property indent → **TMDL012 ERROR**
+   - If DAX indent < property indent → **TMDL012 ERROR**
+
+**Example of TMDL012 error:**
+```tmdl
+measure 'Total Sales' =
+		SUMX(Sales, [Amount])      ← 2 tabs (DAX)
+		lineageTag: abc-123        ← 2 tabs (Property) ❌ SAME LEVEL!
+```
+
+**Correct:**
+```tmdl
+measure 'Total Sales' =
+			SUMX(Sales, [Amount])  ← 3 tabs (DAX)
+		lineageTag: abc-123        ← 2 tabs (Property) ✅ Different levels
+```
+
+### Step 5: Duplicate Property Check (TMDL013)
+
+**Properties that must be unique within each measure/column:**
+
+- `lineageTag`
+- `formatString`
+- `displayFolder`
+- `dataCategory`
+- `isHidden`
+- `annotation PBI_FormatHint`
+
+**Detection procedure:**
+
+1. For each measure/column block
+2. Track each property occurrence with line number
+3. If same property appears multiple times → **TMDL013 ERROR**
+
+### Step 6: Partition-Specific Validation
+
+**For partition `source =` blocks:**
+
+1. Check for `expression :=` vs `source =` usage
+   - Calculated partitions (field parameters) use `expression :=`
+   - Regular partitions use `source =`
+2. Check M code indentation (should be 3 tabs for `let`, 4 tabs for steps)
+3. Check for spaces vs tabs in M code lines
+
+### Step 7: Generate Validation Report
+
+**Report format:**
+
+```
+================================================================================
+TMDL FORMAT VALIDATION REPORT
+================================================================================
+File: <file_path>
+Total Lines: N
+Indentation: TABS / SPACES
+
+[SUMMARY]
+  Errors:   X
+  Warnings: Y
+
+[ERRORS] (Must Fix):
+--------------------------------------------------------------------------------
+
+Line 15 [ERROR] TMDL012: DAX expression at same indentation level as properties
+  > 		SUMX(Sales, [Amount])
+  Recommended fix: Add one more tab before DAX expression
+
+Line 16 [ERROR] TMDL013: Duplicate property "lineageTag" found 2 times
+  > 		lineageTag: abc-123
+  Recommended fix: Remove duplicate property, keep first occurrence
+
+[WARNINGS] (Should Fix):
+--------------------------------------------------------------------------------
+
+Line 10 [WARNING] TMDL003: DAX expression line may have incorrect indentation
+  > 	+ [Quantity]
+  Recommended fix: Verify indentation matches other DAX lines
+
+================================================================================
+[VALIDATION FAILED] - X errors must be fixed before Power BI Desktop can open
+================================================================================
+```
+
+### Step 8: Fix Recommendations
+
+**For each error code, recommended fix:**
+
+| Code | Fix |
+|------|-----|
+| TMDL001 | Align all properties to same indentation (object + 1 tabs) |
+| TMDL002 | Add tabs to property line (should be at object + 1) |
+| TMDL003 | Verify DAX line matches surrounding DAX indentation |
+| TMDL004 | Move property outside DAX block, reduce indentation |
+| TMDL005 | Replace leading spaces with tabs |
+| TMDL006 | Replace all leading whitespace with tabs only |
+| TMDL007 | Add tabs to M code line |
+| TMDL008 | Remove excess tabs from M code line |
+| TMDL009 | Change `source = {` to `expression := {` |
+| TMDL010 | Put entire field parameter on single line |
+| TMDL011 | Replace mixed indentation with pure tabs |
+| TMDL012 | Add one tab before DAX expression, OR add triple backticks |
+| TMDL013 | Remove duplicate property, keep first occurrence |
+
+---
 
 ## Basic Structure
 

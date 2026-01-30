@@ -1,6 +1,10 @@
 # /merge-powerbi-projects
 
-**Role:** Project Merge Orchestrator - The main coordinator that manages the entire Power BI project comparison and merge workflow.
+> **MAIN THREAD EXECUTION**: This workflow executes in the MAIN THREAD, not a subagent.
+> The main thread spawns leaf subagents via `Task()` and coordinates their work.
+> Subagents do NOT spawn other subagents.
+
+**Role:** This workflow runs in the main thread and coordinates the Power BI project comparison and merge process.
 
 ## Invocation
 
@@ -24,7 +28,7 @@ This command orchestrates a three-phase workflow with human-in-the-loop decision
 
 ## Execution Instructions
 
-You are the main orchestrator for the Power BI project merge workflow. Follow these steps precisely:
+This workflow runs in the main thread. Follow these steps precisely:
 
 ### Phase 1: Validate Input
 
@@ -37,10 +41,14 @@ You are the main orchestrator for the Power BI project merge workflow. Follow th
 
 ### Phase 2: Technical Comparison
 
-Invoke the technical auditor agent:
+**Note:** The `powerbi-compare-project-code` agent uses tool-first fallback pattern:
+- **Pro edition:** Uses `pbi_merger_utils.py` for fast, structured comparison
+- **Core edition:** Uses `references/project_comparison_guide.md` → Part 1 for Claude-native comparison
+
+Main thread spawns the technical auditor agent:
 
 ```
-Task tool: subagent_type="powerbi-compare-project-code"
+Task(powerbi-compare-project-code):
 Prompt: "Compare the two Power BI project folders:
 - Main project: {main_path}
 - Comparison project: {comparison_path}
@@ -95,10 +103,10 @@ Wait for the agent to complete. Store the result as `diff_report.json`.
 
 ### Phase 3: Business Impact Analysis
 
-Invoke the business analyst agent:
+Main thread spawns the business analyst agent:
 
 ```
-Task tool: subagent_type="powerbi-code-understander"
+Task(powerbi-code-understander):
 Prompt: "Analyze this Power BI Diff Report and add business impact analysis:
 
 {paste the diff_report.json here}
@@ -202,10 +210,10 @@ When the user responds:
 
 ### Phase 6: Execute Merge
 
-Invoke the merge execution agent:
+Main thread spawns the merge execution agent:
 
 ```
-Task tool: subagent_type="powerbi-code-merger"
+Task(powerbi-code-merger):
 Prompt: "Execute this Power BI project merge based on user decisions:
 
 {paste merge_manifest.json here}
@@ -229,10 +237,14 @@ Wait for the agent to complete. Store the result as `merge_result`.
 
 ### Phase 6.5: TMDL Format Validation (Quality Gate)
 
+**Note:** The `powerbi-tmdl-syntax-validator` agent uses tool-first fallback pattern:
+- **Pro edition:** Uses `tmdl_format_validator.py` for fast validation with auto-fix
+- **Core edition:** Uses `references/tmdl_partition_structure.md` → Part 1 for Claude-native validation
+
 If any TMDL files were modified during the merge, validate their formatting:
 
 ```
-Task tool: subagent_type="powerbi-tmdl-syntax-validator"
+Task(powerbi-tmdl-syntax-validator):
 Prompt: "Validate TMDL file formatting for the merged Power BI project:
 
 Project Path: {output_project_path from merge_result}
@@ -263,7 +275,7 @@ If validation **PASSES**:
 If any measures, calculated columns, or tables were modified, validate DAX syntax:
 
 ```
-Task tool: subagent_type="powerbi-dax-review-agent"
+Task(powerbi-dax-review-agent):
 Prompt: "Validate DAX syntax for modified objects in merged Power BI project:
 
 Project Path: {output_project_path from merge_result}

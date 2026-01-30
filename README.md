@@ -137,7 +137,7 @@ This plugin provides one comprehensive skill:
 | Diagnose & Fix | EVALUATE workflow - fix calculation issues |
 | Create Artifacts | CREATE_ARTIFACT workflow - new measures, columns, tables |
 | Transform Data | DATA_PREP workflow - M code / Power Query |
-| Document | ANALYZE workflow - business-friendly dashboard docs |
+| Document | SUMMARIZE workflow - business-friendly dashboard docs |
 | Deploy | IMPLEMENT workflow - apply changes with validation |
 | Merge Projects | MERGE workflow - compare and combine projects |
 
@@ -148,9 +148,77 @@ The skill automatically routes your requests to the appropriate workflow. Just d
 | Command | Purpose |
 |---------|---------|
 | `/evaluate-pbi-project-file` | Analyze and diagnose Power BI project issues |
-| `/create-pbi-artifact` | Create new measures, columns, tables, or visuals |
+| `/create-pbi-artifact-spec` | Create new measures, columns, tables, or visuals |
 | `/implement-deploy-test-pbi-project-file` | Implement, deploy, and test changes |
 | `/merge-powerbi-projects` | Compare and merge two Power BI projects |
+
+## Architecture
+
+### How Requests Flow Through the Plugin
+
+When you ask Claude to help with Power BI, the request flows through two layers:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  SKILL + WORKFLOW (SKILL.md + workflows/*.md)                   │
+│  Routes your request to the appropriate workflow based on       │
+│  trigger phrases. Main thread executes workflow phases and      │
+│  spawns leaf subagents via Task().                              │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ Task(powerbi-code-locator)
+                              │ Task(powerbi-visual-locator)
+                              │ Task(powerbi-dax-review-agent)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LEAF SUBAGENTS (24+ agents)                                    │
+│  Each agent has focused expertise: code location, DAX review,   │
+│  visual editing, M code transforms, validation, etc.            │
+│  Subagents do NOT spawn other subagents (leaf node pattern).    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Task Blackboard Pattern
+
+Agents coordinate through a shared `findings.md` file:
+
+1. **Main thread** creates `findings.md` with the problem statement
+2. **Investigation agents** write to Section 1 (what they found)
+3. **Planning agents** read Section 1, write to Section 2 (proposed changes)
+4. **Validation agents** read Section 2, write to Section 2.5-2.7 (pass/fail)
+5. **Implementation agents** read Section 2, apply changes
+
+Each agent only sees its assigned sections—they're isolated from the broader workflow.
+
+### Workflow Routing
+
+| You Say | Detected Intent | Workflow | Has Validation Phase? |
+|---------|-----------------|----------|----------------------|
+| "Fix this measure" | Problem to solve | EVALUATE | Yes (proposes changes) |
+| "How is this calculated?" | Question to answer | SUMMARIZE | No (read-only) |
+| "Create a YoY measure" | New artifact | CREATE_ARTIFACT | Yes |
+| "Apply the changes" | Execute plan | IMPLEMENT | Yes |
+
+The main thread picks the workflow based on keywords, and each workflow has a predefined phase sequence. Read-only workflows (SUMMARIZE) skip validation phases because there are no changes to validate.
+
+### Agent Invocation
+
+The main thread spawns agents using Claude Code's `Task()` tool:
+
+```
+Task(powerbi-visual-locator):
+  "Locate the bar chart in the upper right with title 'Revenue'
+
+   Task memory: agent_scratchpads/.../findings.md
+   Write to: Section 1.B
+   Project: C:/Projects/SalesReport"
+```
+
+The agent receives:
+- A task prompt with natural language instructions
+- The path to `findings.md` for reading/writing
+- The project path
+
+The agent does the work (e.g., translates "upper right bar chart" into actual file paths by reading PBIR coordinates), writes results to its section, and returns.
 
 ## Quick Start
 
@@ -165,7 +233,7 @@ The skill includes 17 PBIR visual templates for generating new visuals. Template
 
 ### Using Templates
 
-Templates are used automatically when you create visuals via `/create-pbi-artifact`. The skill selects the appropriate template based on your request.
+Templates are used automatically when you create visuals via `/create-pbi-artifact-spec`. The skill selects the appropriate template based on your request.
 
 ## Updating
 
@@ -193,22 +261,83 @@ git pull; if ($?) { claude -c "/plugin update powerbi-analyst" }
 - Python 3.10+ (for advanced analysis tools)
 - Power BI Service access (for deployment)
 
+### Tool-First Fallback Pattern
+
+The plugin uses a **tool-first fallback pattern** to optimize performance while ensuring all users have full functionality.
+
+| Edition | Python Tools | How It Works |
+|---------|--------------|--------------|
+| **Core** | Not installed | Uses Claude-native approaches (Read, Edit, reference docs) |
+| **Pro** | Installed via bootstrap | Uses Python tools for faster, deterministic execution |
+
+**Both editions have identical functionality.** The difference is execution speed and token usage:
+
+- **Pro tools** execute in milliseconds with lower token cost
+- **Core fallback** uses Claude's reasoning against reference docs (slower, more tokens, same results)
+
+**How it works at runtime:**
+
+```
+Agent checks: Does .claude/tools/tmdl_format_validator.py exist?
+  ├─ Yes (Pro) → Run Python tool (fast, deterministic)
+  └─ No (Core) → Claude validates against tmdl_partition_structure.md (slower, same result)
+```
+
+**Example tasks affected:**
+
+| Task | Pro Tool | Core Fallback |
+|------|----------|---------------|
+| TMDL validation | `tmdl_format_validator.py` | Claude + `tmdl_partition_structure.md` |
+| Sensitive column detection | `sensitive_column_detector.py` | Claude + `anonymization-patterns.md` |
+| M code pattern analysis | `m_pattern_analyzer.py` | Claude reads and analyzes TMDL directly |
+
+**Pro tools** are available from a private repository. Contact the maintainers for access. Core edition is fully functional without them.
+
 ## Structure
 
 ```
 powerbi-analyst-plugin/
+├── agents/                        # Leaf subagent definitions
+│   ├── core/                      # Core agents (23 agents, all editions)
+│   │   ├── powerbi-code-locator.md    # Finds DAX/M code
+│   │   ├── powerbi-visual-locator.md  # Finds PBIR visuals
+│   │   ├── powerbi-dax-specialist.md  # DAX expertise
+│   │   └── ...                        # 20 more specialists
+│   └── pro/                       # Pro-only agents (3 agents)
+│       ├── powerbi-playwright-tester.md
+│       ├── powerbi-ux-reviewer.md
+│       └── powerbi-qa-inspector.md
+│
 ├── skills/
-│   ├── powerbi-analyst/           # Main skill with 20+ agents
-│   │   ├── agents/                # Specialized agents
-│   │   ├── workflows/             # Workflow definitions
-│   │   └── resources/
-│   │       └── visual-templates/  # 17 bundled templates
-│   ├── power-bi-assistant/        # User guidance
-│   ├── powerbi-dashboard-analyzer/# Dashboard analysis
-│   └── powerbi-data-prep/         # M code specialist
-├── tools/                         # Python utilities
-└── .mcp.json                      # Playwright MCP for testing
+│   └── powerbi-analyst/           # Main skill definition
+│       ├── SKILL.md               # Skill routing & capabilities
+│       ├── workflows/             # Detailed workflow definitions
+│       │   ├── evaluate-pbi-project-file.md
+│       │   ├── create-pbi-artifact-spec.md
+│       │   ├── implement-deploy-test-pbi-project-file.md
+│       │   └── ...                # 7 more workflows
+│       ├── references/            # Technical reference docs
+│       ├── resources/             # Runtime resources
+│       │   └── visual-templates/  # 17 PBIR templates
+│       └── assets/                # Report templates
+│
+├── tools/                         # Bootstrap & utilities
+│   ├── bootstrap.ps1              # Windows project setup
+│   ├── bootstrap.sh               # macOS/Linux project setup
+│   └── core/                      # Python tools (Pro edition)
+│
+└── .mcp.json                      # Playwright MCP config
 ```
+
+### Key Files by Purpose
+
+| File | Purpose |
+|------|---------|
+| `SKILL.md` | Routes requests to workflows, defines triggers |
+| `workflows/*.md` | Detailed step-by-step workflow logic (executed by main thread) |
+| `references/orchestration-pattern.md` | Routing logic and quality gate reference |
+| `agents/core/*.md` | Leaf subagent definitions (do not spawn other subagents) |
+| `findings.md` (runtime) | Shared document for agent coordination |
 
 ## License
 

@@ -9,7 +9,6 @@
     },
     "repository": "https://github.com/cn-dataworks/powerbi-analyst-plugin",
     "agents": [
-        "./agents/core/powerbi-orchestrator.md",
         "./agents/core/powerbi-code-locator.md",
         "./agents/core/powerbi-visual-locator.md",
         "./agents/core/powerbi-data-context-agent.md",

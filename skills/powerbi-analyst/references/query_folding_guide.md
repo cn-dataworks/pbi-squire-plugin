@@ -1,5 +1,179 @@
 # Query Folding Guide
 
+Complete guide for analyzing query folding in M code. Supports both Pro edition (Python tool) and Core edition (Claude-native analysis).
+
+---
+
+## Quick Reference
+
+| Edition | Analysis Method |
+|---------|-----------------|
+| **Pro** | Run `query_folding_validator.py` → structured report with line numbers |
+| **Core** | Use Grep/Read tools → apply detection rules below |
+
+---
+
+## Part 1: Folding Analysis (Claude-Native)
+
+When Python tool is not available, use these instructions to analyze query folding by scanning M code files directly.
+
+### Step 1: Find M Code Files
+
+**Locate all partition definitions:**
+
+```
+Glob pattern: **/*.tmdl
+Path: <project>/.SemanticModel/definition/tables/
+
+OR for definition.m files:
+Glob pattern: **/definition.m
+```
+
+### Step 2: Scan for Breaking Operations
+
+**Search for these patterns that ALWAYS break query folding:**
+
+| Operation | Search Pattern | Why It Breaks |
+|-----------|----------------|---------------|
+| `Table.AddColumn` | `Table\.AddColumn\(` | Adding custom columns breaks query folding |
+| `Text.Start` | `Text\.Start\(` | Text operations break query folding |
+| `Text.End` | `Text\.End\(` | Text operations break query folding |
+| `Text.Middle` | `Text\.Middle\(` | Text operations break query folding |
+| `Text.Replace` | `Text\.Replace\(` | Text operations break query folding |
+| `Text.Combine` | `Text\.Combine\(` | Text operations break query folding |
+| `Text.Upper` | `Text\.Upper\(` | Text operations break query folding |
+| `Text.Lower` | `Text\.Lower\(` | Text operations break query folding |
+| `Text.Trim` | `Text\.Trim\(` | Text operations break query folding |
+| `Date.Year` | `Date\.Year\(` | Date extraction functions break query folding |
+| `Date.Month` | `Date\.Month\(` | Date extraction functions break query folding |
+| `Date.Day` | `Date\.Day\(` | Date extraction functions break query folding |
+| `DateTime.Date` | `DateTime\.Date\(` | DateTime extraction functions break query folding |
+| `DateTime.Time` | `DateTime\.Time\(` | DateTime extraction functions break query folding |
+| `List.Sum` | `List\.Sum\(` | List operations break query folding |
+| `List.Count` | `List\.Count\(` | List operations break query folding |
+| `List.Max` | `List\.Max\(` | List operations break query folding |
+| `List.Min` | `List\.Min\(` | List operations break query folding |
+| `Record.Field` | `Record\.Field\(` | Record operations break query folding |
+| `Table.Pivot` | `Table\.Pivot\(` | Pivot operations break query folding |
+| `Table.Unpivot` | `Table\.Unpivot\(` | Unpivot operations break query folding |
+| `Table.Buffer` | `Table\.Buffer\(` | Buffering explicitly breaks query folding |
+| `Table.Transpose` | `Table\.Transpose\(` | Transpose breaks query folding |
+| `&` (in M code) | `[^"]\s*&\s*[^"]` | Text concatenation breaks query folding |
+
+### Step 3: Scan for Preserving Operations
+
+**These operations PRESERVE query folding (no action needed):**
+
+| Operation | Search Pattern | Why It Preserves |
+|-----------|----------------|------------------|
+| `Table.SelectRows` | `Table\.SelectRows\(` | Row filtering preserves query folding |
+| `Table.SelectColumns` | `Table\.SelectColumns\(` | Column selection preserves query folding |
+| `Table.RemoveColumns` | `Table\.RemoveColumns\(` | Column removal preserves query folding |
+| `Table.RenameColumns` | `Table\.RenameColumns\(` | Column renaming preserves query folding |
+| `Table.Sort` | `Table\.Sort\(` | Sorting preserves query folding |
+| `Table.Distinct` | `Table\.Distinct\(` | Distinct rows preserves query folding |
+| `Table.NestedJoin` | `Table\.NestedJoin\(` | Table joins preserve folding (if both sources fold) |
+| `Table.Join` | `Table\.Join\(` | Table joins preserve folding (if both sources fold) |
+| `Table.Combine` | `Table\.Combine\(` | Appending preserves folding (if all sources fold) |
+| `Table.Group` | `Table\.Group\(` | Standard aggregations preserve query folding |
+| `Table.TransformColumnTypes` | `Table\.TransformColumnTypes\(` | Type conversions preserve query folding |
+| `Sql.Database` | `Sql\.Database\(` | SQL database connection supports query folding |
+
+### Step 4: Scan for Conditional Operations
+
+**These operations MAY break folding (depends on source):**
+
+| Operation | Search Pattern | Notes |
+|-----------|----------------|-------|
+| `Table.ReplaceValue` | `Table\.ReplaceValue\(` | May preserve depending on source capability |
+| `Table.FillDown` | `Table\.FillDown\(` | May not be supported by all sources |
+| `Table.FillUp` | `Table\.FillUp\(` | May not be supported by all sources |
+
+### Step 5: Determine Break Point
+
+**For each M code file, identify:**
+
+1. Read the M code line by line
+2. Find the FIRST line containing a breaking operation
+3. Record the line number as the "folding break point"
+4. All operations AFTER this point do NOT fold
+
+**Example:**
+```m
+let
+    Source = Sql.Database(...),           // Line 2: ✅ Folds
+    Filtered = Table.SelectRows(...),     // Line 3: ✅ Folds
+    AddedColumn = Table.AddColumn(...),   // Line 4: ❌ BREAKS HERE
+    Sorted = Table.Sort(...)              // Line 5: ❌ Doesn't fold (after break)
+in
+    Sorted
+```
+→ Folding break point: Line 4
+
+### Step 6: Estimate Performance Impact
+
+**Based on break point position:**
+
+| Break Point | Impact Level | Assessment |
+|-------------|--------------|------------|
+| No breaking operations | None | ✅ EXCELLENT - All operations fold to source |
+| Only "maybe" operations | Minor | ⚠️ Minor - Some operations may not fold |
+| Line 1-5 (early) | HIGH | ❌ HIGH IMPACT - Most/all data loaded before filtering |
+| Line 6-10 (mid) | MEDIUM | ⚠️ MEDIUM IMPACT - Some filtering occurs at source |
+| Line 11+ (late) | LOW | 📊 LOW IMPACT - Most filtering completed at source |
+
+### Step 7: Generate Report
+
+**Report format:**
+
+```
+================================================================================
+QUERY FOLDING VALIDATION REPORT
+================================================================================
+
+Breaking Operations: N
+Potentially Breaking: M
+
+PERFORMANCE IMPACT: [HIGH/MEDIUM/LOW/None]
+Query folding first breaks at line X
+
+================================================================================
+ISSUES DETECTED
+================================================================================
+
+❌ Line X: [Operation]
+   Reason: [Why it breaks]
+   Recommendation: [How to fix]
+
+⚠️ Line Y: [Operation]
+   Reason: [May break depending on source]
+   Recommendation: Verify in Power Query Editor using "View Native Query"
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+1. Move non-foldable operations to end of pipeline
+2. Consider creating view at data source
+3. [If many breaks] Evaluate if all transformations are necessary
+================================================================================
+```
+
+### Step 8: Provide Recommendations
+
+**Based on breaking operations found:**
+
+| If Found | Recommendation |
+|----------|----------------|
+| `Table.AddColumn` | Move custom column creation to end of pipeline, or use calculated column in source |
+| `Text.*` functions | Consider creating view at source with substring logic |
+| `Date.*` functions | Create view at source with YEAR()/MONTH() functions |
+| `Table.Pivot` | Consider pre-pivoting data at source |
+| `Table.Buffer` | Remove buffer unless table is referenced multiple times |
+| `&` concatenation | Move text concatenation to end, or combine at source level |
+
+---
+
 ## What is Query Folding?
 
 Query folding is Power Query's ability to push transformations back to the data source (SQL Server, Azure, etc.) instead of loading all data into Power BI and transforming it there.

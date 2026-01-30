@@ -6,6 +6,10 @@ pattern: ^/implement-deploy-test-pbi-project-file\s+(.+)$
 
 # Implement, Deploy, and Test Power BI Project
 
+> **MAIN THREAD EXECUTION**: This workflow executes in the MAIN THREAD, not a subagent.
+> The main thread spawns leaf subagents via `Task()` and coordinates their work through findings.md.
+> Subagents do NOT spawn other subagents.
+
 This slash command orchestrates the complete implementation workflow for Power BI code changes by:
 1. Applying proposed changes to a versioned copy of the project
 2. Validating DAX syntax and semantics of modified code
@@ -79,7 +83,7 @@ This slash command orchestrates the complete implementation workflow for Power B
 
 **Condition:** Only runs if Section 2.A (Calculation Changes) exists in findings.md
 
-**Invoke:** `powerbi-code-implementer-apply` agent
+**Main thread spawns:** `Task(powerbi-code-implementer-apply)`
 
 **Inputs:**
 - Findings file path
@@ -113,7 +117,7 @@ This slash command orchestrates the complete implementation workflow for Power B
 - If Section 2.A was executed → Use versioned project path from Phase 2a
 - If Section 2.A was NOT executed → Create versioned project first
 
-**Invoke:** `powerbi-visual-implementer-apply` agent
+**Main thread spawns:** `Task(powerbi-visual-implementer-apply)`
 
 **Inputs:**
 - Findings file path
@@ -153,7 +157,7 @@ Visuals may reference measures or columns created in Phase 2a. Running code chan
 
 **Condition:** Only runs if Phase 2a (code changes) was executed
 
-**Invoke:** `powerbi-tmdl-syntax-validator` agent
+**Main thread spawns:** `Task(powerbi-tmdl-syntax-validator)`
 
 **Inputs:**
 - Versioned project path (from Phase 2a output)
@@ -175,10 +179,18 @@ Visuals may reference measures or columns created in Phase 2a. Running code chan
    - Precise line number reporting
 
 3. **If tool NOT available (Core edition):**
-   - Read TMDL file(s) directly
-   - Validate against TMDL format rules (see `references/tmdl_partition_structure.md`)
-   - Check indentation using regex patterns
-   - Manual verification of property placement
+   - Load `references/tmdl_partition_structure.md` → **Part 1: Format Validation (Claude-Native)**
+   - Follow the 8-step validation procedure:
+     1. Read TMDL file
+     2. Check indentation (count leading tabs per line)
+     3. Validate object-property-value hierarchy
+     4. Check property placement (formatString, displayFolder at level 2)
+     5. Detect DAX/property boundary issues
+     6. Check for duplicate properties (TMDL013)
+     7. Validate closing structure
+     8. Generate validation report with specific error codes
+   - Reference the 13 TMDL error codes (TMDL001-TMDL013)
+   - Use Read tool to check indentation patterns
 
 **Validation Steps (both modes):**
 1. For each modified TMDL file, run format validation
@@ -244,7 +256,7 @@ This auto-fix is safe because:
 
 **Condition:** Only runs if Phase 2b (visual changes) was executed
 
-**Invoke:** `powerbi-pbir-validator` agent
+**Main thread spawns:** `Task(powerbi-pbir-validator)`
 
 **Inputs:**
 - Findings file path (for Section 2.B: Visual Changes)
@@ -305,7 +317,7 @@ This auto-fix is safe because:
 
 **Condition:** Only runs if Phase 2a (code changes) was executed
 
-**Invoke:** `powerbi-dax-review-agent` agent
+**Main thread spawns:** `Task(powerbi-dax-review-agent)`
 
 **Inputs:**
 - Findings file path (for Section 2.A: Calculation Changes)
@@ -394,14 +406,38 @@ This auto-fix is safe because:
 - `--dashboard-url` parameter was provided, OR
 - Deployment in Phase 4 returned a dashboard URL
 
-**Invoke:** `powerbi-playwright-tester` agent
+**Agent Selection (Pro Feature with Graceful Fallback):**
 
-**Inputs:**
+1. **Check if Pro agent available:**
+   - Check if `agents/pro/powerbi-playwright-tester.md` exists in plugin registration
+   - This agent requires Playwright MCP server
+
+2. **If Pro agent available:**
+   - **Main thread spawns:** `Task(powerbi-playwright-tester)`
+   - Continue with automated testing (see Agent Actions below)
+
+3. **If Pro agent NOT available (Core edition):**
+   - Log: "ℹ️ Automated testing requires Pro edition (Playwright MCP)"
+   - Skip automated testing phase gracefully
+   - Write to Section 4 of findings.md:
+     ```
+     ### Testing Results
+     **Status:** ⏭️ SKIPPED (Core Edition)
+     **Reason:** Automated Playwright testing is a Pro feature
+     **Recommendation:** Manually verify dashboard in Power BI Desktop:
+     1. Open the versioned project in Power BI Desktop
+     2. Navigate to each modified visual
+     3. Verify data displays correctly
+     4. Check for any error indicators
+     ```
+   - Proceed to Phase 6
+
+**Inputs (when Pro agent runs):**
 - Findings file path (for test plan in Section 3)
 - Dashboard URL
 - Test results directory: `<scratchpad-folder>/test-results/`
 
-**Agent Actions:**
+**Agent Actions (when Pro agent runs):**
 1. Create `test-results/` subfolder in scratchpad directory
 2. Read Section 3 of findings.md for test cases
 3. If Section 3 has test cases:
@@ -420,9 +456,9 @@ This auto-fix is safe because:
 - Dashboard inaccessible: LOG error, skip testing phase
 
 **Outputs:**
-- Test results markdown file
-- Screenshot files
-- Pass/fail summary
+- Test results markdown file (Pro) or skip notice (Core)
+- Screenshot files (Pro only)
+- Pass/fail summary (Pro) or manual verification checklist (Core)
 
 ### Phase 6: Consolidate Results
 

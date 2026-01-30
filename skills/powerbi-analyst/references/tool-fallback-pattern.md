@@ -40,19 +40,19 @@ Every agent that can use a Python tool should follow this pattern:
 
 ## Tool-to-Fallback Mapping
 
-| Python Tool | Pro Behavior | Core Fallback |
-|-------------|--------------|---------------|
-| `tmdl_format_validator.py` | Run validator, get precise errors | Read TMDL, validate against `tmdl_partition_structure.md` rules |
-| `pbir_visual_editor.py` | Execute XML edit plan | Parse XML, use Edit tool on visual.json |
-| `m_partition_editor.py` | Edit M code with tab handling | Use Edit tool with careful indentation |
-| `tmdl_measure_replacer.py` | Replace measure DAX | Use Edit tool or MCP measure_operations |
-| `m_pattern_analyzer.py` | Scan for M patterns | Read TMDL files, analyze with Claude |
-| `query_folding_validator.py` | Analyze folding | Use `query_folding_guide.md` reference |
-| `pbi_project_validator.py` | Validate structure | Use Glob to check folder structure |
-| `pbi_merger_utils.py` | Compare/merge projects | Read and compare files directly |
-| `sensitive_column_detector.py` | Pattern match columns | Use `anonymization-patterns.md` reference |
-| `anonymization_generator.py` | Generate M code | Use templates from `anonymization-patterns.md` |
-| `extract_visual_layout.py` | Extract layout info | Read visual.json directly |
+| Python Tool | Pro Behavior | Core Fallback | Reference Doc Part |
+|-------------|--------------|---------------|-------------------|
+| `m_pattern_analyzer.py` | Scan for M patterns, generate report | Follow detection rules | `m_pattern_discovery.md` → **Part 1** |
+| `query_folding_validator.py` | Analyze folding, line-by-line | Scan for breaking operations | `query_folding_guide.md` → **Part 1** |
+| `sensitive_column_detector.py` | Pattern match columns with confidence | Match against pattern tables | `anonymization-patterns.md` → **Part 1** |
+| `tmdl_format_validator.py` | Validate with 13 error codes | Check indentation and structure | `tmdl_partition_structure.md` → **Part 1** |
+| `pbi_project_validator.py` | Detect format, validate structure | Use Glob for format detection | `project_structure_validation.md` → **Part 1** |
+| `pbi_merger_utils.py` | Compare/merge with diff IDs | Extract and compare measures | `project_comparison_guide.md` → **Part 1** |
+| `extract_visual_layout.py` | Extract visual positions/fields | Read visual.json directly | `pbir_visual_structure.md` → **Part 1** |
+| `pbir_visual_editor.py` | Execute visual edit plan | Parse JSON, use Edit tool | Pro-only (visual editing) |
+| `m_partition_editor.py` | Edit M code with tab handling | Use Edit tool with indentation | `tmdl_partition_structure.md` |
+| `tmdl_measure_replacer.py` | Replace measure DAX | Use Edit tool or MCP | Edit tool fallback |
+| `anonymization_generator.py` | Generate M masking code | Use M code templates | `anonymization-patterns.md` → Templates |
 
 ---
 
@@ -114,9 +114,56 @@ These tools enhance the Pro experience but are not required for core functionali
 
 ---
 
+---
+
+## Reference Document Structure
+
+All Claude-native reference documents follow this structure:
+
+```markdown
+# [Topic] Guide
+
+## Quick Reference
+| Edition | Method |
+|---------|--------|
+| **Pro** | Run `tool_name.py` |
+| **Core** | Follow detection rules below |
+
+## Part 1: Detection/Validation (Claude-Native)
+Step-by-step instructions for Claude to perform the same
+analysis using Grep/Glob/Read tools.
+- What to search for
+- How to classify results
+- How to generate report
+
+## Part 2+: Application/Usage
+How to apply detected patterns or fixes
+
+## Checklist
+Verification steps before completing
+```
+
+### Complete Reference Document List
+
+| Reference Document | Purpose | Tool Equivalent |
+|--------------------|---------|-----------------|
+| `m_pattern_discovery.md` | M code pattern analysis | `m_pattern_analyzer.py` |
+| `query_folding_guide.md` | Query folding analysis | `query_folding_validator.py` |
+| `anonymization-patterns.md` | Sensitive column detection | `sensitive_column_detector.py` |
+| `tmdl_partition_structure.md` | TMDL format validation | `tmdl_format_validator.py` |
+| `project_structure_validation.md` | Project format detection | `pbi_project_validator.py` |
+| `project_comparison_guide.md` | Project comparison/merge | `pbi_merger_utils.py` |
+| `pbir_visual_structure.md` | Visual layout extraction | `extract_visual_layout.py` |
+
+---
+
 ## See Also
 
 - `SKILL.md` - Main skill documentation
-- `tmdl_partition_structure.md` - TMDL format rules for fallback validation
-- `anonymization-patterns.md` - Patterns for fallback anonymization
-- `query_folding_guide.md` - Query folding rules for fallback analysis
+- `m_pattern_discovery.md` - M code pattern detection
+- `query_folding_guide.md` - Query folding analysis
+- `anonymization-patterns.md` - Sensitive column detection
+- `tmdl_partition_structure.md` - TMDL format validation
+- `project_structure_validation.md` - Project format detection
+- `project_comparison_guide.md` - Project comparison
+- `pbir_visual_structure.md` - Visual layout extraction

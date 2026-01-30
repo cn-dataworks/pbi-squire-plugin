@@ -56,7 +56,7 @@ Guide users to the correct command based on their stated intent.
 - Symptoms: "broken", "incorrect", "wrong", "fix", "debug", "issue"
 - Applies to: Calculation problems, visual issues, hybrid changes
 
-**User wants to create something new** → `/create-pbi-artifact`
+**User wants to create something new** → `/create-pbi-artifact-spec`
 - Symptoms: "create", "add", "build", "new measure/column/table/visual"
 - Applies to: Net-new artifacts with specification guidance
 

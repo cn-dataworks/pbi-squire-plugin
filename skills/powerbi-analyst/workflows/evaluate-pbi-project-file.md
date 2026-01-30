@@ -6,10 +6,14 @@ pattern: ^/evaluate-pbi-project-file\s+(.+)$
 
 # Evaluate Power BI Project File
 
+> **MAIN THREAD EXECUTION**: This workflow executes in the MAIN THREAD, not a subagent.
+> The main thread spawns leaf subagents via `Task()` and coordinates their work through findings.md.
+> Subagents do NOT spawn other subagents.
+
 This slash command creates a comprehensive analyst findings report for Power BI project changes by:
 1. Interactively clarifying the problem statement with the user
 2. Creating a structured scratchpad workspace
-3. Orchestrating specialized agents to locate, implement, and verify proposed changes
+3. Main thread spawns specialized agents to locate, plan, and verify proposed changes
 
 ## Tracing Output (Required)
 
@@ -127,6 +131,27 @@ Parse the `--description` parameter to detect if visual changes are expected:
 4. **Context Note**: This flag will be passed to the verification agent to ensure PBIR structure validation
 
 **Step 2: Invoke Verification Agent (Initial)**
+
+**Tool Selection (Try Tool First, Fallback to Claude-Native):**
+
+1. **Check for Python validator:**
+   ```bash
+   test -f ".claude/tools/pbi_project_validator.py" && echo "TOOL_AVAILABLE" || echo "TOOL_NOT_AVAILABLE"
+   ```
+
+2. **If tool available (Pro edition):**
+   - Execute Python validator for fast, structured validation
+   - Automatic format detection and path length analysis
+
+3. **If tool NOT available (Core edition):**
+   - Load `references/project_structure_validation.md` → **Part 1: Format Detection (Claude-Native)**
+   - Follow the 5-step validation procedure:
+     1. Detect project format (PBIX vs PBIP vs pbi-tools)
+     2. Validate required files per format
+     3. Check path length (Windows MAX_PATH 260 char limit)
+     4. Generate validation report
+     5. Handle special cases (PBIX extraction, missing .Report folder)
+   - Use Glob to detect format indicators
 
 Invoke the `powerbi-verify-pbiproject-folder-setup` agent:
 ```
@@ -810,7 +835,7 @@ ADDITIONAL SEARCH TARGETS (from user clarification):
 
 **Purpose**: Design calculation and/or visual changes based on investigation findings
 
-**Agent**: `powerbi-dashboard-update-planner`
+**Main thread spawns**: `Task(powerbi-dashboard-update-planner)`
 
 **Input**:
 - Problem statement
@@ -825,14 +850,31 @@ The agent reads Section 1.A and 1.B to determine scenario:
 - Both sections → HYBRID workflow (with coordination)
 
 **Output** (scenario-dependent):
-- **CALC_ONLY**: Section 2.A (Calculation Changes)
+- **CALC_ONLY**: Section 2.A (Calculation Changes) or Section 2.A.spec (if specialist needed)
 - **VISUAL_ONLY**: Section 2.B (Visual Changes)
-- **HYBRID**: Coordination Summary + Section 2.A + Section 2.B
+- **HYBRID**: Coordination Summary + Section 2.A/2.A.spec + Section 2.B
 
 **Key Feature for HYBRID**:
 - Agent designs calculation changes FIRST (determines measure names, formats)
 - Agent designs visual changes SECOND (references exact names from calculations)
 - Agent documents dependencies and execution order
+
+**Specialist Execution (Main Thread Responsibility)**:
+After planner returns, main thread checks for specialist work specs:
+
+```
+IF Section 2.A.spec exists (DAX specialist work needed):
+  Main thread spawns: Task(powerbi-dax-specialist)
+    Input: Reads Section 2.A.spec from findings.md
+    Output: Writes final DAX code to Section 2.A
+
+IF Section 2.B.spec exists (M code specialist work needed):
+  Main thread spawns: Task(powerbi-mcode-specialist)
+    Input: Reads Section 2.B.spec from findings.md
+    Output: Writes final M code to Section 2.A (M Code subsection)
+```
+
+**IMPORTANT**: The planner does NOT spawn specialists itself. It writes specifications; the main thread spawns specialists.
 
 **Note**: This single agent replaces the former `powerbi-code-fix-identifier` and `pbir-visual-edit-planner` agents with unified expertise
 

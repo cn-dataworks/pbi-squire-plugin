@@ -1,10 +1,10 @@
 ---
-name: analyze-pbi-dashboard
-description: Analyze existing Power BI dashboard pages and provide business-friendly summaries of visuals, metrics, filters, and page interactions
-pattern: ^/analyze-pbi-dashboard\s+(.+)$
+name: summarize-pbi-dashboard
+description: Summarize existing Power BI dashboard pages and provide business-friendly documentation of visuals, metrics, filters, and page interactions
+pattern: ^/summarize-pbi-dashboard\s+(.+)$
 ---
 
-# Analyze Power BI Dashboard
+# Summarize Power BI Dashboard
 
 This slash command creates comprehensive business-friendly documentation for existing Power BI dashboards by:
 1. Validating the Power BI project structure
@@ -15,7 +15,7 @@ This slash command creates comprehensive business-friendly documentation for exi
 ## Usage
 
 ```bash
-/analyze-pbi-dashboard --project <path-to-pbip-folder> [--output <output-file-path>]
+/summarize-pbi-dashboard --project <path-to-pbip-folder> [--output <output-file-path>]
 ```
 
 ### Parameters
@@ -27,13 +27,13 @@ This slash command creates comprehensive business-friendly documentation for exi
 
 ```bash
 # Basic usage - analyze dashboard and create report
-/analyze-pbi-dashboard --project "C:\Projects\SalesReport"
+/summarize-pbi-dashboard --project "C:\Projects\SalesReport"
 
 # Specify custom output location
-/analyze-pbi-dashboard --project "./MyReport" --output "./docs/dashboard-overview.md"
+/summarize-pbi-dashboard --project "./MyReport" --output "./docs/dashboard-overview.md"
 
 # Analyze dashboard with both .Report and .SemanticModel
-/analyze-pbi-dashboard --project "C:\Reports\FinanceDashboard.Report"
+/summarize-pbi-dashboard --project "C:\Reports\FinanceDashboard.Report"
 ```
 
 ## Workflow
@@ -557,7 +557,7 @@ The generated analysis file follows this structure:
 
 - This command is designed for comprehensive dashboard documentation
 - For troubleshooting specific issues, use `/evaluate-pbi-project-file` instead
-- For creating new artifacts, use `/create-pbi-artifact`
+- For creating new artifacts, use `/create-pbi-artifact-spec`
 - The analysis preserves full technical details while creating business-accessible summaries
 - Output is designed to serve both technical and non-technical audiences
 

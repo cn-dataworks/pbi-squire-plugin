@@ -26,7 +26,7 @@
 
 ## How Templates Work
 
-1. **Agents use templates** when generating new visuals (e.g., `/create-pbi-artifact`)
+1. **Agents use templates** when generating new visuals (e.g., `/create-pbi-artifact-spec`)
 2. **Templates are bundled** with the skill - no network fetch required
 3. **Placeholders** like `{{MEASURE_NAME}}` are replaced with actual values
 
