@@ -1,7 +1,7 @@
 ---
 name: pbi-squire-visual-locator
 description: Locate and document PBIR visuals before planning visual modifications. Use when investigating visual changes or needing current visual state.
-model: sonnet
+model: haiku
 tools:
   - Read
   - Glob

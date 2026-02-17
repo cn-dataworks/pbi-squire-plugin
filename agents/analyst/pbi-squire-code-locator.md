@@ -1,7 +1,7 @@
 ---
 name: pbi-squire-code-locator
 description: Locate and document DAX, M code, and TMDL definitions related to a problem statement. Use when investigating calculation issues or planning code changes.
-model: sonnet
+model: haiku
 tools:
   - Read
   - Glob

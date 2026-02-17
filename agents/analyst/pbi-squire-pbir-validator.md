@@ -1,7 +1,7 @@
 ---
 name: pbi-squire-pbir-validator
 description: Validate PBIR visual.json files after XML edit plan execution but before deployment. Use as a quality gate for visual changes.
-model: sonnet
+model: haiku
 tools:
   - Read
   - Write

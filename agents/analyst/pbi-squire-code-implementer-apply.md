@@ -1,7 +1,7 @@
 ---
 name: pbi-squire-code-implementer-apply
 description: Apply calculation changes from Section 2.A to TMDL files. Use during implementation phase after validation passes.
-model: sonnet
+model: haiku
 tools:
   - Read
   - Write

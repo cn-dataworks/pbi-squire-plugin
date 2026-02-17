@@ -1,7 +1,7 @@
 ---
 name: pbi-squire-pbir-page-generator
 description: Generate complete PBIR page structures including page.json and visual folders. Use when creating new dashboard pages from specifications.
-model: sonnet
+model: haiku
 tools:
   - Read
   - Write

@@ -1,7 +1,7 @@
 ---
 name: pbi-squire-visual-implementer-apply
 description: Apply visual changes from Section 2.B XML edit plan to PBIR visual.json files. Use during implementation phase after validation passes.
-model: sonnet
+model: haiku
 tools:
   - Read
   - Write
