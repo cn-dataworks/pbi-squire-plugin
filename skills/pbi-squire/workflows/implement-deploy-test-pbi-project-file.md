@@ -364,6 +364,72 @@ This auto-fix is safe because:
 
 ---
 
+### Phase 3.5: Outcome Verification (CRITICAL)
+
+**Condition:** Runs after Phase 3 (DAX Validation) passes, before deployment. This phase verifies that the changes actually achieved the intended outcome — not just that the file was saved successfully.
+
+> **Why this phase exists:** Red team testing revealed that agents marked tasks "complete" because the file saved without errors, but the DAX expression was never tested against actual data or verified in the project files. A successful file write is NOT evidence of a successful fix.
+
+**Verification by Mode:**
+
+#### LIVE MODE (MCP Available)
+
+1. **Execute EVALUATE query** against the modified measure(s):
+   ```dax
+   EVALUATE ROW("Result", [Modified Measure Name])
+   ```
+2. **Compare result** against the expected outcome from Section 3 test cases
+3. **If result matches expected**: Mark `VERIFICATION PASSED`
+4. **If result does NOT match**: Mark `VERIFICATION FAILED` — do NOT proceed
+
+#### FILE MODE (No MCP)
+
+1. **Grep `definition/tables/` for the exact new DAX expression** — confirm the new code is present in the TMDL file
+2. **Grep for the OLD DAX expression** — confirm it is NO LONGER present (for MODIFY operations)
+3. **Read the modified file** and verify the measure definition is complete and properly formatted
+4. **If new expression found AND old expression absent**: Mark `VERIFICATION PASSED`
+5. **If old expression still present OR new expression not found**: Mark `VERIFICATION FAILED`
+
+#### On Verification Failure
+
+```
+❌ VERIFICATION FAILED
+
+The changes were written to disk, but outcome verification did not confirm
+the intended result.
+
+Evidence:
+[Specific evidence — e.g., "Old DAX expression still found at line 47" or
+"EVALUATE returned 0 instead of expected 25%"]
+
+Options:
+  [R] Re-apply — attempt the fix again
+  [I] Investigate — examine what went wrong
+  [A] Abort — stop and preserve current state for manual review
+```
+
+**Do NOT mark the task as complete if verification fails.**
+
+#### Verification Output (Section 4.A Addendum)
+
+Add to Section 4.A after implementation results:
+
+```markdown
+### Outcome Verification
+
+**Mode**: LIVE MODE | FILE MODE
+**Status**: ✅ VERIFIED | ❌ VERIFICATION FAILED
+
+**Evidence**:
+- [LIVE] EVALUATE result: [value] (expected: [value])
+- [FILE] New expression found: [yes/no] at [file:line]
+- [FILE] Old expression absent: [yes/no]
+
+**Conclusion**: Change confirmed effective | Change requires investigation
+```
+
+---
+
 ### Phase 4: Deployment (OPTIONAL - If Requested)
 
 **Condition:** Only runs if:

@@ -61,6 +61,20 @@ Glob: **/*.SemanticModel/definition/**/*.tmdl
 Glob: **/*.SemanticModel/definition/tables/*.tmdl
 ```
 
+### Step 2.5: Filter Results to Canonical Paths
+
+**Before using any search results**, verify all file paths point to the canonical `definition/` directory:
+
+1. **Check each result path** for `/definition/` (or `\definition\`)
+2. **Discard any match** in `TMDLScripts/`, `.pbi/`, or `StaticResources/` directories
+3. **If results were discarded**, re-run the search constrained to canonical paths:
+   ```
+   Glob: **/*.SemanticModel/definition/**/*.tmdl
+   ```
+4. **Log discarded paths** in the "Not Found" section with reason: "Discarded: non-canonical path (TMDLScripts/)"
+
+> **Why:** `TMDLScripts/` contains export copies that Power BI Desktop overwrites. Only `definition/` is the source of truth.
+
 ### Step 3: Search for Relevant Code
 
 Use Grep to find mentions in TMDL files:
@@ -170,6 +184,16 @@ Write to Section 1.A of findings.md using this format:
 3. Document aggregation patterns (SUM, AVERAGE, COUNT)
 ```
 
+### For Sibling Measures
+```
+1. Extract base name from target measure (e.g., "PSSR Labor Commission" → "PSSR.*Commission")
+2. Grep for sibling measures matching the base pattern in definition/tables/*.tmdl
+3. For each sibling found, extract the full DAX expression
+4. Compare DAX structure across siblings — flag shared patterns (same CALCULATE, same filter logic)
+5. Document which siblings share the same code structure as the target
+6. Note any symmetry patterns (Added/Removed, different category filters, time variants)
+```
+
 ## Output Quality Criteria
 
 Before completing:
@@ -254,3 +278,4 @@ Suggestions:
 - **Complete**: Extract full definitions, not snippets
 - **Referenced**: Include clickable file paths
 - **Scoped**: Write ONLY to Section 1.A
+- **Write location**: ONLY write to `findings.md` in the `agent_scratchpads/` directory provided in the task prompt. NEVER write to `.claude/tasks/`, project root, or any other location

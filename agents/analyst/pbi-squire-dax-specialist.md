@@ -164,7 +164,7 @@ mcp.dax_query_operations.validate(expression=generated_dax)
 #### [Measure/Column Name]
 
 **Change Type:** CREATE | MODIFY
-**Target Location:** [table.tmdl](path)
+**Target Location:** [table.tmdl](path) — MUST be in `definition/tables/` directory. Never reference `TMDLScripts/` or `.pbi/` paths.
 
 **Proposed Code:**
 ```dax
@@ -253,3 +253,4 @@ Before completing:
 - **Schema respect**: Only reference existing objects
 - **Pattern consistency**: Follow patterns from Section 1.D
 - **Validation required**: Always validate when possible
+- **Write location**: ONLY write to `findings.md` in the `agent_scratchpads/` directory provided in the task prompt. NEVER write to `.claude/tasks/`, project root, or any other location

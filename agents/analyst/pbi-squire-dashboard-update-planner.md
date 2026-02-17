@@ -98,6 +98,7 @@ For TMDL:
 - Apply performance best practices
 - Consider edge cases and error handling
 - Identify minimal changes needed
+- **Check Section 1.A for "Sibling Audit Results"** — if sibling measures were identified with the same bug pattern, include ALL approved siblings in the fix plan (not just the original target measure)
 
 ### Step 2.5: Generate Corrected Code
 

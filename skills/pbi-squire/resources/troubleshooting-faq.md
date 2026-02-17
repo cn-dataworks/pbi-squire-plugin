@@ -228,6 +228,51 @@ DIVIDE([Numerator], [Denominator], 0)  -- Returns 0 instead of BLANK
 
 ---
 
+## Agent Behavior Issues
+
+### "I edited the file but the change isn't showing in Power BI"
+
+**Cause:** The agent may have edited `TMDLScripts/` instead of the canonical `definition/` directory.
+
+**How to check:**
+1. Look at the file path in the implementation report (Section 4.A)
+2. If the path contains `TMDLScripts/`, the edit went to the wrong location
+3. Power BI Desktop overwrites `TMDLScripts/` on every save, discarding your changes
+
+**Solutions:**
+1. Re-run the workflow — PBI Squire v1.1.0+ enforces path validation to `definition/` only
+2. Manually verify the target path contains `/definition/tables/`
+3. If using an older version, update the plugin
+
+---
+
+### "Task was marked complete but the measure still shows wrong values"
+
+**Cause:** The agent confirmed the file saved successfully but did not verify the DAX actually produces correct results.
+
+**How to check:**
+1. Open the TMDL file and verify the new DAX expression is present
+2. Check that the OLD expression is completely removed (not duplicated)
+3. Test the measure in Power BI Desktop DAX query view
+
+**Solutions:**
+1. PBI Squire v1.1.0+ includes Phase 3.5 (Outcome Verification) that verifies changes are effective, not just saved
+2. In LIVE MODE: Run `EVALUATE ROW("Result", [Measure Name])` to test
+3. In FILE MODE: Grep the TMDL file for both old and new expressions
+
+---
+
+### "Config was created with dataSensitiveMode: false but I have sensitive data"
+
+**Cause:** During initial setup, the data sensitivity prompt was skipped or auto-defaulted without asking.
+
+**Solutions:**
+1. Edit `.claude/pbi-squire.json` and change `"dataSensitiveMode": false` to `"dataSensitiveMode": true`
+2. PBI Squire v1.1.0+ makes this prompt BLOCKING — it will not proceed until you explicitly choose
+3. After changing the setting, run `/setup-data-anonymization` to configure masking
+
+---
+
 ## Getting More Help
 
 If your issue isn't listed here:
@@ -240,4 +285,4 @@ Ask: "I'm getting [error] when trying to [action]. Can you help?"
 
 ---
 
-*Last updated: 2025-12-22*
+*Last updated: 2026-02-16*

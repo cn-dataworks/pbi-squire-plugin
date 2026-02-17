@@ -44,6 +44,24 @@ Before any modifications:
 Copy [file.tmdl] → [file.tmdl.backup]
 ```
 
+### Step 2.5: Validate Target Paths
+
+**Before writing ANY file**, validate every target path:
+
+1. **Check path contains `/definition/`** (or `\definition\` on Windows)
+2. **ABORT if path matches forbidden directory:**
+   - `TMDLScripts/` — export copy, NOT canonical
+   - `.pbi/` — internal cache
+   - `StaticResources/` — binary assets
+3. **If path fails validation**, write to Section 4.A:
+   ```markdown
+   **Status**: ❌ ABORTED - Forbidden Target Path
+   **Error**: Target path is NOT in the canonical definition/ directory: [path]
+   **Forbidden Match**: [TMDLScripts/ | .pbi/ | StaticResources/]
+   **Resolution**: Re-run code-locator to find the correct path within definition/
+   ```
+4. **Do NOT proceed** with any file writes until all paths are validated
+
 ### Step 3: Apply Changes
 
 #### For CREATE Operations:
@@ -164,6 +182,13 @@ Write Section 4.A:
 **Backups Created**:
 - [Measures.tmdl.backup](path)
 
+**Outcome Evidence** (REQUIRED):
+- [ ] EVALUATE query result: `[result]` (LIVE MODE) OR grep confirmation (FILE MODE)
+- [ ] Old expression confirmed absent (for MODIFY operations)
+- [ ] New expression confirmed present at expected location
+
+> **CRITICAL:** Do NOT report SUCCESS without outcome evidence. A successful file write is NOT sufficient — you must verify the change is actually present and correct in the target file.
+
 **Next Step**: Apply visual changes (Section 4.B) or validate
 ```
 
@@ -265,3 +290,4 @@ partition 'Partition Name' = m
 - **Validate after**: Run syntax validator
 - **Document fully**: Record before/after states
 - **Only write Section 4.A**: Don't modify other sections
+- **Write location**: ONLY write to (1) `findings.md` in the `agent_scratchpads/` directory provided in the task prompt, and (2) TMDL files within the `definition/` directory of the project. NEVER write to `.claude/tasks/`, project root, or any other location

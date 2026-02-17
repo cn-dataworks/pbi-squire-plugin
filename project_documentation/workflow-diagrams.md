@@ -55,8 +55,12 @@ flowchart TD
         P0[Phase 0: Setup<br/>Create scratchpad + findings.md] --> P1
 
         P1[Phase 1: Investigation<br/>PARALLEL subagents] --> QG1{Quality Gate 1}
-        QG1 -->|Pass| P2
+        QG1 -->|Pass| P1_5{EVALUATE workflow?}
         QG1 -->|Fail| P1
+
+        P1_5 -->|Yes| SA[Step 2.6: Sibling Audit<br/>Find sibling measures<br/>with same bug pattern]
+        P1_5 -->|No| P2
+        SA --> P2
 
         P2[Phase 2: Planning<br/>SEQUENTIAL agents] --> QG2{Quality Gate 2}
         QG2 -->|Pass| P3
@@ -79,7 +83,9 @@ flowchart TD
         W6 --> IMP1{findings.md exists?}
         IMP1 -->|No| IMP2[Error: Run evaluation first]
         IMP1 -->|Yes| IMP3[Apply changes to project]
-        IMP3 --> IMP4{Developer Edition?}
+        IMP3 --> IMP3_5{Phase 3.5:<br/>Outcome Verification}
+        IMP3_5 -->|VERIFIED| IMP4{Developer Edition?}
+        IMP3_5 -->|FAILED| IMP3_5a[Re-apply / Investigate / Abort]
         IMP4 -->|Yes| IMP5[Run Playwright tests]
         IMP4 -->|No| IMP6[Manual verification]
     end

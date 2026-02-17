@@ -127,6 +127,12 @@ Ready to proceed?
 
 2. Create findings.md with Problem Statement from user request
 
+2.5. **Permission Pre-Check** — Before spawning any subagents:
+   - Create the scratchpad directory including any parent directories (`agent_scratchpads/YYYYMMDD-HHMMSS-<task-name>/`). If the `agent_scratchpads/` parent folder does not exist yet, create it — this is expected on first run.
+   - Write the initial findings.md file to confirm the directory is writable
+   - **If directory creation or file write fails**: HALT workflow and report error to user — do NOT proceed with subagents that will write to wrong locations
+   - **If successful**: Confirm the full scratchpad path in the task prompt for every subagent so they know exactly where to write
+
 3. Classify change type based on problem statement:
    - `calc_only` - DAX/M/TMDL changes only
    - `visual_only` - PBIR visual changes only
@@ -505,6 +511,47 @@ The main thread provides clear progress indicators:
 7. **Clear error reporting** - Always explain failures with specific details
 8. **User confirmation** - Get approval before implementing changes
 9. **Edition awareness** - Only offer Developer features when Pro agents exist
+10. **Scratchpad location enforced** - ALL agent output MUST go to `agent_scratchpads/YYYYMMDD-HHMMSS-<TaskName>/`, NEVER to `.claude/tasks/`, project root, or any other location
+11. **Write permission pre-check** - Before spawning subagents, verify the scratchpad directory can be created and is writable
+12. **Forbidden write locations** - Agents MUST NOT write to: `.claude/tasks/`, project root (loose files), `.git/`, `node_modules/`, `TMDLScripts/`, `.pbi/`, `StaticResources/`. The ONLY allowed write targets are (a) `agent_scratchpads/` for findings and (b) `definition/` for TMDL edits
+
+---
+
+## File Path Safety Rules
+
+All agents that read or write TMDL files MUST follow these path constraints.
+
+### Allowed Paths
+
+| Path Pattern | Purpose |
+|-------------|---------|
+| `definition/tables/*.tmdl` | Table definitions (measures, columns, partitions) |
+| `definition/model.tmdl` | Model-level settings |
+| `definition/relationships.tmdl` | Table relationships |
+| `definition/expressions.tmdl` | Shared expressions |
+| `definition/roles/*.tmdl` | Security roles |
+| `definition/perspectives/*.tmdl` | Perspectives |
+
+### Forbidden Paths (NEVER read or write)
+
+| Path Pattern | Why Forbidden |
+|-------------|---------------|
+| `TMDLScripts/` | Temporary export folder — NOT the canonical source |
+| `.pbi/` | Internal Power BI cache — will be overwritten |
+| `StaticResources/` | Binary assets — not editable |
+| `.git/` | Version control internals |
+| `*.pbix` | Binary files — not directly editable |
+
+### 4-Step Path Resolution Protocol
+
+Before reading or writing ANY TMDL file:
+
+1. **Resolve path** — get the full file path
+2. **Check for `/definition/`** — the path MUST contain `/definition/` (or `\definition\` on Windows)
+3. **Discard forbidden matches** — if the path contains `TMDLScripts/`, `.pbi/`, or `StaticResources/`, DISCARD it immediately
+4. **Re-search if needed** — if all results were discarded, re-run the search constrained to `**/definition/**/*.tmdl`
+
+> **Why this matters:** Some projects contain a `TMDLScripts/` folder alongside `definition/`. Edits to `TMDLScripts/` are silently overwritten by Power BI Desktop, making them appear to "not save." The `definition/` folder is the single source of truth.
 
 ---
 
@@ -517,3 +564,6 @@ Before completing any workflow:
 - [ ] All quality gates passed or user approved override
 - [ ] Next steps clearly communicated
 - [ ] Errors documented if any occurred
+- [ ] **Outcome evidence collected** — EVALUATE query result (LIVE) or grep confirmation (FILE) proves changes are effective, not just saved
+- [ ] **Old code confirmed absent** — for MODIFY operations, grep confirms previous expression no longer exists in target file
+- [ ] **All write paths validated** — every file written is within `agent_scratchpads/` (findings) or `definition/` (TMDL edits), with no writes to forbidden locations

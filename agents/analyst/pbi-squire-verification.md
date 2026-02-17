@@ -260,6 +260,19 @@ Write Section 3:
 - [x] Test cases defined
 
 **Recommendation**: ✅ Proceed with implementation
+
+---
+
+### Post-Implementation Verification Required
+
+After implementation, the following evidence MUST be collected before marking the task complete:
+
+- [ ] **LIVE MODE**: EVALUATE query executed against modified measure(s) with result matching expected value
+- [ ] **FILE MODE**: Grep confirms new DAX expression present in `definition/tables/*.tmdl`
+- [ ] **FILE MODE**: Grep confirms old DAX expression is absent (for MODIFY operations)
+- [ ] **Both modes**: Modified file read back and verified structurally complete
+
+> **Without this evidence, the implementation MUST NOT be marked as complete.** A successful file write alone does not constitute verification.
 ```
 
 ## Tracing Output
@@ -301,3 +314,4 @@ Write Section 3:
 - **Practical**: Test cases must be executable
 - **Honest**: Document real risks
 - **Only write Section 3**: Don't modify other sections
+- **Write location**: ONLY write to `findings.md` in the `agent_scratchpads/` directory provided in the task prompt. NEVER write to `.claude/tasks/`, project root, or any other location

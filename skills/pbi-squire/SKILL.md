@@ -137,6 +137,20 @@ Before executing any workflow, perform these checks in order:
 
 **For write workflows (EVALUATE, CREATE_ARTIFACT, IMPLEMENT):** Show the warning above and let user decide.
 
+#### MCP Mode Announcement (Required)
+
+After determining MCP status, **always** display the operating mode to the user:
+
+```
+Operating Mode: LIVE MODE (MCP connected)
+  → DAX validation, data sampling, and live queries available
+
+Operating Mode: FILE MODE (no MCP)
+  → Reading/writing TMDL files directly, no live validation
+```
+
+This ensures the user knows what capabilities are available for the session. Display this BEFORE proceeding to any workflow.
+
 ### Step -1: Project Setup Check (AUTOMATIC)
 
 **Purpose**: Auto-configure the project on first skill invocation. No manual bootstrap needed for Analyst Edition.
@@ -224,7 +238,9 @@ Based on the number of projects found:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-##### 3. Prompt for Data Sensitivity
+##### 3. Prompt for Data Sensitivity (BLOCKING)
+
+**This step MUST complete before creating config files. Do NOT auto-select a default. Wait for the user's explicit answer.**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -240,7 +256,9 @@ Based on the number of projects found:
 │  • Compliance policies require data masking                         │
 │                                                                     │
 │  [Y] Yes - require anonymization setup before data queries          │
-│  [N] No - proceed without masking requirements (Recommended)        │
+│  [N] No - proceed without masking requirements                      │
+│                                                                     │
+│  ⚠️ You must choose one — there is no default.                      │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -253,17 +271,19 @@ Create the following files inline (no bootstrap script needed):
 ```json
 {
   "projectPath": "<detected-or-provided-path>",
-  "dataSensitiveMode": false,
+  "dataSensitiveMode": <value-from-step-3>,
   "mode": "single",
   "projectOverrides": {}
 }
 ```
 
+> **CRITICAL:** The `dataSensitiveMode` value MUST reflect the user's answer from Step 3. Never default to `false`. If Step 3 has not been completed, do NOT create this file.
+
 For shared repositories:
 ```json
 {
   "projectPath": "<current-directory>",
-  "dataSensitiveMode": false,
+  "dataSensitiveMode": <value-from-step-3>,
   "mode": "shared",
   "projectOverrides": {}
 }

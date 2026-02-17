@@ -831,6 +831,63 @@ ADDITIONAL SEARCH TARGETS (from user clarification):
 | Unexpected Complexity | Simple request but code shows 8-variable calculation | Confirm full scope |
 | Filter Context Needed | User wants to "add filter" but multiple filter contexts exist | Clarify exact context |
 
+#### Step 2.6: Sibling Pattern Audit (CRITICAL)
+
+**Purpose**: Detect sibling measures that share the same bug pattern as the target measure(s). Prevents partial fixes where one measure is corrected but identical siblings are left broken.
+
+**Execute**: ALWAYS for EVALUATE workflow modifying existing measures. SKIP for CREATE_ARTIFACT workflow (new artifacts have no siblings yet).
+
+**Workflow**:
+
+1. **Extract naming patterns** from the target measure(s) identified in Section 1.A:
+   - Base name pattern (e.g., "PSSR Labor Commission" → base "PSSR * Commission")
+   - Common prefixes/suffixes (e.g., "YoY", "PY", "MTD", "QTD")
+   - Table membership (same table = likely siblings)
+
+2. **Broad grep for siblings** in `definition/tables/*.tmdl`:
+   ```
+   Grep: pattern matching the base name pattern
+   Example: "measure 'PSSR.*Commission'" in definition/tables/*.tmdl
+   ```
+
+3. **Compare DAX formulas** across siblings:
+   - Extract the DAX expression from each sibling
+   - Identify shared patterns (same CALCULATE structure, same filter logic, same aggregation)
+   - Flag siblings using the SAME problematic pattern identified in the root cause
+
+4. **Symmetry check**:
+   - If target measure has "Added" variant, check for "Removed" variant
+   - If target measure filters by one category, check other category filters
+   - If target measure uses SAMEPERIODLASTYEAR, check sibling time intelligence measures
+
+5. **Present findings to user**:
+   ```
+   ⚠️ SIBLING PATTERN AUDIT
+
+   Target measure: "PSSR Labor Commission"
+   Root cause: Missing RETURN_INDICATOR filter
+
+   Found 2 sibling measures with the SAME issue:
+     • "PSSR Parts Commission" (line 1590) — same missing filter
+     • "PSSR Misc Commission" (line 1951) — same missing filter
+
+   Options:
+     [A] Apply fix to ALL 3 measures (recommended)
+     [T] Apply fix to TARGET only (Labor Commission)
+     [S] Select which measures to fix
+   ```
+
+6. **Update scope** based on user's choice:
+   - If [A]: Add all sibling measures to the fix scope in Section 1.A
+   - If [T]: Proceed with only the original target
+   - If [S]: Let user select, then update scope accordingly
+
+**Output**: Append "### Sibling Audit Results" subsection to Section 1.A with:
+- Siblings found (names, locations, line numbers)
+- Pattern comparison (which share the bug pattern)
+- User's scope decision
+- Updated target list
+
 #### Step 3: Dashboard Update Planning (powerbi-dashboard-update-planner)
 
 **Purpose**: Design calculation and/or visual changes based on investigation findings

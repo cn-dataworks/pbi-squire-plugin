@@ -1,38 +1,38 @@
-{
-    "name": "pbi-squire",
-    "version": "1.0.0",
-    "description": "PBI Squire - Complete Power BI development assistant. Diagnose issues, create DAX measures, transform data with M code, document dashboards, and deploy changes.",
-    "author": {
-        "name": "CN Dataworks",
-        "email": "info@cndataworks.com"
-    },
-    "repository": "https://github.com/cn-dataworks/pbi-squire-plugin",
-    "agents": [
-        "./agents/analyst/pbi-squire-code-locator.md",
-        "./agents/analyst/pbi-squire-visual-locator.md",
-        "./agents/analyst/pbi-squire-data-context-agent.md",
-        "./agents/analyst/pbi-squire-pattern-discovery.md",
-        "./agents/analyst/pbi-squire-dashboard-update-planner.md",
-        "./agents/analyst/pbi-squire-dax-review-agent.md",
-        "./agents/analyst/pbi-squire-pbir-validator.md",
-        "./agents/analyst/pbi-squire-dax-specialist.md",
-        "./agents/analyst/pbi-squire-mcode-specialist.md",
-        "./agents/analyst/pbi-squire-artifact-decomposer.md",
-        "./agents/analyst/pbi-squire-data-understanding-agent.md",
-        "./agents/analyst/pbi-squire-code-implementer-apply.md",
-        "./agents/analyst/pbi-squire-visual-implementer-apply.md",
-        "./agents/analyst/pbi-squire-verification.md",
-        "./agents/analyst/pbi-squire-page-layout-designer.md",
-        "./agents/analyst/pbi-squire-interaction-designer.md",
-        "./agents/analyst/pbi-squire-visual-type-recommender.md",
-        "./agents/analyst/pbi-squire-code-understander.md",
-        "./agents/analyst/pbi-squire-compare-project-code.md",
-        "./agents/analyst/pbi-squire-template-harvester.md",
-        "./agents/analyst/pbi-squire-pbir-page-generator.md",
-        "./agents/analyst/pbi-squire-dashboard-documenter.md",
-        "./agents/analyst/pbi-squire-anonymization-setup.md"
-    ],
-    "skills": [
-        "./skills/pbi-squire"
-    ]
+﻿{
+    "name":  "pbi-squire",
+    "version":  "1.1.0",
+    "description":  "PBI Squire - Complete Power BI development assistant. Diagnose issues, create DAX measures, transform data with M code, document dashboards, and deploy changes.",
+    "author":  {
+                   "name":  "CN Dataworks",
+                   "email":  "info@cndataworks.com"
+               },
+    "repository":  "https://github.com/cn-dataworks/pbi-squire-plugin",
+    "agents":  [
+                   "./agents/analyst/pbi-squire-code-locator.md",
+                   "./agents/analyst/pbi-squire-visual-locator.md",
+                   "./agents/analyst/pbi-squire-data-context-agent.md",
+                   "./agents/analyst/pbi-squire-pattern-discovery.md",
+                   "./agents/analyst/pbi-squire-dashboard-update-planner.md",
+                   "./agents/analyst/pbi-squire-dax-review-agent.md",
+                   "./agents/analyst/pbi-squire-pbir-validator.md",
+                   "./agents/analyst/pbi-squire-dax-specialist.md",
+                   "./agents/analyst/pbi-squire-mcode-specialist.md",
+                   "./agents/analyst/pbi-squire-artifact-decomposer.md",
+                   "./agents/analyst/pbi-squire-data-understanding-agent.md",
+                   "./agents/analyst/pbi-squire-code-implementer-apply.md",
+                   "./agents/analyst/pbi-squire-visual-implementer-apply.md",
+                   "./agents/analyst/pbi-squire-verification.md",
+                   "./agents/analyst/pbi-squire-page-layout-designer.md",
+                   "./agents/analyst/pbi-squire-interaction-designer.md",
+                   "./agents/analyst/pbi-squire-visual-type-recommender.md",
+                   "./agents/analyst/pbi-squire-code-understander.md",
+                   "./agents/analyst/pbi-squire-compare-project-code.md",
+                   "./agents/analyst/pbi-squire-template-harvester.md",
+                   "./agents/analyst/pbi-squire-pbir-page-generator.md",
+                   "./agents/analyst/pbi-squire-dashboard-documenter.md",
+                   "./agents/analyst/pbi-squire-anonymization-setup.md"
+               ],
+    "skills":  [
+                   "./skills/pbi-squire"
+               ]
 }
