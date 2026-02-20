@@ -528,37 +528,6 @@ Based on existing patterns in your project, here are the styling recommendations
 - Dependencies identified
 - Change rationale comprehensive
 
-### Phase 6.5: Senior Review (pbi-squire-senior-reviewer) ⭐ Developer Edition
-
-> **SKIP IF:** `--embedded-mode` is true (parent workflow handles review)
-> **SKIP IF:** Developer Edition not detected (Analyst Edition skips this phase silently)
-
-**Purpose**: Holistic review of the entire artifact specification — traces proposed artifacts through
-the codebase and validates no unintended consequences (naming collisions, dependency conflicts, filter context issues).
-
-**Conditional**: Only runs if Developer Edition is detected (check if `pbi-squire-senior-reviewer` agent is available). Skip silently on Analyst Edition.
-
-**Input**: Entire findings.md (all sections), plus direct access to PBIP codebase
-**Output**: Section 2.9 (Senior Review) — only populated if concerns exist
-
-**Invocation**: Always runs after artifact design is complete (Section 2 populated)
-
-**Main thread spawns**: `Task(pbi-squire-senior-reviewer)`
-
-```
-project_path: <project-path>
-findings_file_path: <scratchpad-path>/findings.md
-
-Read: ALL sections of findings.md (Sections 1.1-1.3 and Section 2)
-Read: Actual PBIP codebase files to check for naming collisions and dependency conflicts
-Write: Section 2.9 (Senior Review)
-```
-
-**Quality Gate**:
-- If APPROVED → proceed to Phase 7 (Completion)
-- If CORRECTIONS RECOMMENDED → present corrections to user, offer to revise artifact design
-- If CHANGES REQUIRED → present required changes, return to Phase 6 (redesign)
-
 ### Phase 7: Completion
 
 > **SKIP IF:** `--embedded-mode` is true (parent workflow handles completion messaging)
@@ -567,9 +536,8 @@ Write: Section 2.9 (Senior Review)
 
 1. Display summary of findings location
 2. Show specification completion status
-3. Show senior review status (if senior review ran)
-4. Provide clickable link to findings file
-5. **Suggest next steps:**
+3. Provide clickable link to findings file
+4. **Suggest next steps:**
    ```
    ✅ Artifact specification complete!
 

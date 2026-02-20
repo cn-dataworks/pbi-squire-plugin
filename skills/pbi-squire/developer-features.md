@@ -255,28 +255,6 @@ See `workflows/qa-loop-pbi-dashboard.md` for full documentation.
 
 ## Pro Specialist Agents
 
-### Senior Reviewer (`pbi-squire-senior-reviewer`)
-**Handles:** Holistic review of proposed changes before implementation
-
-**Expertise:**
-- Downstream measure dependency tracing
-- Filter context propagation analysis
-- Relationship path integrity validation
-- Cross-cutting impact assessment
-- Solution quality evaluation (simpler/more performant alternatives)
-
-**When it runs:**
-- After validation passes in EVALUATE workflow (Step 5, after Sections 2.5-2.7)
-- After artifact design in CREATE_ARTIFACT workflow (Phase 6.5, after Section 2)
-- Writes Section 2.9 (Senior Review) to findings.md
-
-**Status levels:**
-- ✅ APPROVED — no concerns, proceed to implementation
-- ⚠️ CORRECTIONS RECOMMENDED — non-blocking, present to user
-- ❌ CHANGES REQUIRED — blocking, return to planning phase
-
-See `agents/developer/pbi-squire-senior-reviewer.md` for full documentation.
-
 ### Playwright Tester (`powerbi-playwright-tester`)
 **Handles:** Browser automation, visual testing, screenshot capture
 
@@ -341,10 +319,9 @@ Additional examples for Pro users:
 - `workflows/qa-loop-pbi-dashboard.md` - Automated QA loop workflow
 
 ### Agents
-- `agents/developer/pbi-squire-senior-reviewer.md` - Holistic review agent (final quality gate)
-- `agents/developer/pbi-squire-playwright-tester.md` - Browser automation agent
-- `agents/developer/pbi-squire-ux-reviewer.md` - UX analysis agent
-- `agents/developer/pbi-squire-qa-inspector.md` - DOM inspection agent (with design critique)
+- `agents/powerbi-playwright-tester.md` - Browser automation agent
+- `agents/powerbi-ux-reviewer.md` - UX analysis agent
+- `agents/powerbi-qa-inspector.md` - DOM inspection agent (with design critique)
 
 ### Design Standards & Guidelines
 - `references/powerbi-design-standards.md` - Dashboard design constitution & AI critique rubric
