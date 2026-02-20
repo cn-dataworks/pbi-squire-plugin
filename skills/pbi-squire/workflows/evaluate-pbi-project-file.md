@@ -968,11 +968,40 @@ IF Section 2.B.spec exists (M code specialist work needed):
 
 **Result**: Provides Pass/Warning/Fail verdict based on comprehensive validation
 
+#### Step 5: Senior Review (pbi-squire-senior-reviewer) ⭐ Developer Edition
+
+**Purpose**: Holistic review of the entire analysis — traces proposed changes through
+the codebase and validates no unintended consequences.
+
+**Conditional**: Only runs if Developer Edition is detected (check if `pbi-squire-senior-reviewer` agent is available). Skip silently on Analyst Edition.
+
+**Input**: Entire findings.md (all sections), plus direct access to PBIP codebase
+**Output**: Section 2.9 (Senior Review) — only populated if concerns exist
+
+**Invocation**: Always runs after validation is complete (Sections 2.5-2.7 and Section 3 populated)
+
+**Main thread spawns**: `Task(pbi-squire-senior-reviewer)`
+
+```
+project_path: <validated_project_path>
+findings_file_path: <scratchpad-path>/findings.md
+
+Read: ALL sections of findings.md (Problem Statement through Section 3)
+Read: Actual PBIP codebase files referenced in Section 1
+Write: Section 2.9 (Senior Review)
+```
+
+**Quality Gate**:
+- If APPROVED → proceed to Phase 5
+- If CORRECTIONS RECOMMENDED → present corrections to user, offer to revise plan
+- If CHANGES REQUIRED → present required changes, return to Step 3 (replanning)
+
 ### Phase 5: Completion
 1. Display summary of findings location
 2. Show verification verdict (if verification ran)
-3. Provide clickable link to findings file
-4. Suggest next steps based on verdict:
+3. Show senior review status (if senior review ran — Developer Edition only)
+4. Provide clickable link to findings file
+5. Suggest next steps based on verdict:
    - **Pass**: Ready to implement changes
    - **Warning**: Review recommendations before implementing
    - **Fail**: Address issues before proceeding

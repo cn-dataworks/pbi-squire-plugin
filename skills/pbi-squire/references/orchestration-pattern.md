@@ -223,6 +223,23 @@ If any validator returns FAIL:
 2. Report to user with specific issues
 3. Offer to revise plan or exit workflow
 
+### Phase 3.5: Senior Review (SEQUENTIAL) ⭐ Developer Edition
+
+**Conditional**: Only runs if Developer Edition is detected. Skip on Analyst Edition.
+
+```
+IF Developer Edition (pbi-squire-senior-reviewer agent available):
+  Task(pbi-squire-senior-reviewer)
+    Input: Entire findings.md + PBIP codebase files
+    Output: Section 2.9 (Senior Review)
+```
+
+**Quality Gate 4:** Main thread reads Section 2.9 and checks status:
+- APPROVED → Proceed to Phase 4
+- CORRECTIONS RECOMMENDED → Present to user, offer to revise plan
+- CHANGES REQUIRED → Present to user, return to Phase 2 (replanning)
+- (Analyst Edition: Skip this gate, proceed directly to Phase 4)
+
 ### Phase 4: Completion
 
 1. Display findings.md summary to user
@@ -389,6 +406,15 @@ Create findings.md with this structure:
 **Status:** PASS | WARNINGS | FAIL
 
 [Validation results]
+
+---
+
+## Section 2.9: Senior Review
+*Written by: pbi-squire-senior-reviewer*
+
+**Status:** APPROVED | CORRECTIONS RECOMMENDED | CHANGES REQUIRED
+
+[Holistic review results — only populated if concerns exist]
 
 ---
 

@@ -1040,6 +1040,7 @@ These agents are available only in the Developer Edition:
 
 | Agent | Purpose |
 |-------|---------|
+| `pbi-squire-senior-reviewer` | Holistic review — traces changes through codebase, validates no unintended consequences (Section 2.9) |
 | `powerbi-playwright-tester` | Browser automation testing |
 | `powerbi-ux-reviewer` | Design critique from screenshots |
 | `powerbi-qa-inspector` | DOM inspection for deployment errors |
