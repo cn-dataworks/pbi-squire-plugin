@@ -116,7 +116,8 @@ if ($targetVersion -ne $jsonVersion) {
     Write-Host "Updating plugin.json..." -ForegroundColor Cyan
     $json = Get-Content $pluginJsonPath -Raw | ConvertFrom-Json
     $json.version = $targetVersion
-    $json | ConvertTo-Json -Depth 10 | Set-Content $pluginJsonPath -Encoding UTF8
+    $jsonText = $json | ConvertTo-Json -Depth 10
+    [System.IO.File]::WriteAllText($pluginJsonPath, $jsonText, (New-Object System.Text.UTF8Encoding $false))
     Write-Host "  Updated: $jsonVersion -> $targetVersion" -ForegroundColor Green
 } else {
     Write-Host "plugin.json already at $targetVersion" -ForegroundColor Green

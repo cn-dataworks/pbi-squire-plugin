@@ -88,6 +88,18 @@ When working on this plugin codebase, consult `CONTRIBUTING.md` for:
 
 See `CONTRIBUTING.md` for detailed scenarios and commands.
 
+### PowerShell File Encoding
+
+**All generated files must be UTF-8 without BOM.** Windows PowerShell 5.1's `-Encoding UTF8` writes a BOM (`EF BB BF`) by default, which corrupts JSON files and breaks parsers.
+
+| Method | BOM? | Safe? |
+|--------|------|-------|
+| `Set-Content -Encoding UTF8` | Yes (PS 5.1) | **No** |
+| `Set-Content -Encoding UTF8NoBOM` | No (PS 7+ only) | Only on PS 7+ |
+| `[System.IO.File]::WriteAllText($path, $content, (New-Object System.Text.UTF8Encoding $false))` | No | **Yes — use this** |
+
+When writing PowerShell scripts that output JSON or other machine-readable files, always use `[System.IO.File]::WriteAllText()` with `UTF8Encoding($false)` to ensure cross-version compatibility. This applies to `plugin.json`, any generated config files, and tool output.
+
 ### Release Workflow
 
 After pushing a version bump, create a GitHub release with release notes:
