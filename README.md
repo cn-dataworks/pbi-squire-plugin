@@ -249,6 +249,192 @@ The agent does the work (e.g., translates "upper right bar chart" into actual fi
 3. Ask Claude: "Help me fix the YoY growth measure" or "Create a new sales dashboard page"
 4. Claude will guide you through the appropriate workflow
 
+## Multi-Project Setup
+
+When managing multiple Power BI projects that need separate context — such as different departments, business units, or clients — use a **one repository per project group** structure. This gives each project group its own `CLAUDE.md` with tailored business context, and keeps git history, permissions, and deployment pipelines cleanly separated.
+
+### Recommended Structure
+
+Create a separate git repository for each independent group of dashboards:
+
+```
+your-org/
+├── sales-pbi/                # Repo: Sales department dashboards
+│   ├── .gitignore
+│   ├── CLAUDE.md             # Sales-specific context & conventions
+│   └── dashboards/
+│       ├── SalesExec.pbip/
+│       └── SalesRegional.pbip/
+├── finance-pbi/              # Repo: Finance department dashboards
+│   ├── .gitignore
+│   ├── CLAUDE.md             # Finance-specific context & conventions
+│   └── dashboards/
+│       └── FinanceReview.pbip/
+└── ops-pbi/                  # Repo: Operations dashboards
+    ├── .gitignore
+    ├── CLAUDE.md
+    └── dashboards/
+        └── OpsMonitoring.pbip/
+```
+
+On your local machine or server, mirror this as separate clones:
+
+```
+/home/user/projects/
+├── sales-pbi/          ← git@github.com:your-org/sales-pbi.git
+├── finance-pbi/        ← git@github.com:your-org/finance-pbi.git
+└── ops-pbi/            ← git@github.com:your-org/ops-pbi.git
+```
+
+### Why Separate Repos
+
+| Concern | Separate Repos | Single Repo |
+|---------|---------------|-------------|
+| **CLAUDE.md context** | Tailored per project group | One file trying to serve everything |
+| **Git history** | Clean, scoped to one group | Noisy, mixes unrelated changes |
+| **Access control** | Grant access per repo | All-or-nothing |
+| **Plugin behavior** | Clean `.pbip` discovery | Ambiguous project targeting |
+| **CI/CD** | Independent pipelines | Complex path-based filtering |
+
+### Per-Project CLAUDE.md Template
+
+Each repository should have a `CLAUDE.md` at the root that enforces plugin usage and provides business context. Adapt this template for each project group:
+
+```markdown
+# [Project Group Name] — Power BI Projects
+
+## MANDATORY TOOLS — READ FIRST
+
+**You MUST use the pbi-squire plugin for ALL Power BI work in this repository.**
+- Invoke `/pbi-squire` for any task involving DAX, M code, TMDL, visuals,
+  or model changes.
+- Do NOT manually edit TMDL, PBIR JSON, or model definition files directly.
+  Always route through the plugin's workflows (EVALUATE, CREATE_ARTIFACT,
+  DATA_PREP, IMPLEMENT, etc.).
+- The plugin provides specialist agents for code location, validation, review,
+  and implementation. Use them — do not bypass them with raw file edits.
+
+**You MUST use the Power BI Modeling MCP server for live semantic model
+operations.**
+- Use the MCP tools for reading model metadata, testing DAX queries, and
+  validating changes against the live model.
+- Before modifying any measure, column, or relationship, query the current
+  state through the MCP server to confirm what exists.
+- After implementing changes, use the MCP server to verify the changes were
+  applied correctly.
+- If the MCP server is unavailable (model not connected), fall back to
+  file-based TMDL — but always attempt MCP first.
+
+**Workflow enforcement:**
+1. Diagnose/investigate → use EVALUATE workflow via the plugin
+2. Create new measures/columns/visuals → use CREATE_ARTIFACT workflow
+3. Power Query / M code changes → use DATA_PREP workflow
+4. Document a dashboard → use SUMMARIZE workflow
+5. Apply planned changes → use IMPLEMENT workflow
+6. Compare projects → use MERGE workflow
+
+Do NOT skip plugin workflows. Do NOT edit .tmdl or visual.json files with
+the Edit tool directly. The plugin's agents handle validation, naming
+conventions, and consistency checks that manual edits will miss.
+
+---
+
+## Business Context
+- Industry / Department: [e.g., Finance, Sales, Operations]
+- Key stakeholders: [who sees these dashboards]
+- Reporting cadence: [monthly, weekly, daily]
+
+## Projects in This Repo
+| Folder | Dashboard | Workspace | Refresh |
+|--------|-----------|-----------|---------|
+| `dashboards/ProjectName.pbip` | Dashboard Name | Workspace | Schedule |
+
+## Naming Conventions
+- Measures prefix: [e.g., "m_" or none]
+- Calculated columns prefix: [e.g., "cc_"]
+- Measure folders: [how measure groups are organized]
+- Date table name: [e.g., "DimDate", "Calendar"]
+
+## Business Terminology
+- [Term] = [Definition]
+
+## Data Sources
+- [Source] → [what it feeds]
+
+## Deployment Notes
+- Production workspace: [workspace name]
+- Gateway: [gateway name if relevant]
+- Refresh schedule: [when and how]
+
+## Change Management
+- All changes go through feature branches
+- PRs required before merging to main
+- main = what's deployed to Power BI Service
+
+## Known Quirks
+- [Anything unusual about the data model or environment]
+```
+
+### Recommended .gitignore for Power BI Repos
+
+```gitignore
+# Power BI local cache and build artifacts
+*.pbir.json.bak
+*.pbi/
+*.pbit
+.pbi/
+localSettings.json
+
+# Dataset cache
+*.SemanticModel/model.bim
+*.SemanticModel/.pbi/
+
+# Report cache
+*.Report/.pbi/
+
+# Never commit data files
+*.pbix
+*.xlsx
+*.csv
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+```
+
+Commit the TMDL definition files and PBIR JSON. Never commit binary caches, data extracts, or `.pbix` files.
+
+### Working Across Projects
+
+Switch between project groups by changing directories. Each Claude Code session picks up the local `CLAUDE.md` automatically:
+
+```bash
+cd /home/user/projects/sales-pbi && claude     # Sales context
+cd /home/user/projects/finance-pbi && claude   # Finance context
+```
+
+You can run multiple terminal sessions simultaneously — each Claude Code instance is independent.
+
+### Non-Power BI Code
+
+If you also maintain applications, ETL pipelines, or other code for the same team or client, keep those in their own repositories. Each repo gets a `CLAUDE.md` tuned for its contents:
+
+```
+your-org/
+├── sales-pbi/              # Power BI dashboards
+├── sales-webapp/           # Web application
+├── sales-etl/              # Data pipelines
+├── finance-pbi/            # Power BI dashboards
+└── finance-api/            # Backend API
+```
+
+Mixing Power BI projects with unrelated codebases in a single repo creates conflicting `CLAUDE.md` instructions, noisy git history, and complicated access controls.
+
+### Consultancy & Multi-Client Note
+
+This structure works identically for consultancies managing multiple clients. Replace department/division names with client names and use **private repositories** — client Power BI models contain business logic, KPIs, and potentially connection strings. Tag dashboard releases (e.g., `v2026.Q1`) so you can track and roll back deployments per client.
+
 ## Visual Templates
 
 The skill includes 17 PBIR visual templates for generating new visuals. Templates are bundled with the skill and work offline.
