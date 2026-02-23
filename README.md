@@ -255,27 +255,40 @@ When managing multiple Power BI projects that need separate context — such as 
 
 ### Recommended Structure
 
-Create a separate git repository for each independent group of dashboards:
+Create a separate git repository for each independent group of dashboards. The repository **is** the Power BI folder — `.pbip` projects sit at the root alongside `CLAUDE.md`. Multiple dashboards that share the same business context (same team, same client, same division) belong in the same repo:
 
 ```
 your-org/
-├── sales-pbi/                # Repo: Sales department dashboards
+├── sales-pbi/                     # Repo: Sales department dashboards
 │   ├── .gitignore
-│   ├── CLAUDE.md             # Sales-specific context & conventions
-│   └── dashboards/
-│       ├── SalesExec.pbip/
-│       └── SalesRegional.pbip/
-├── finance-pbi/              # Repo: Finance department dashboards
+│   ├── CLAUDE.md                  # Sales-specific context & conventions
+│   ├── .claude/
+│   │   └── settings.json         # Recommended permissions (see below)
+│   ├── SalesExec.pbip/            # Dashboard 1
+│   │   ├── SalesExec.pbip
+│   │   ├── SalesExec.SemanticModel/
+│   │   └── SalesExec.Report/
+│   └── SalesRegional.pbip/        # Dashboard 2 (same team, same repo)
+│       ├── SalesRegional.pbip
+│       ├── SalesRegional.SemanticModel/
+│       └── SalesRegional.Report/
+│
+├── finance-pbi/                   # Repo: Finance department dashboards
 │   ├── .gitignore
-│   ├── CLAUDE.md             # Finance-specific context & conventions
-│   └── dashboards/
-│       └── FinanceReview.pbip/
-└── ops-pbi/                  # Repo: Operations dashboards
+│   ├── CLAUDE.md
+│   ├── .claude/
+│   │   └── settings.json
+│   └── FinanceReview.pbip/
+│
+└── ops-pbi/                       # Repo: Operations dashboards
     ├── .gitignore
     ├── CLAUDE.md
-    └── dashboards/
-        └── OpsMonitoring.pbip/
+    ├── .claude/
+    │   └── settings.json
+    └── OpsMonitoring.pbip/
 ```
+
+**Multiple dashboards in one repo:** If dashboards share the same business context, naming conventions, and stakeholders, they belong together. The shared `CLAUDE.md` gives Claude consistent context across all of them. Only split into separate repos when dashboards have genuinely different business contexts or access requirements.
 
 On your local machine or server, mirror this as separate clones:
 
@@ -347,7 +360,7 @@ conventions, and consistency checks that manual edits will miss.
 ## Projects in This Repo
 | Folder | Dashboard | Workspace | Refresh |
 |--------|-----------|-----------|---------|
-| `dashboards/ProjectName.pbip` | Dashboard Name | Workspace | Schedule |
+| `ProjectName.pbip` | Dashboard Name | Workspace Name | Schedule |
 
 ## Naming Conventions
 - Measures prefix: [e.g., "m_" or none]
@@ -405,6 +418,40 @@ Thumbs.db
 
 Commit the TMDL definition files and PBIR JSON. Never commit binary caches, data extracts, or `.pbix` files.
 
+### Recommended Permissions
+
+Each Power BI repository should include a `.claude/settings.json` that auto-approves the tools the plugin needs. Without this, Claude Code will prompt for permission on every file read and edit, which slows down the multi-agent workflows significantly.
+
+Create `.claude/settings.json` in each repo:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "Bash(python *)",
+      "Bash(git *)"
+    ]
+  }
+}
+```
+
+| Permission | Why It's Needed |
+|-----------|-----------------|
+| `Read` | Agents read TMDL, PBIR JSON, and M code files during investigation |
+| `Glob` | Agents discover `.pbip` projects, visual folders, and table definitions |
+| `Grep` | Agents search for measure references, relationship patterns, and dependencies |
+| `Edit` | Implementation agents apply changes to TMDL and PBIR files |
+| `Write` | Agents write `findings.md` (task blackboard) and new visual files |
+| `Bash(python *)` | Developer Edition Python tools for validation and analysis |
+| `Bash(git *)` | Git operations for committing and branching |
+
+Commit this file to the repo so permissions are consistent for anyone who clones it.
+
 ### Working Across Projects
 
 Switch between project groups by changing directories. Each Claude Code session picks up the local `CLAUDE.md` automatically:
@@ -418,18 +465,18 @@ You can run multiple terminal sessions simultaneously — each Claude Code insta
 
 ### Non-Power BI Code
 
-If you also maintain applications, ETL pipelines, or other code for the same team or client, keep those in their own repositories. Each repo gets a `CLAUDE.md` tuned for its contents:
+If you also maintain applications, ETL pipelines, or other code for the same team or client, keep those in their own repositories. Do **not** nest Power BI projects inside an app repo or vice versa. Each repo gets a `CLAUDE.md` tuned for its contents:
 
 ```
 your-org/
-├── sales-pbi/              # Power BI dashboards
-├── sales-webapp/           # Web application
-├── sales-etl/              # Data pipelines
+├── sales-pbi/              # Power BI dashboards (CLAUDE.md enforces plugin)
+├── sales-webapp/           # Web application (CLAUDE.md has app conventions)
+├── sales-etl/              # Data pipelines (CLAUDE.md has pipeline context)
 ├── finance-pbi/            # Power BI dashboards
 └── finance-api/            # Backend API
 ```
 
-Mixing Power BI projects with unrelated codebases in a single repo creates conflicting `CLAUDE.md` instructions, noisy git history, and complicated access controls.
+Mixing Power BI projects with unrelated codebases in a single repo creates conflicting `CLAUDE.md` instructions, noisy git history, and complicated access controls. The Power BI repo's `CLAUDE.md` mandates plugin usage and MCP enforcement — those directives don't make sense in an app repo, and app-specific instructions (test runners, linters, frameworks) don't belong in a Power BI repo.
 
 ### Consultancy & Multi-Client Note
 
